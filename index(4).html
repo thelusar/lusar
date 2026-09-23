@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>LUSAR — Lighting & Interiors</title>
+  <meta name="description" content="LUSAR — свет, светильники и люстры для частных и коммерческих интерьеров. Новый сайт готовится к запуску." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:title" content="LUSAR — сайт скоро откроется" />
+  <meta property="og:description" content="Свет, светильники и люстры для продуманных интерьеров. Новый сайт LUSAR готовится к запуску." />
+  <meta property="og:type" content="website" />
+  <style>
+    :root{
+      --bg:#080808;
+      --panel:rgba(255,255,255,.045);
+      --line:rgba(255,255,255,.105);
+      --text:#f3f1ec;
+      --muted:#a4a19a;
+      --soft:#d7d2c8;
+      --glow:rgba(241,238,229,.16);
+      --mx:50%; --my:42%;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+    body{
+      font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      overflow:hidden;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    body::before{
+      content:""; position:fixed; inset:-20%; pointer-events:none;
+      background:
+        radial-gradient(900px 600px at var(--mx) var(--my), rgba(255,255,255,.09), transparent 58%),
+        radial-gradient(700px 420px at 78% 18%, rgba(255,255,255,.045), transparent 62%),
+        radial-gradient(700px 420px at 20% 86%, rgba(255,255,255,.035), transparent 64%);
+      filter:blur(10px); opacity:.92;
+      transition:opacity .4s ease;
+      animation:breathe 9s ease-in-out infinite alternate;
+    }
+    body::after{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.25;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+      mix-blend-mode:soft-light;
+    }
+    @keyframes breathe{from{transform:scale(1) translate3d(0,0,0)}to{transform:scale(1.04) translate3d(-1%,1%,0)}}
+    @keyframes reveal{from{opacity:0;transform:translateY(14px);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+    @keyframes sheen{0%,75%{transform:translateX(-120%) skewX(-18deg)}100%{transform:translateX(180%) skewX(-18deg)}}
+    @keyframes lineMove{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+
+    .page{height:100svh;min-height:620px;padding:28px;position:relative;display:grid;place-items:stretch}
+    .shell{
+      position:relative; width:100%; height:100%; border:1px solid var(--line); border-radius:26px;
+      background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
+      backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+      overflow:hidden; isolation:isolate;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 24px 80px rgba(0,0,0,.35);
+    }
+    .shell::before{
+      content:""; position:absolute; left:7%; right:7%; top:0; height:1px; opacity:.7;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+      animation:lineMove 9s linear infinite;
+    }
+    .topbar{position:absolute;left:34px;right:34px;top:26px;display:flex;align-items:center;justify-content:space-between;z-index:4}
+    .brand{display:flex;align-items:center;gap:11px;letter-spacing:.22em;font-weight:650;font-size:14px}
+    .mark{width:24px;height:24px;border:1px solid rgba(255,255,255,.32);border-radius:50%;position:relative;box-shadow:0 0 30px rgba(255,255,255,.06)}
+    .mark::before{content:"";position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle,#faf8f2 0 18%,rgba(255,255,255,.12) 20% 100%);box-shadow:0 0 18px rgba(255,255,255,.22)}
+    .status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+    .dot{width:6px;height:6px;border-radius:50%;background:#e8e5dc;box-shadow:0 0 16px rgba(255,255,255,.65)}
+
+    .content{height:100%;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.72fr);align-items:end;padding:112px 7.2% 7.2%;gap:7vw;position:relative;z-index:2}
+    .copy{align-self:end;max-width:820px}
+    .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:25px;animation:reveal .9s .08s both}
+    h1{margin:0;max-width:780px;font-weight:430;letter-spacing:-.045em;line-height:1.02;font-size:clamp(42px,5.6vw,82px);animation:reveal 1.05s .16s both}
+    h1 em{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-style:italic;color:var(--soft)}
+    .lead{margin:28px 0 0;max-width:640px;color:#b6b3ac;font-size:clamp(16px,1.45vw,20px);line-height:1.6;animation:reveal 1s .27s both}
+    .meta{display:flex;gap:42px;margin-top:38px;padding-top:22px;border-top:1px solid var(--line);animation:reveal 1s .38s both}
+    .meta-item{min-width:145px}
+    .meta-label{display:block;color:#77746f;text-transform:uppercase;font-size:10px;letter-spacing:.17em;margin-bottom:8px}
+    .meta-value{font-size:14px;color:#dad7d0}
+
+    .visual{align-self:stretch;position:relative;min-height:420px;display:flex;align-items:center;justify-content:center;animation:reveal 1.2s .2s both}
+    .orb{position:absolute;width:min(34vw,470px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 44% 42%,rgba(255,255,255,.96) 0 2%,rgba(255,255,255,.25) 4%,rgba(255,255,255,.06) 15%,rgba(255,255,255,.018) 38%,transparent 66%);filter:blur(.2px);opacity:.72;box-shadow:0 0 120px rgba(255,255,255,.06);animation:breathe 7s ease-in-out infinite alternate-reverse}
+    .ring{position:absolute;width:min(31vw,430px);aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 0 60px rgba(255,255,255,.025),0 0 80px rgba(255,255,255,.03)}
+    .ring::before,.ring::after{content:"";position:absolute;border-radius:50%;inset:9%;border:1px solid rgba(255,255,255,.07)}
+    .ring::after{inset:23%;border-color:rgba(255,255,255,.045)}
+    .beam{position:absolute;width:1px;height:68%;top:16%;background:linear-gradient(180deg,transparent,rgba(255,255,255,.55),rgba(255,255,255,.05),transparent);box-shadow:0 0 18px rgba(255,255,255,.25)}
+    .beam.b2{transform:rotate(56deg)} .beam.b3{transform:rotate(112deg);opacity:.55}
+    .glass{position:absolute;width:160px;height:210px;border:1px solid rgba(255,255,255,.13);border-radius:80px 80px 36px 36px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.01));backdrop-filter:blur(8px);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 30px 70px rgba(0,0,0,.2)}
+    .glass::after{content:"";position:absolute;top:-10%;left:-80%;width:45%;height:120%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);animation:sheen 7s ease-in-out infinite}
+    .core{position:absolute;width:18px;height:18px;border-radius:50%;background:#fffdf7;box-shadow:0 0 12px #fff,0 0 32px rgba(255,255,255,.75),0 0 80px rgba(255,255,255,.28)}
+    .caption{position:absolute;bottom:4%;right:0;width:210px;color:#77746f;font-size:11px;line-height:1.55;letter-spacing:.05em}
+
+    .foot{position:absolute;left:34px;right:34px;bottom:26px;display:flex;justify-content:space-between;align-items:center;color:#6f6c66;font-size:11px;letter-spacing:.08em;z-index:4}
+    .foot span:last-child{color:#94918b}
+
+    @media (max-width:900px){
+      body{overflow:auto}
+      .page{height:auto;min-height:100svh;padding:14px}
+      .shell{min-height:calc(100svh - 28px);border-radius:20px}
+      .topbar{left:20px;right:20px;top:20px}
+      .content{grid-template-columns:1fr;padding:96px 22px 86px;gap:12px;align-items:center}
+      .visual{position:absolute;inset:10% -18% auto auto;width:72vw;height:52vh;min-height:0;opacity:.48;z-index:-1}
+      .copy{align-self:center;max-width:680px}
+      h1{font-size:clamp(42px,12vw,68px);max-width:640px}
+      .lead{font-size:16px;max-width:540px;margin-top:22px}
+      .meta{gap:24px;flex-wrap:wrap;margin-top:30px}
+      .caption{display:none}
+      .foot{left:20px;right:20px;bottom:19px}
+    }
+    @media (max-width:560px){
+      .status{font-size:10px}.status .status-text{display:none}
+      .brand{font-size:13px}.mark{width:22px;height:22px}
+      .content{padding-left:18px;padding-right:18px}
+      h1{font-size:clamp(39px,12.5vw,54px);line-height:1.04}
+      .eyebrow{margin-bottom:18px;font-size:10px}
+      .lead{font-size:15px;line-height:1.55}
+      .meta{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;padding-top:18px}
+      .meta-item{min-width:0}
+      .foot{font-size:9px;gap:12px}.foot span:last-child{text-align:right}
+      .visual{right:-31%;top:10%;width:88vw;height:48vh}
+    }
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="shell" aria-label="LUSAR — временная страница">
+      <header class="topbar">
+        <div class="brand"><span class="mark" aria-hidden="true"></span><span>LUSAR</span></div>
+        <div class="status"><span class="dot"></span><span class="status-text">Preparing for launch</span></div>
+      </header>
+
+      <div class="content">
+        <div class="copy">
+          <div class="eyebrow">Lighting · Chandeliers · Interior light</div>
+          <h1>Мы создаём пространство, в котором <em>свет</em> становится частью архитектуры.</h1>
+          <p class="lead">LUSAR — компания в сфере интерьерного и декоративного освещения. Мы готовим новый сайт с подборкой светильников, люстр и решений для продуманных частных и коммерческих интерьеров.</p>
+          <div class="meta">
+            <div class="meta-item"><span class="meta-label">Founder</span><span class="meta-value">David Matevosyan</span></div>
+            <div class="meta-item"><span class="meta-label">Website</span><span class="meta-value">Скоро будет готов</span></div>
+          </div>
+        </div>
+
+        <div class="visual" aria-hidden="true">
+          <div class="orb"></div>
+          <div class="ring"></div>
+          <div class="beam"></div>
+          <div class="beam b2"></div>
+          <div class="beam b3"></div>
+          <div class="glass"></div>
+          <div class="core"></div>
+          <div class="caption">A quiet study of light, reflection and material — designed to feel alive without becoming decorative noise.</div>
+        </div>
+      </div>
+
+      <footer class="foot"><span>© 2026 LUSAR</span><span>New website is coming soon</span></footer>
+    </section>
+  </main>
+  <script>
+    const root=document.documentElement;
+    let tx=50,ty=42,cx=50,cy=42,raf;
+    const tick=()=>{cx+=(tx-cx)*.08;cy+=(ty-cy)*.08;root.style.setProperty('--mx',cx+'%');root.style.setProperty('--my',cy+'%');raf=requestAnimationFrame(tick)};
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      addEventListener('pointermove',e=>{tx=(e.clientX/innerWidth)*100;ty=(e.clientY/innerHeight)*100},{passive:true});
+      tick();
+    }
+  </script>
+</body>
+</html>
