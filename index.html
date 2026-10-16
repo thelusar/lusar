@@ -66,6 +66,7 @@
     .brand{display:flex;align-items:center;gap:11px;letter-spacing:.22em;font-weight:650;font-size:14px}
     .mark{width:24px;height:24px;border:1px solid rgba(255,255,255,.32);border-radius:50%;position:relative;box-shadow:0 0 30px rgba(255,255,255,.06)}
     .mark::before{content:"";position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle,#faf8f2 0 18%,rgba(255,255,255,.12) 20% 100%);box-shadow:0 0 18px rgba(255,255,255,.22)}
+    .catalog-link{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(215,194,153,.45);border-radius:4px;padding:11px 17px;font-size:14px;color:#e2cfaa;letter-spacing:.02em;text-decoration:none;transition:background .2s}.catalog-link:hover{background:rgba(215,194,153,.08)}.catalog-link:focus-visible{outline:2px solid #d7c299;outline-offset:5px}
     .status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
     .dot{width:6px;height:6px;border-radius:50%;background:#e8e5dc;box-shadow:0 0 16px rgba(255,255,255,.65)}
 
@@ -129,7 +130,7 @@
     <section class="shell" aria-label="LUSAR — временная страница">
       <header class="topbar">
         <div class="brand"><span class="mark" aria-hidden="true"></span><span>LUSAR</span></div>
-        <div class="status"><span class="dot"></span><span class="status-text">Preparing for launch</span></div>
+        <a class="catalog-link" href="catalog.html">Каталог товаров</a>
       </header>
 
       <div class="content">
@@ -139,7 +140,7 @@
           <p class="lead">LUSAR — компания в сфере интерьерного и декоративного освещения. Мы готовим новый сайт с подборкой светильников, люстр и решений для продуманных частных и коммерческих интерьеров.</p>
           <div class="meta">
             <div class="meta-item"><span class="meta-label">Founder</span><span class="meta-value">David Matevosyan</span></div>
-            <div class="meta-item"><span class="meta-label">Website</span><span class="meta-value">Скоро будет готов</span></div>
+            <div class="meta-item"><span class="meta-label">Website</span><a class="meta-value" href="catalog.html" style="color:#e2cfaa;text-underline-offset:4px">Посмотреть каталог</a></div>
           </div>
         </div>
 
@@ -169,3 +170,4 @@
   </script>
 </body>
 </html>
+

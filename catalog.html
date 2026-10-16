@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Каталог освещения — LUSAR</title>
+  <meta name="description" content="Светильники, люстры, бра, светодиодные ленты и решения для освещения LUSAR. Фотографии, цены в драмах и характеристики товаров.">
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="canonical" href="https://lusar.am/catalog.html">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0b0c'/%3E%3Cpath d='M10 7h4v15h9v4H10z' fill='%23d4bb8e'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/catalog.css">
+  <script src="assets/catalog.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#products">Перейти к товарам</a>
+  <header class="site-header"><a class="brand" href="./" aria-label="LUSAR — главная">LUSAR<span>LIGHTING</span></a><nav aria-label="Основное меню"><a href="./">Главная</a><a href="catalog.html" aria-current="page">Каталог</a></nav></header>
+  <main class="catalog-page">
+    <div class="catalog-heading"><div><p class="eyebrow">LUSAR / КОЛЛЕКЦИЯ</p><h1>Каталог освещения</h1></div><p class="collection-count" id="collection-count" aria-live="polite">Загружаем коллекцию</p></div>
+    <div class="catalog-tools"><label class="search"><span class="sr-only">Поиск по названию, артикулу или характеристике</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="search" type="search" placeholder="Название, артикул, характеристика" autocomplete="off"></label><label class="sort"><span>Порядок</span><select id="sort"><option value="new">Сначала новые</option><option value="name">По названию</option><option value="price-asc">Цена по возрастанию</option><option value="price-desc">Цена по убыванию</option></select></label></div>
+    <nav id="categories" class="categories" aria-label="Категории товаров"><button type="button" class="category-pill selected" aria-pressed="true">Все товары</button></nav>
+    <div id="connection-notice" class="connection-notice" role="status" hidden><span>Не удалось обновить каталог.</span><button type="button" id="retry">Попробовать ещё раз</button></div>
+    <section id="products" class="product-grid" aria-label="Товары" aria-busy="true"><div class="loading-card" aria-hidden="true"></div><div class="loading-card" aria-hidden="true"></div><div class="loading-card" aria-hidden="true"></div><div class="loading-card" aria-hidden="true"></div></section>
+    <section id="empty" class="empty-state" hidden><span class="empty-mark" aria-hidden="true">L</span><h2 id="empty-title">Коллекция готовится</h2><p id="empty-text">Скоро здесь появятся товары LUSAR.</p><button type="button" id="reset-filters" hidden>Сбросить фильтры</button></section>
+    <noscript><p class="noscript">Чтобы увидеть актуальные товары и фотографии, включите JavaScript в браузере.</p></noscript>
+  </main>
+  <footer class="site-footer"><span>© <span id="year">2026</span> LUSAR</span><span>Свет для частных и коммерческих пространств</span><a href="./">lusar.am</a></footer>
+  <dialog id="product-dialog" class="product-dialog" aria-labelledby="detail-title"><div class="dialog-toolbar"><span>LUSAR / ТОВАР</span><button type="button" id="close-detail" class="icon-button" aria-label="Закрыть карточку товара">×</button></div><div id="product-detail" class="product-detail"></div></dialog>
+  <div class="sr-only" aria-live="polite" id="announce"></div>
+</body>
+</html>
