@@ -1,0 +1,1692 @@
+{
+  "schemaVersion": 1,
+  "brand": "Lusar",
+  "currency": "AMD",
+  "categories": [
+    {
+      "id": "chandeliers",
+      "name": "Люстры",
+      "parentId": null,
+      "path": "Люстры"
+    },
+    {
+      "id": "pendants",
+      "name": "Подвесные светильники",
+      "parentId": null,
+      "path": "Подвесные светильники"
+    },
+    {
+      "id": "sconces",
+      "name": "Бра",
+      "parentId": null,
+      "path": "Бра"
+    },
+    {
+      "id": "floodlights",
+      "name": "Прожекторы",
+      "parentId": null,
+      "path": "Прожекторы"
+    },
+    {
+      "id": "outdoor",
+      "name": "Уличное освещение",
+      "parentId": null,
+      "path": "Уличное освещение"
+    }
+  ],
+  "products": [
+    {
+      "id": "afb812ef-ffed-4ccb-86fe-5ab9a1d39aee",
+      "name": "Уличный LED-прожектор 100 Вт ",
+      "sku": "90727",
+      "categoryId": "floodlights",
+      "description": "Светодиодный прожектор предназначен для эффективного освещения открытых территорий, фасадов зданий, дворов, парковок и хозяйственных объектов. Практичный корпус и лаконичный дизайн делают его удобным решением для наружного освещения.",
+      "brand": "LUYS+",
+      "price": 7500,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Встроенный LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "power",
+          "label": "Мощность",
+          "value": "100",
+          "unit": "Вт",
+          "group": "Электрика"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "lumens",
+          "label": "Световой поток",
+          "value": "10000",
+          "unit": "лм",
+          "group": "Свет"
+        },
+        {
+          "key": "temperature",
+          "label": "Цветовая температура",
+          "value": "4000",
+          "unit": "К",
+          "group": "Свет"
+        },
+        {
+          "key": "cri",
+          "label": "Индекс цветопередачи CRI / Ra",
+          "value": "70",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "light_color",
+          "label": "Цвет свечения",
+          "value": "Нейтральный белый",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Графит",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "литой алюминий, матовое закалённое стекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "ip",
+          "label": "Защита IP",
+          "value": "IP65",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "200",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "175",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "beam",
+          "label": "Угол рассеивания",
+          "value": "120",
+          "unit": "°",
+          "group": "Свет"
+        }
+      ],
+      "images": [
+        {
+          "id": "a0343838-d246-4562-9d57-4089dfae1487",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/a0343838-d246-4562-9d57-4089dfae1487",
+          "alt": "Уличный LED-прожектор 100 Вт "
+        },
+        {
+          "id": "0cb7d8d8-5ac9-4142-a383-4e1bb0fa6e63",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/0cb7d8d8-5ac9-4142-a383-4e1bb0fa6e63",
+          "alt": "Уличный LED-прожектор 100 Вт "
+        },
+        {
+          "id": "65273a1f-86a9-4fbc-a653-2b7078842cc7",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/65273a1f-86a9-4fbc-a653-2b7078842cc7",
+          "alt": "Уличный LED-прожектор 100 Вт "
+        },
+        {
+          "id": "940e6888-662f-4e85-ba77-91022ff9aeee",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/940e6888-662f-4e85-ba77-91022ff9aeee",
+          "alt": "Уличный LED-прожектор 100 Вт "
+        }
+      ],
+      "createdAt": "2026-10-15T14:04:31.841Z",
+      "updatedAt": "2026-10-15T14:06:05.559Z"
+    },
+    {
+      "id": "139c6aa3-b958-4781-80ce-7063bee6a2e4",
+      "name": "Уличный LED-прожектор 100 Вт",
+      "sku": "10783",
+      "categoryId": "floodlights",
+      "description": "Светодиодный прожектор предназначен для эффективного освещения открытых территорий, фасадов зданий, дворов, парковок и хозяйственных объектов. Практичный корпус и лаконичный дизайн делают его удобным решением для наружного освещения.",
+      "brand": "LUYS+",
+      "price": 7500,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Встроенный LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "power",
+          "label": "Мощность",
+          "value": "100",
+          "unit": "Вт",
+          "group": "Электрика"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "lumens",
+          "label": "Световой поток",
+          "value": "10000",
+          "unit": "лм",
+          "group": "Свет"
+        },
+        {
+          "key": "temperature",
+          "label": "Цветовая температура",
+          "value": "6000",
+          "unit": "К",
+          "group": "Свет"
+        },
+        {
+          "key": "cri",
+          "label": "Индекс цветопередачи CRI / Ra",
+          "value": "70",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "light_color",
+          "label": "Цвет свечения",
+          "value": "Холодный белый",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Графит",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "литой алюминий, матовое закалённое стекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "ip",
+          "label": "Защита IP",
+          "value": "IP65",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "200",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "175",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "beam",
+          "label": "Угол рассеивания",
+          "value": "120",
+          "unit": "°",
+          "group": "Свет"
+        }
+      ],
+      "images": [
+        {
+          "id": "9f6864dd-9089-4ffd-a365-61140f978502",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/9f6864dd-9089-4ffd-a365-61140f978502",
+          "alt": "Уличный LED-прожектор 100 Вт"
+        },
+        {
+          "id": "c45db175-82bd-4a3f-943f-84a36883a3dd",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/c45db175-82bd-4a3f-943f-84a36883a3dd",
+          "alt": "Уличный LED-прожектор 100 Вт"
+        },
+        {
+          "id": "bfc22d53-0dc3-4e3e-8d4d-8c6f47def5b8",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/bfc22d53-0dc3-4e3e-8d4d-8c6f47def5b8",
+          "alt": "Уличный LED-прожектор 100 Вт"
+        },
+        {
+          "id": "785f57c7-ecb1-4bcc-8d69-0918ec93d910",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/785f57c7-ecb1-4bcc-8d69-0918ec93d910",
+          "alt": "Уличный LED-прожектор 100 Вт"
+        }
+      ],
+      "createdAt": "2026-10-15T13:10:02.334Z",
+      "updatedAt": "2026-10-15T14:04:26.057Z"
+    },
+    {
+      "id": "e4722334-6f85-4f98-b67e-c30dd63e97ab",
+      "name": "Каскадная хрустальная люстра",
+      "sku": "10334",
+      "categoryId": "chandeliers",
+      "description": "Элегантная люстра с каскадной композицией из прозрачных хрустальных подвесок и изысканной золотой фурнитурой. Создаёт эффектное сияние, наполняя интерьер атмосферой роскоши и утончённости. Идеально подходит для современных гостиных, столовых и просторных интерьеров.",
+      "brand": "",
+      "price": 130000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "E14",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "lamp_count",
+          "label": "Количество ламп",
+          "value": "12",
+          "unit": "шт.",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Золото",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "металл, стекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "550",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "460",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "adjustable_suspension",
+          "label": "Регулируемый подвес",
+          "value": "Да",
+          "unit": "",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "324891ec-25d1-47f9-89fe-20c10f0a3700",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/324891ec-25d1-47f9-89fe-20c10f0a3700",
+          "alt": "Каскадная хрустальная люстра"
+        },
+        {
+          "id": "051cedca-1664-420b-9e1e-150725f1eac9",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/051cedca-1664-420b-9e1e-150725f1eac9",
+          "alt": "Каскадная хрустальная люстра"
+        },
+        {
+          "id": "04825dba-6cb8-4c65-9a54-6a4f7a4ade74",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/04825dba-6cb8-4c65-9a54-6a4f7a4ade74",
+          "alt": "Каскадная хрустальная люстра"
+        },
+        {
+          "id": "049bf453-2565-48c2-8b94-22e2b80c50a3",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/049bf453-2565-48c2-8b94-22e2b80c50a3",
+          "alt": "Каскадная хрустальная люстра"
+        },
+        {
+          "id": "a95a040e-9f65-43fa-91d0-2e4776bc7ea7",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/a95a040e-9f65-43fa-91d0-2e4776bc7ea7",
+          "alt": "Каскадная хрустальная люстра"
+        }
+      ],
+      "createdAt": "2026-10-15T11:06:26.013Z",
+      "updatedAt": "2026-10-15T12:37:11.800Z"
+    },
+    {
+      "id": "3748e3b1-d8d2-4f4e-a54c-9152e83fae3f",
+      "name": "Настенное бра Птички",
+      "sku": "20150",
+      "categoryId": "sconces",
+      "description": "Дизайнерское настенное бра с двумя изящными птицами в золотистой отделке. Необычная композиция и оригинальный дизайн превращают светильник в эффектный декоративный элемент. Мягкое освещение и элегантные формы прекрасно дополнят интерьер спальни, гостиной или современной зоны отдыха.",
+      "brand": "",
+      "price": 22000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Встроенный LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "power",
+          "label": "Мощность",
+          "value": "20",
+          "unit": "Вт",
+          "group": "Электрика"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "Без цоколя / LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "temperature",
+          "label": "Цветовая температура",
+          "value": "4000",
+          "unit": "К",
+          "group": "Свет"
+        },
+        {
+          "key": "light_color",
+          "label": "Цвет свечения",
+          "value": "Нейтральный белый",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "металл, акрил",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "380",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "280",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "e73ba931-f896-4564-b714-0e9c878b70b1",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/e73ba931-f896-4564-b714-0e9c878b70b1",
+          "alt": "Настенное бра Птички"
+        },
+        {
+          "id": "d2448919-0315-41d5-ab26-f396cb1ab9e4",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/d2448919-0315-41d5-ab26-f396cb1ab9e4",
+          "alt": "Настенное бра Птички"
+        }
+      ],
+      "createdAt": "2026-10-11T13:28:48.221Z",
+      "updatedAt": "2026-10-11T13:51:37.764Z"
+    },
+    {
+      "id": "ef5d66c9-a216-4cea-856c-b22b76afd1e2",
+      "name": "Настенное бра Птичка",
+      "sku": "20151",
+      "categoryId": "sconces",
+      "description": "Оригинальное настенное бра в форме изящной птицы с декоративной золотистой отделкой. Необычный дизайн и плавные линии придают светильнику особый шарм. Мягкое освещение создаёт уютную атмосферу и становится стильным акцентом в интерьере.",
+      "brand": "",
+      "price": 16000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Встроенный LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "power",
+          "label": "Мощность",
+          "value": "10",
+          "unit": "Вт",
+          "group": "Электрика"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "Без цоколя / LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "temperature",
+          "label": "Цветовая температура",
+          "value": "4000",
+          "unit": "К",
+          "group": "Свет"
+        },
+        {
+          "key": "light_color",
+          "label": "Цвет свечения",
+          "value": "Нейтральный белый",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "металл, акрил",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "330",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "180",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "1bcab894-86fb-446e-b833-f139b6a80bea",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/1bcab894-86fb-446e-b833-f139b6a80bea",
+          "alt": "Настенное бра Птичка"
+        },
+        {
+          "id": "329f8970-6dc1-4b97-b798-1a36e6a73977",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/329f8970-6dc1-4b97-b798-1a36e6a73977",
+          "alt": "Настенное бра Птичка"
+        }
+      ],
+      "createdAt": "2026-10-11T13:03:53.488Z",
+      "updatedAt": "2026-10-11T13:33:52.173Z"
+    },
+    {
+      "id": "5bee2006-29a2-4f21-bf1d-6c31de028e25",
+      "name": "Настенное бра Рука чёрная",
+      "sku": "30359",
+      "categoryId": "sconces",
+      "description": "Стильное дизайнерское настенное бра в форме руки с большим шарообразным акриловым плафоном. Глянцевая чёрная поверхность корпуса подчёркивает оригинальность формы и придаёт светильнику современный характер. Необычный дизайн и мягкий рассеянный свет гармонично дополнят интерьер спальни, гостиной или современной зоны отдыха.",
+      "brand": "",
+      "price": 16000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Встроенный LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "power",
+          "label": "Мощность",
+          "value": "10",
+          "unit": "Вт",
+          "group": "Электрика"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "Без цоколя / LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "temperature",
+          "label": "Цветовая температура",
+          "value": "4000",
+          "unit": "К",
+          "group": "Свет"
+        },
+        {
+          "key": "light_color",
+          "label": "Цвет свечения",
+          "value": "Нейтральный белый",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "Медь, акрил",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "300",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "250",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "742a1072-a873-4865-8c4e-d9617ffb5a09",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/742a1072-a873-4865-8c4e-d9617ffb5a09",
+          "alt": "Настенное бра Рука чёрная"
+        },
+        {
+          "id": "3cfc0a16-1bbf-4f02-83ab-27f5c085f2c9",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/3cfc0a16-1bbf-4f02-83ab-27f5c085f2c9",
+          "alt": "Настенное бра Рука чёрная"
+        }
+      ],
+      "createdAt": "2026-10-11T12:51:34.557Z",
+      "updatedAt": "2026-10-11T13:03:20.998Z"
+    },
+    {
+      "id": "629d6060-338e-47e2-bbcb-e7cee61db891",
+      "name": "Линейный подвесной светильник с тремя стеклянными плафонами",
+      "sku": "30312",
+      "categoryId": "pendants",
+      "description": "Стильный подвесной светильник с тремя дымчатыми стеклянными плафонами на чёрном линейном основании. Сочетает минималистичный дизайн и элегантные детали, гармонично дополняя современные кухни и обеденные зоны.",
+      "brand": "",
+      "price": 21000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "GX53",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "lamp_count",
+          "label": "Количество ламп",
+          "value": "4",
+          "unit": "шт.",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": " алюминий, стекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "660",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "100",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "depth",
+          "label": "Глубина",
+          "value": "60",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "suspension",
+          "label": "Длина подвеса",
+          "value": "1000",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "b6ee76a7-aaac-4490-af6c-ccfa0612cd23",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/b6ee76a7-aaac-4490-af6c-ccfa0612cd23",
+          "alt": "Линейный подвесной светильник с тремя стеклянными плафонами"
+        },
+        {
+          "id": "bfb9241c-e52b-4401-902a-9b6e30e5dfec",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/bfb9241c-e52b-4401-902a-9b6e30e5dfec",
+          "alt": "Линейный подвесной светильник с тремя стеклянными плафонами"
+        }
+      ],
+      "createdAt": "2026-10-11T08:45:43.675Z",
+      "updatedAt": "2026-10-15T12:44:20.434Z"
+    },
+    {
+      "id": "2a072c76-f87f-4400-943c-cc135436fe29",
+      "name": "Линейный подвесной светильник с четырьмя стеклянными плафонами",
+      "sku": "30311",
+      "categoryId": "pendants",
+      "description": "Стильный подвесной светильник с тремя дымчатыми стеклянными плафонами на чёрном линейном основании. Сочетает минималистичный дизайн и элегантные детали, гармонично дополняя современные кухни и обеденные зоны.",
+      "brand": "",
+      "price": 25000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "GX53",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "lamp_count",
+          "label": "Количество ламп",
+          "value": "4",
+          "unit": "шт.",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "алюминий, стекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "910",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "100",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "suspension",
+          "label": "Длина подвеса",
+          "value": "1000",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "7622f1ba-6ace-42ca-ba7d-7c996fedd6d8",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/7622f1ba-6ace-42ca-ba7d-7c996fedd6d8",
+          "alt": "Линейный подвесной светильник с четырьмя стеклянными плафонами"
+        },
+        {
+          "id": "7d562339-1e3f-4ef6-98b5-61e098f30e64",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/7d562339-1e3f-4ef6-98b5-61e098f30e64",
+          "alt": "Линейный подвесной светильник с четырьмя стеклянными плафонами"
+        }
+      ],
+      "createdAt": "2026-10-11T08:33:58.963Z",
+      "updatedAt": "2026-10-15T12:44:40.385Z"
+    },
+    {
+      "id": "bf2bacb6-a2d8-4d82-b1b3-c8430bbc57cb",
+      "name": "Подвесной светильник с цилиндрическим стеклянным плафоном",
+      "sku": "30636",
+      "categoryId": "pendants",
+      "description": "Минималистичный подвесной светильник с цилиндрическим плафоном из дымчатого стекла и чёрной металлической арматурой. Подходит для кухонных островов, обеденных зон и современных интерьеров, добавляя пространству лаконичный и выразительный акцент.",
+      "brand": "",
+      "price": 7000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "E27",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "lamp_count",
+          "label": "Количество ламп",
+          "value": "1",
+          "unit": "шт.",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "алюминий, стекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "120",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "180",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "depth",
+          "label": "Глубина",
+          "value": "130",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "suspension",
+          "label": "Длина подвеса",
+          "value": "1000",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "44b10066-6455-4603-847c-2117a198a7c8",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/44b10066-6455-4603-847c-2117a198a7c8",
+          "alt": "Подвесной светильник с цилиндрическим стеклянным плафоном"
+        },
+        {
+          "id": "161dd1c5-d07b-4d1f-b2b0-ef2ea58ea175",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/161dd1c5-d07b-4d1f-b2b0-ef2ea58ea175",
+          "alt": "Подвесной светильник с цилиндрическим стеклянным плафоном"
+        }
+      ],
+      "createdAt": "2026-10-11T07:19:58.234Z",
+      "updatedAt": "2026-10-15T12:44:05.074Z"
+    },
+    {
+      "id": "1183f95a-eba2-40a8-a37a-e33f325d32db",
+      "name": "Подвесной светильник , чёрный металлический плафон в современном стиле",
+      "sku": "30233",
+      "categoryId": "pendants",
+      "description": "Элегантный подвесной светильник с лаконичным чёрным плафоном и белой внутренней поверхностью. Плавные линии и минималистичный дизайн делают его универсальным решением для кухни, столовой, гостиной или кафе. Светильник создаёт уютную атмосферу и гармонично вписывается в современные интерьеры.\n",
+      "brand": "",
+      "price": 6000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "E27",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "lamp_count",
+          "label": "Количество ламп",
+          "value": "1",
+          "unit": "шт.",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "металл",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "395",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "280",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "f4748c9d-ed2c-4863-950f-883078484ec1",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/f4748c9d-ed2c-4863-950f-883078484ec1",
+          "alt": "Подвесной светильник , чёрный металлический плафон в современном стиле"
+        },
+        {
+          "id": "288d3987-8e96-4d48-bdfe-2a8eff8ec06e",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/288d3987-8e96-4d48-bdfe-2a8eff8ec06e",
+          "alt": "Подвесной светильник , чёрный металлический плафон в современном стиле"
+        }
+      ],
+      "createdAt": "2026-10-09T13:21:25.213Z",
+      "updatedAt": "2026-10-15T12:43:38.416Z"
+    },
+    {
+      "id": "9cd1544f-6b62-42b3-a106-8b03517ac9f5",
+      "name": "Подвесной светильник, чёрный геометрический плафон с золотистой внутренней отделкой",
+      "sku": "30683",
+      "categoryId": "pendants",
+      "description": "Стильный подвесной светильник с геометрическим плафоном, матовым чёрным корпусом и золотистой внутренней поверхностью. Современный дизайн гармонично дополнит интерьер кухни, столовой, гостиной или кафе, создавая выразительный акцент в пространстве.",
+      "brand": "",
+      "price": 9000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "E27",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "металл",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "380",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "230",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "suspension",
+          "label": "Длина подвеса",
+          "value": "1000",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "a74fbd40-faa0-4836-a287-c032929b9d64",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/a74fbd40-faa0-4836-a287-c032929b9d64",
+          "alt": "Подвесной светильник, чёрный геометрический плафон с золотистой внутренней отделкой"
+        },
+        {
+          "id": "71beeeb3-4b68-4d92-9c47-85c5587e2e7e",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/71beeeb3-4b68-4d92-9c47-85c5587e2e7e",
+          "alt": "Подвесной светильник, чёрный геометрический плафон с золотистой внутренней отделкой"
+        }
+      ],
+      "createdAt": "2026-10-09T13:02:50.715Z",
+      "updatedAt": "2026-10-15T12:43:12.339Z"
+    },
+    {
+      "id": "18a876dc-e000-4df9-bad1-0822db648fa0",
+      "name": " Подвесной светильник в геометрическом стиле с чёрным металлическим каркасом",
+      "sku": "10509",
+      "categoryId": "pendants",
+      "description": "Современный подвесной светильник с геометрическим чёрным каркасом и белым плафоном. Сочетание лаконичных линий и мягкого рассеянного света делает его стильным решением для кухни, столовой, гостиной или кафе. Светильник гармонично дополняет современные и минималистичные интерьеры.",
+      "brand": "",
+      "price": 11000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "E27",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "lamp_count",
+          "label": "Количество ламп",
+          "value": "1",
+          "unit": "шт.",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "металл, ткань ",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "38",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "38",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "suspension",
+          "label": "Длина подвеса",
+          "value": "1000",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "b7e072ef-110a-46aa-b82b-7a21419da870",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/b7e072ef-110a-46aa-b82b-7a21419da870",
+          "alt": " Подвесной светильник в геометрическом стиле с чёрным металлическим каркасом"
+        },
+        {
+          "id": "9e676fce-3691-4440-bdfb-9889cc094ad3",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/9e676fce-3691-4440-bdfb-9889cc094ad3",
+          "alt": " Подвесной светильник в геометрическом стиле с чёрным металлическим каркасом"
+        }
+      ],
+      "createdAt": "2026-10-09T12:36:03.455Z",
+      "updatedAt": "2026-10-15T12:43:48.319Z"
+    },
+    {
+      "id": "1f92a7c0-1f51-48ad-abfe-ecf1d5037bd9",
+      "name": "Уличный настенный светильник COB LED",
+      "sku": "30489",
+      "categoryId": "outdoor",
+      "description": "Современный фасадный светильник для наружного освещения. Лаконичная форма гармонично вписывается в архитектуру фасадов, входных зон и открытых пространств, создавая выразительное и равномерное освещение.",
+      "brand": "",
+      "price": 4000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Встроенный LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "power",
+          "label": "Мощность",
+          "value": "4",
+          "unit": "Вт",
+          "group": "Электрика"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "temperature",
+          "label": "Цветовая температура",
+          "value": "3000",
+          "unit": "К",
+          "group": "Свет"
+        },
+        {
+          "key": "light_color",
+          "label": "Цвет свечения",
+          "value": "Тёплый белый",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "алюминий",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "225",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "60",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "depth",
+          "label": "Глубина",
+          "value": "60",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "ee6a1d4a-242d-430d-8bc0-9c63dd1c093f",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/ee6a1d4a-242d-430d-8bc0-9c63dd1c093f",
+          "alt": "Уличный настенный светильник COB LED"
+        },
+        {
+          "id": "10a235f4-01ea-4fa2-8a95-ed28e8933b4d",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/10a235f4-01ea-4fa2-8a95-ed28e8933b4d",
+          "alt": "Уличный настенный светильник COB LED"
+        },
+        {
+          "id": "0bebe6be-bd05-471f-a1dd-465fa51d7c83",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/0bebe6be-bd05-471f-a1dd-465fa51d7c83",
+          "alt": "Уличный настенный светильник COB LED"
+        }
+      ],
+      "createdAt": "2026-10-06T09:34:00.876Z",
+      "updatedAt": "2026-10-06T11:52:27.244Z"
+    },
+    {
+      "id": "16bfe425-03bd-44e9-acf2-fc20f320501f",
+      "name": "Уличный настенный светильник с цоколем E27",
+      "sku": "10880",
+      "categoryId": "outdoor",
+      "description": "Современный настенный светильник для фасадов и открытых пространств. Лаконичный дизайн подчёркивает архитектуру и создаёт комфортную атмосферу.",
+      "brand": "",
+      "price": 15000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "алюминий, оргстекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "ip",
+          "label": "Защита IP",
+          "value": "IP65",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "150",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "190",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "depth",
+          "label": "Глубина",
+          "value": "150",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "f5931ca1-2952-421a-b60f-e533b6fe70c0",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/f5931ca1-2952-421a-b60f-e533b6fe70c0",
+          "alt": "Уличный настенный светильник с цоколем E27"
+        },
+        {
+          "id": "ed78ab5e-aed9-4eac-9ec7-c37d235708eb",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/ed78ab5e-aed9-4eac-9ec7-c37d235708eb",
+          "alt": "Уличный настенный светильник с цоколем E27"
+        },
+        {
+          "id": "9eb9a0bc-62cb-41ef-9679-447ec734f556",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/9eb9a0bc-62cb-41ef-9679-447ec734f556",
+          "alt": "Уличный настенный светильник с цоколем E27"
+        }
+      ],
+      "createdAt": "2026-10-06T08:04:29.786Z",
+      "updatedAt": "2026-10-06T11:52:21.294Z"
+    },
+    {
+      "id": "73bea5b0-4a0c-430a-ab39-f4873eed756f",
+      "name": "Уличный настенный светильник с цоколем E27",
+      "sku": "10881",
+      "categoryId": "outdoor",
+      "description": "Современный настенный светильник для фасадов и открытых пространств. Лаконичный дизайн подчёркивает архитектуру и создаёт комфортную атмосферу.",
+      "brand": "",
+      "price": 10000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Чёрный",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "алюминий, оргстекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "ip",
+          "label": "Защита IP",
+          "value": "IP65",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "150",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "180",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "depth",
+          "label": "Глубина",
+          "value": "150",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "41e0832e-0039-481e-b54a-673e2d551b94",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/41e0832e-0039-481e-b54a-673e2d551b94",
+          "alt": "Уличный настенный светильник с цоколем E27"
+        },
+        {
+          "id": "71db90fc-0223-4d93-94b1-26cc5ae003b0",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/71db90fc-0223-4d93-94b1-26cc5ae003b0",
+          "alt": "Уличный настенный светильник с цоколем E27"
+        },
+        {
+          "id": "d1f7496c-0dba-4c0b-8a61-7f5923fdead6",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/d1f7496c-0dba-4c0b-8a61-7f5923fdead6",
+          "alt": "Уличный настенный светильник с цоколем E27"
+        }
+      ],
+      "createdAt": "2026-10-06T06:22:06.121Z",
+      "updatedAt": "2026-10-06T11:52:15.090Z"
+    },
+    {
+      "id": "8ff50394-5ce3-44e8-a26a-93a89523199f",
+      "name": "Подвесная люстра с золотой волной и стеклянными элементами",
+      "sku": "90407",
+      "categoryId": "chandeliers",
+      "description": "Элегантная подвесная люстра с выразительным волнообразным металлическим элементом и многослойными стеклянными плафонами. Подходит для гостиных, столовых, спален и других интерьеров, добавляя пространству декоративность и мягкое атмосферное освещение.",
+      "brand": "",
+      "price": 110000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Сменная лампа",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "E14",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "lamp_count",
+          "label": "Количество ламп",
+          "value": "12",
+          "unit": "шт.",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Золото",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "металл с гальваническим покрытием,стекло",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "800",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "255e683e-5e24-4b6b-b5bc-76857ed3d900",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/255e683e-5e24-4b6b-b5bc-76857ed3d900",
+          "alt": "Подвесная люстра с золотой волной и стеклянными элементами"
+        },
+        {
+          "id": "8bac4de1-bb66-4c27-ae0f-74bb288645ae",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/8bac4de1-bb66-4c27-ae0f-74bb288645ae",
+          "alt": "Подвесная люстра с золотой волной и стеклянными элементами"
+        },
+        {
+          "id": "35d35746-bad6-459f-afd3-49ba0ca2fd88",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/35d35746-bad6-459f-afd3-49ba0ca2fd88",
+          "alt": "Подвесная люстра с золотой волной и стеклянными элементами"
+        },
+        {
+          "id": "c5bfa00a-643c-4cdd-910e-d355ab0640b7",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/c5bfa00a-643c-4cdd-910e-d355ab0640b7",
+          "alt": "Подвесная люстра с золотой волной и стеклянными элементами"
+        }
+      ],
+      "createdAt": "2026-10-05T07:55:11.131Z",
+      "updatedAt": "2026-10-06T13:08:08.314Z"
+    },
+    {
+      "id": "c4e407dd-45f8-47dc-ad7d-fd0382fd90ea",
+      "name": "Настенное бра Рука золотая",
+      "sku": "20144",
+      "categoryId": "sconces",
+      "description": "Оригинальное дизайнерское настенное бра в форме руки с большим шарообразным акриловым плафоном. Глянцевая золотистая поверхность корпуса придаёт светильнику роскошный и выразительный вид. Сочетание необычной формы и мягкого рассеянного света делает его эффектным акцентом в интерьере спальни, гостиной или современной зоны отдыха.",
+      "brand": "",
+      "price": 16000,
+      "currency": "AMD",
+      "unit": "шт.",
+      "attributes": [
+        {
+          "key": "source",
+          "label": "Источник света",
+          "value": "Встроенный LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "power",
+          "label": "Мощность",
+          "value": "10",
+          "unit": "Вт",
+          "group": "Электрика"
+        },
+        {
+          "key": "voltage",
+          "label": "Напряжение питания",
+          "value": "220–240",
+          "unit": "",
+          "group": "Электрика"
+        },
+        {
+          "key": "socket",
+          "label": "Цоколь",
+          "value": "Без цоколя / LED",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "temperature",
+          "label": "Цветовая температура",
+          "value": "4000",
+          "unit": "К",
+          "group": "Свет"
+        },
+        {
+          "key": "light_color",
+          "label": "Цвет свечения",
+          "value": "Нейтральный белый",
+          "unit": "",
+          "group": "Свет"
+        },
+        {
+          "key": "color",
+          "label": "Цвет корпуса",
+          "value": "Золото",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "material",
+          "label": "Материал",
+          "value": "Медь, акрил",
+          "unit": "",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "width",
+          "label": "Ширина",
+          "value": "300",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        },
+        {
+          "key": "height",
+          "label": "Высота",
+          "value": "250",
+          "unit": "мм",
+          "group": "Корпус и размеры"
+        }
+      ],
+      "images": [
+        {
+          "id": "580d541b-dfe6-44c2-a759-64b297890c8b",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/580d541b-dfe6-44c2-a759-64b297890c8b",
+          "alt": "Настенное бра Рука золотая"
+        },
+        {
+          "id": "f4b7ae94-a350-401d-b52c-1793186d43dc",
+          "url": "https://lusar-catalog-studio.sovazones.chatgpt.site/api/storefront/photo/f4b7ae94-a350-401d-b52c-1793186d43dc",
+          "alt": "Настенное бра Рука золотая"
+        }
+      ],
+      "createdAt": "2026-10-02T12:19:47.860Z",
+      "updatedAt": "2026-10-11T13:28:22.628Z"
+    }
+  ]
+}

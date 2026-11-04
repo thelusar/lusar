@@ -1,0 +1,22 @@
+# LUSAR storefront preview
+
+Run from the repository root with Python 3.12:
+
+```powershell
+python site/build.py
+python site/serve.py
+```
+
+Open `http://127.0.0.1:8080/`. The preview serves clean URLs, including the redirects from the existing catalog, and stores test orders in a local SQLite database outside the public directory.
+
+For the local manager view, set `LUSAR_LOCAL_MANAGER_PASSWORD` before starting the server, then open `/manager/orders/` with username `manager`. Use test data only. The preview server and its shared manager login are local development tools.
+
+```powershell
+python site/check_checkout.py
+```
+
+The check uses Edge by default. Pass `--browser` with a Chrome executable path to run it in Chrome. It creates a temporary database and checks the storefront and manager flow at mobile width.
+
+The build reads the public catalog snapshot in `storefront.json`. Refresh with `python site/sync_catalog.py`, or validate a previously fetched public export with `python site/sync_catalog.py --input <path>`, then rebuild.
+
+Production requires hosting for the order service, manager authentication, storage and redirects. GitHub Pages can serve the static output only. Telegram delivery, analytics, customer accounts and Lusar AI require production configuration or implementation. Keep credentials and databases out of Git.
