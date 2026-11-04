@@ -88,3 +88,16 @@ button:disabled { opacity: .6; cursor: wait; }
   main { padding-top: 2.5rem; }
   #checkout:not([hidden]) { padding: 1rem; }
 }
+.home { padding-top: clamp(1.5rem, 4vw, 4rem); }
+.home h1 { margin: 0 0 .65rem; max-width: 16ch; }
+.home > .lead { margin: 0 0 1.25rem; }
+.home > .tiles { grid-template-columns: 1fr; }
+.home > .tiles a { padding: .8rem 1rem; }
+.home > .tiles li:first-child a { background: var(--accent); color: var(--background); font-weight: 650; }
+.home .light-scene { margin: 0; min-width: 0; }
+@media (min-width: 58rem) {
+  .home { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); column-gap: clamp(1.5rem, 5vw, 5rem); align-content: start; }
+  .home > h1, .home > p, .home > .tiles { grid-column: 1; }
+  .home > .light-scene { grid-column: 2; grid-row: 1 / span 4; }
+  .home > h1 { align-self: end; }
+}

@@ -42,5 +42,6 @@
   settings.hidden = false;
   settings.addEventListener("click", () => openPanel(true));
   publishChoice();
-  if (!choice && !["/cart", "/checkout", "/checkout/received", "/order-status"].includes(location.pathname)) openPanel(false);
+  const analyticsEnabled = document.documentElement.dataset.analyticsEnabled === "true";
+  if (analyticsEnabled && !choice && !["/cart", "/checkout", "/checkout/received", "/order-status"].includes(location.pathname)) openPanel(false);
 })();

@@ -70,7 +70,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
 <body><a class="skip-link" href="#main">К содержанию</a><header>{link("", "LUSAR")}<nav aria-label="Основная навигация">{link("catalog/", "Каталог")} {link("ai/", "Lusar AI")} {link("search", "Поиск")} {link("compare", "Сравнение")}
 {link("favorites/", "Избранное")} {link("cart/", "Корзина")} {link("account/", "Кабинет")}</nav>
 <button id="theme-toggle" type="button" aria-pressed="false" hidden>Светлая тема</button></header>
-<main id="main" tabindex="-1"><h1>{html.escape(title)}</h1>{body}</main>
+<main id="main" tabindex="-1"{' class="home"' if not path else ''}><h1>{html.escape(title)}</h1>{body}</main>
 <footer>{' '.join(link(path + "/", name) for path, name in FOOTER)}
 <button type="button" id="cookie-settings" hidden>Настройки cookie</button></footer>
 <section id="cookie-panel" class="cookie-panel" aria-labelledby="cookie-heading" hidden>
