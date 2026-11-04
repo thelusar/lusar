@@ -56,7 +56,8 @@ async function guestStatus(params) {
 function startShopping() {
 openPage("/catalog", page => {
   mobileLayout(page);
-  require(page.querySelector('a[href^="/catalog/category/"]'), "Missing categories");
+  require(page.querySelector('main a[href^="/catalog/category/"]'), "Missing categories");
+  require(page.querySelector('.product-tiles a[href^="/catalog/product/"]'), "Missing catalog products");
   openPage(PRODUCT, page => {
     mobileLayout(page);
     page.querySelector("[data-add]").click();
@@ -114,6 +115,18 @@ openPage("/catalog", page => {
 }
 openPage("/", page => {
   mobileLayout(page);
+  const [catalog, rooms] = page.querySelectorAll(".nav-dropdown");
+  const catalogTrigger = catalog.querySelector("summary");
+  catalogTrigger.click();
+  require(catalog.open && catalog.querySelector('a[href="/catalog"]'), "Catalog dropdown failed");
+  mobileLayout(page);
+  rooms.querySelector("summary").click();
+  require(rooms.open && !catalog.open && rooms.querySelector('a[href^="/rooms/"]'), "Room dropdown failed");
+  page.dispatchEvent(new frame.contentWindow.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+  require(!rooms.open && page.activeElement === rooms.querySelector("summary"), "Escape did not restore menu focus");
+  catalogTrigger.click();
+  page.querySelector("#home-title").click();
+  require(!catalog.open, "Click outside did not close menu");
   const day = page.querySelector('[data-scene="day"]');
   day.click();
   const timeout = Date.now() + 5000;

@@ -59,6 +59,50 @@ for item in data["products"]:
 def link(path, title):
     return f'<a href="/{path.strip("/")}">{html.escape(title)}</a>'
 
+NAV_ICONS = {
+    "search": '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>',
+    "favorites": '<path d="M12 20 4.8 13a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5Z"/>',
+    "compare": '<path d="M5 20v-7m7 7V5m7 15V9"/>',
+    "cart": '<path d="M5 8h14l1 13H4Zm4 1V6a3 3 0 0 1 6 0v3"/>',
+    "account": '<circle cx="12" cy="8" r="3.2"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/>',
+    "theme": '<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
+}
+
+
+def nav_icon(name):
+    return ('<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" '
+            'stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            + NAV_ICONS[name] + "</svg>")
+
+
+def nav_dropdown(title, items, path, overview):
+    return ('<details class="nav-dropdown"><summary>' + html.escape(title) +
+            '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">'
+            '<path d="m2 4 4 4 4-4" fill="none" stroke="currentColor"/></svg></summary>'
+            '<div class="nav-panel"><ul>' +
+            "".join(f"<li>{link(url, label)}</li>" for url, label in items) +
+            f'</ul><p>{link(path, overview)}</p></div></details>')
+
+
+def header_markup():
+    shortcuts = (("search", "Поиск"), ("compare", "Сравнение"), ("favorites", "Избранное"),
+                 ("account", "Личный кабинет"), ("cart", "Корзина"))
+    tools = "".join(f'<a class="icon-link" href="/{key}" aria-label="{title}" title="{title}">{nav_icon(key)}</a>'
+                    for key, title in shortcuts)
+    catalog_links = [(category_path(key), category["name"]) for key, category in categories.items()
+                     if not category.get("parentId")]
+    room_links = [("rooms/" + key, name) for key, (name, *_) in ROOMS.items()]
+    return ('<header class="site-header"><div class="header-inner">'
+            '<a class="wordmark" href="/" aria-label="LUSAR — главная">LUSAR</a>'
+            '<nav class="main-nav" aria-label="Основная навигация">' +
+            nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог →") +
+            nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты →") + link("ai", "Lusar AI") +
+            '</nav><nav class="header-tools" aria-label="Поиск и покупки">' + tools +
+            '<button class="icon-link" id="theme-toggle" type="button" aria-label="Светлая тема" title="Светлая тема" '
+            'aria-pressed="false" hidden>' + nav_icon("theme") +
+            '</button></nav></div></header><script src="/site-nav.js" defer></script>')
+
+
 def write(path, title, body, draft=False, *, description="", image="", structured_data=None):
     target = OUT / path / "index.html"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -87,10 +131,8 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     target.write_text(f"""<!doctype html>
 <html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"></head>
-<body><a class="skip-link" href="#main">К содержанию</a><header>{link("", "LUSAR")}<nav aria-label="Основная навигация">{link("catalog/", "Каталог")} {link("ai/", "Lusar AI")} {link("search", "Поиск")} {link("compare", "Сравнение")}
-{link("favorites/", "Избранное")} {link("cart/", "Корзина")} {link("account/", "Кабинет")}</nav>
-<button id="theme-toggle" type="button" aria-pressed="false" hidden>Светлая тема</button></header>
-<main id="main" tabindex="-1"{' class="home"' if not path else ''}>{f"<h1>{html.escape(title)}</h1>" if path else ""}{body}</main>
+<body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
+<main id="main" tabindex="-1"{' class="home"' if not path else ' class="catalog-page"' if path == "catalog" else ''}>{f"<h1>{html.escape(title)}</h1>" if path and path != "catalog" else ""}{body}</main>
 <footer>{' '.join(link(path + "/", name) for path, name in FOOTER)}
 <button type="button" id="cookie-settings" hidden>Настройки cookie</button></footer>
 <section id="cookie-panel" class="cookie-panel" aria-labelledby="cookie-heading" hidden>
@@ -157,7 +199,7 @@ def display_price(item):
     return "Цена по запросу" if item["price"] is None else f'{item["price"]:,} ֏'.replace(",", " ")
 
 
-def product_grid(items):
+def product_grid(items, *, filters=True):
     if not items:
         return "<p>В этой категории пока нет опубликованных товаров.</p>"
     cards = []
@@ -172,48 +214,72 @@ def product_grid(items):
             f'<span class="tile-sku">{html.escape(item["sku"])}</span>'
             f'<span class="tile-price">{html.escape(display_price(item))}</span></a></li>'
         )
+    grid = '<ul class="tiles product-tiles">' + "".join(cards) + '</ul>'
+    if not filters:
+        return grid
     return (
         '<form id="product-filters" class="product-filters" hidden>'
         '<label>Цена до, ֏ <input name="maximum" type="number" min="0" step="any"></label>'
         '<label>Сортировка <select name="sort"><option value="default">Как в каталоге</option>'
         '<option value="low">Сначала дешевле</option><option value="high">Сначала дороже</option></select></label>'
         '<button type="reset">Сбросить</button></form>'
-        '<p id="product-filter-count" role="status"></p><ul class="tiles product-tiles">' +
-        "".join(cards) + '</ul><script src="/product-filters.js" defer></script>'
+        '<p id="product-filter-count" role="status"></p>' + grid +
+        '<script src="/product-filters.js" defer></script>'
     )
 
-write("", "Свет, который меняет пространство", """
+def category_cards(keys):
+    short_names = {"pendants": "Подвесы", "outdoor": "Уличный свет"}
+    cards = []
+    for key in keys:
+        category = categories[key]
+        item = next((item for item in data["products"] if item["categoryId"] == key and item["images"]), None)
+        photo = ""
+        if item:
+            url = html.escape(item["images"][0]["url"], quote=True)
+            photo = f'<img loading="lazy" decoding="async" src="{url}" alt="">'
+        label = html.escape(short_names.get(key, category["name"]))
+        cards.append(
+            f'<li><a href="/{category_path(key).strip("/")}"><span class="category-photo">{photo}</span>'
+            f'<span class="category-label">{label}<span aria-hidden="true">↗</span></span></a></li>'
+        )
+    return '<ul class="category-cards">' + "".join(cards) + '</ul>'
+
+
+write("", "Свет в деталях", """
 <section class="home-hero" aria-labelledby="home-title">
+<div class="hero-copy">
+  <p class="eyebrow">Свет для дома и проектов</p>
+  <h1 id="home-title">Свет в деталях</h1>
+  <p class="lead">Люстры, бра и архитектурный свет.</p>
+  <div class="hero-actions"><a class="button-link" href="/catalog">Открыть каталог <span aria-hidden="true">↗</span></a>
+  <a href="/ai">Примерить с Lusar AI</a></div>
+</div>
 <figure class="light-scene">
   <img id="scene-image" src="/scenes/lusar-hero.webp" width="1536" height="1024"
        fetchpriority="high" alt="Тёплый свет подвеса и мягкая подсветка вокруг обеденного стола">
   <figcaption>
     <div id="scene-controls" role="group" aria-label="Сценарий освещения" hidden>
-      <button type="button" data-scene="day" aria-pressed="false">Дневной</button>
+      <button type="button" data-scene="day" aria-pressed="false">День</button>
       <button type="button" data-scene="warm" aria-pressed="true">Тёплый</button>
-      <button type="button" data-scene="evening" aria-pressed="false">Вечерний</button>
+      <button type="button" data-scene="evening" aria-pressed="false">Вечер</button>
     </div>
-    <p id="scene-caption" role="status">Подвес освещает стол, а подсветка добавляет глубину стенам.</p>
+    <p id="scene-caption" role="status">Тёплый свет над столом</p>
   </figcaption>
 </figure>
-<div class="hero-copy">
-  <p class="eyebrow">LUSAR / Освещение</p>
-  <h1 id="home-title">Свет, который меняет пространство</h1>
-  <p class="lead">Люстры, бра и архитектурный свет для дома и проектов.</p>
-  <div class="hero-actions"><a href="/catalog">Смотреть каталог</a><a href="/ai">Подобрать свет с Lusar AI</a></div>
-</div>
 </section>
 <script src="/scenes.js" defer></script>
-""" + '<section class="home-collection"><p class="eyebrow">Каталог</p><h2>Выберите свой свет</h2>' +
-      '<p>Начните с типа светильника или подберите освещение под комнату.</p>' +
-      listing([(category_path(key), category["name"]) for key, category in categories.items()]) +
-      '<p>' + link("rooms", "Подобрать по комнате →") + '</p></section>' +
-      '<section class="home-collection"><p class="eyebrow">Коллекция LUSAR</p><h2>Светильники в каталоге</h2>' +
-      product_grid(data["products"][:4]) + '</section>')
+""" + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
+      link("rooms", "По комнатам →") + '</div>' +
+      category_cards([key for key in ("chandeliers", "pendants", "sconces", "outdoor") if key in categories]) +
+      '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +
+      link("catalog", "Все светильники →") + '</div>' +
+      product_grid(data["products"][:4], filters=False) + '</section>')
 write("catalog", "Каталог освещения",
-      "<h2>По типу светильника</h2>" +
-      listing([(category_path(key), item["name"]) for key, item in categories.items()]) +
-      '<p>' + link("rooms/", "Подобрать по комнате") + ' · ' + link("brands", "Смотреть бренды") + '</p>')
+      '<div class="section-heading catalog-heading"><h1>Каталог освещения</h1><nav aria-label="Подбор света">' +
+      '<a href="#catalog-products">К товарам</a>' + link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' +
+      '<section aria-label="Категории">' + category_cards(categories) + '</section>' +
+      '<section class="catalog-products" id="catalog-products"><h2>Все светильники</h2>' +
+      product_grid(data["products"]) + '</section>')
 for key, category in categories.items():
     children = [(category_path(child), item["name"]) for child, item in categories.items() if item.get("parentId") == key]
     products = [item for item in data["products"] if item["categoryId"] == key]
@@ -471,6 +537,7 @@ ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xm
 (OUT / "cookie-settings.js").write_bytes((ROOT / "cookie-settings.js").read_bytes())
 (OUT / "analytics.js").write_bytes((ROOT / "analytics.js").read_bytes())
 (OUT / "scenes.js").write_bytes((ROOT / "scenes.js").read_bytes())
+(OUT / "site-nav.js").write_bytes((ROOT / "site-nav.js").read_bytes())
 (OUT / "order-status.js").write_bytes((ROOT / "order-status.js").read_bytes())
 (OUT / "receipt.js").write_bytes((ROOT / "receipt.js").read_bytes())
 (OUT / "product-gallery.js").write_bytes((ROOT / "product-gallery.js").read_bytes())
