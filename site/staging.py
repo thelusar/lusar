@@ -44,6 +44,7 @@ class StagingHandler(serve.Handler):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     password = os.environ.get("LUSAR_STAGING_PASSWORD", "")
     if len(password) < 24:
         raise SystemExit("Set LUSAR_STAGING_PASSWORD to a generated secret of at least 24 characters.")
@@ -62,6 +63,7 @@ def main():
                 except ValueError as error:
                     logging.warning("Уведомления LUSAR отключены. %s", error)
                 else:
+                    logging.info("Запущена отправка уведомлений LUSAR в Telegram.")
                     Thread(target=notify_orders.run_worker, args=(sender,), daemon=True).start()
             server.serve_forever()
 

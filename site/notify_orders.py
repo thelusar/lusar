@@ -39,6 +39,8 @@ def deliver_pending(send, *, limit=20):
             db.execute("""UPDATE order_notifications
                 SET sent_at = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE NULL END, last_error = ?
                 WHERE number = ? AND attempts = ? AND sent_at IS NULL""", (error is None, error, number, claimed[0]))
+        if error:
+            logging.warning("Уведомление LUSAR %s не доставлено: %s", number, error)
 
 
 def sender_from_environment():
