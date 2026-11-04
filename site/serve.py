@@ -14,6 +14,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from contextlib import closing
 from urllib.parse import parse_qs, quote, unquote, urlsplit
+import order_storage
 from loyalty import FIRST_ORDER_PERCENT
 
 ROOT = Path(__file__).resolve().parent
@@ -174,8 +175,8 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.manager_authorized():
             return
         rows = []
-        if DATABASE.is_file():
-            with closing(sqlite3.connect(DATABASE)) as db:
+        if order_storage.available(DATABASE):
+            with order_storage.connect(DATABASE) as db:
                 rows = db.execute("SELECT number, status, created, payload FROM orders ORDER BY created DESC").fetchall()
         cards = []
         for number, status, created, raw in rows:
@@ -198,7 +199,7 @@ class Handler(SimpleHTTPRequestHandler):
                         f'<input type="hidden" name="token" value="{status_token(number, status)}">'
                         f'<label>Новый статус <select name="target">{options}</select></label>'
                         '<button>Сохранить статус</button></form>') if options else ""
-            cards.append(f'<article id="{html.escape(number, quote=True)}"><h2>{html.escape(number)}</h2><p>{html.escape(created)} · '
+            cards.append(f'<article id="{html.escape(number, quote=True)}"><h2>{html.escape(number)}</h2><p>{html.escape(str(created))} · '
                          f'{html.escape(STATUS_LABELS.get(status, status))}</p>'
                          f'<p>{details}</p><ul>{lines}</ul><p>{summary}</p>{controls}'
                          f'{self.adjustment_controls(number, status, raw, order)}</article>')
@@ -261,7 +262,7 @@ class Handler(SimpleHTTPRequestHandler):
         catalog = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
         products = {item["id"]: item for item in catalog["products"]}
         try:
-            with closing(sqlite3.connect(DATABASE)) as db, db:
+            with order_storage.connect(DATABASE, write=True) as db:
                 db.execute("""CREATE TABLE IF NOT EXISTS orders (
                     request_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL,
                     number TEXT NOT NULL UNIQUE, payload TEXT NOT NULL,
@@ -295,7 +296,7 @@ class Handler(SimpleHTTPRequestHandler):
                     attempts INTEGER NOT NULL DEFAULT 0,
                     last_attempt TEXT, last_error TEXT)""")
                 db.execute("INSERT INTO order_notifications (number) VALUES (?)", (number,))
-        except sqlite3.Error:
+        except order_storage.DatabaseError:
             return self.reply(503, {"error": "Сохранение временно недоступно. Повторите отправку."})
         return self.reply(201, {"number": number, "trackingToken": tracking_token})
 
@@ -313,12 +314,12 @@ class Handler(SimpleHTTPRequestHandler):
         except (ValueError, TypeError, KeyError):
             return self.reply(400, {"error": "Проверьте приватную ссылку."})
         missing = {"error": "Заявка не найдена. Проверьте приватную ссылку."}
-        if not DATABASE.is_file():
+        if not order_storage.available(DATABASE):
             return self.reply(404, missing)
         try:
-            with closing(sqlite3.connect(DATABASE)) as db:
+            with order_storage.connect(DATABASE) as db:
                 row = db.execute("SELECT status, payload FROM orders WHERE number = ?", (number,)).fetchone()
-        except sqlite3.Error:
+        except order_storage.DatabaseError:
             return self.reply(503, {"error": "Статус временно недоступен. Попробуйте позже."})
         saved = json.loads(row[1]).get("trackingToken") if row else None
         if not saved or not secrets.compare_digest(saved, key):
@@ -342,10 +343,10 @@ class Handler(SimpleHTTPRequestHandler):
             return self.reply(403, {"error": "Откройте список заказов и повторите действие."})
         if target not in TRANSITIONS.get(current, ()):
             return self.reply(409, {"error": "Этот переход недоступен."})
-        if not DATABASE.is_file():
+        if not order_storage.available(DATABASE):
             return self.reply(404, {"error": "Заказ не найден."})
         try:
-            with closing(sqlite3.connect(DATABASE)) as db, db:
+            with order_storage.connect(DATABASE, write=True) as db:
                 result = db.execute("UPDATE orders SET status = ? WHERE number = ? AND status = ? "
                                     "AND (? != 'cancelled' OR json_extract(payload, '$.payment') IS NULL)",
                                     (target, number, current, target))
@@ -356,7 +357,7 @@ class Handler(SimpleHTTPRequestHandler):
                     changed TEXT DEFAULT CURRENT_TIMESTAMP)""")
                 db.execute("INSERT INTO order_status_history (number, previous, current) VALUES (?, ?, ?)",
                            (number, current, target))
-        except sqlite3.Error:
+        except order_storage.DatabaseError:
             return self.reply(503, {"error": "Не удалось сохранить статус. Повторите попытку."})
         self.send_response(303)
         self.send_header("Location", "/manager/orders/")
@@ -412,10 +413,10 @@ class Handler(SimpleHTTPRequestHandler):
             quantity = int(fields.get("quantity", ["0"])[0])
         except (ValueError, KeyError):
             return self.reply(400, {"error": "Проверьте данные формы."})
-        if not DATABASE.is_file():
+        if not order_storage.available(DATABASE):
             return self.reply(404, {"error": "Заказ не найден."})
         try:
-            with closing(sqlite3.connect(DATABASE)) as db, db:
+            with order_storage.connect(DATABASE, write=True) as db:
                 db.execute("BEGIN IMMEDIATE")
                 row = db.execute("SELECT status, payload FROM orders WHERE number = ?", (number,)).fetchone()
                 if not row:
@@ -436,7 +437,7 @@ class Handler(SimpleHTTPRequestHandler):
                         changed TEXT DEFAULT CURRENT_TIMESTAMP)""")
                     db.execute("INSERT INTO order_status_history (number, previous, current) VALUES (?, ?, ?)",
                                (number, status, target))
-        except sqlite3.Error:
+        except order_storage.DatabaseError:
             return self.reply(503, {"error": "Не удалось сохранить изменение."})
         self.send_response(303)
         self.send_header("Location", "/manager/orders/")

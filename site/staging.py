@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import serve
+import order_storage
 
 
 class StagingHandler(serve.Handler):
@@ -26,7 +27,7 @@ class StagingHandler(serve.Handler):
 
     def do_GET(self):
         if self.path == "/healthz":
-            return self.reply(200, {"ok": True})
+            return self.reply(200, {"ok": True, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite"})
         if self.staging_authorized():
             super().do_GET()
 
@@ -45,6 +46,10 @@ def main():
         raise SystemExit("Set LUSAR_STAGING_PASSWORD to a generated secret of at least 24 characters.")
     os.environ["LUSAR_LOCAL_MANAGER_PASSWORD"] = password
     StagingHandler.staging_auth = b"Basic " + base64.b64encode(f"manager:{password}".encode())
+    try:
+        order_storage.initialize()
+    except order_storage.DatabaseError:
+        raise SystemExit("PostgreSQL connection or migration failed. Check Render database settings.") from None
     with TemporaryDirectory(prefix="lusar-staging-") as directory:
         serve.DATABASE = Path(directory) / "orders.sqlite"
         with serve.ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), StagingHandler) as server:
