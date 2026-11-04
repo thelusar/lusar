@@ -1,10 +1,13 @@
 """Password-gated test deployment. Accept synthetic data only."""
 import base64
+import logging
 import os
 import secrets
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from threading import Thread
 
+import notify_orders
 import serve
 import order_storage
 
@@ -53,6 +56,13 @@ def main():
     with TemporaryDirectory(prefix="lusar-staging-") as directory:
         serve.DATABASE = Path(directory) / "orders.sqlite"
         with serve.ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), StagingHandler) as server:
+            if order_storage.DATABASE_URL and os.environ.get("LUSAR_TELEGRAM_BOT_TOKEN"):
+                try:
+                    sender = notify_orders.sender_from_environment()
+                except ValueError as error:
+                    logging.warning("Уведомления LUSAR отключены. %s", error)
+                else:
+                    Thread(target=notify_orders.run_worker, args=(sender,), daemon=True).start()
             server.serve_forever()
 
 

@@ -23,8 +23,10 @@ Production requires hosting for the order service, manager authentication, stora
 
 ## Render staging
 
-In Render, create a Blueprint from `thelusar/lusar` and select `lusar-next`. The root `render.yaml` defines a free test service. Open its generated Render URL and sign in as `manager` using the generated `LUSAR_STAGING_PASSWORD` from the service's Environment settings. Use synthetic orders only. The staging database is reset when the process restarts, and the whole preview is password protected and excluded from indexing. Leave the production domain connected to the existing site.
+In Render, create a Blueprint from `thelusar/lusar` and select `lusar-next`. The root `render.yaml` defines a free test service. Open its generated Render URL and sign in as `manager` using the generated `LUSAR_STAGING_PASSWORD` from the service's Environment settings. Use synthetic orders only. The preview is password protected and excluded from indexing. Leave the production domain connected to the existing site.
 
 ## PostgreSQL preparation
 
-`postgres/001_orders.sql` is the initial migration for the separate integration database. With `DATABASE_URL` set on Render, staging applies it at startup and stores orders, status history and queued notifications in PostgreSQL. Without the variable, staging uses temporary SQLite. Keep the connection URL in Render's environment settings. The Telegram sender still needs PostgreSQL support before it can deliver this queue.
+`postgres/001_orders.sql` is the initial migration for the separate integration database. With `DATABASE_URL` set on Render, staging applies it at startup and stores orders, status history and queued notifications in PostgreSQL. Without the variable, staging uses temporary SQLite and its data is lost on restart. Keep the connection URL in Render's environment settings.
+
+To enable Telegram notices on staging, add `LUSAR_TELEGRAM_BOT_TOKEN`, `LUSAR_TELEGRAM_CHAT_ID` (the negative ID of the private staff group), and `LUSAR_MANAGER_ORIGIN` (the HTTPS staging origin) in Render's Environment settings and redeploy. Add the bot to the group with permission to post. Once enabled, staging sends pending notices while the service is running. Each message contains the order number and a link to the protected manager page. Telegram failures are retried and a notice may repeat if Telegram accepts it before the delivery is recorded in the database.
