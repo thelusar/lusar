@@ -62,10 +62,10 @@ def link(path, title):
 NAV_ICONS = {
     "search": '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>',
     "favorites": '<path d="M12 20 4.8 13a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5Z"/>',
-    "compare": '<path d="M5 20v-7m7 7V5m7 15V9"/>',
     "cart": '<path d="M5 8h14l1 13H4Zm4 1V6a3 3 0 0 1 6 0v3"/>',
     "account": '<circle cx="12" cy="8" r="3.2"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/>',
     "theme": '<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
+    "menu": '<path d="M4 7h16M4 12h16M4 17h16"/>',
 }
 
 
@@ -85,21 +85,28 @@ def nav_dropdown(title, items, path, overview):
 
 
 def header_markup():
-    shortcuts = (("search", "Поиск"), ("compare", "Сравнение"), ("favorites", "Избранное"),
+    shortcuts = (("search", "Поиск"), ("favorites", "Избранное"),
                  ("account", "Личный кабинет"), ("cart", "Корзина"))
     tools = "".join(f'<a class="icon-link" href="/{key}" aria-label="{title}" title="{title}">{nav_icon(key)}</a>'
                     for key, title in shortcuts)
     catalog_links = [(category_path(key), category["name"]) for key, category in categories.items()
                      if not category.get("parentId")]
+    catalog_links.append(("compare", "Сравнение"))
     room_links = [("rooms/" + key, name) for key, (name, *_) in ROOMS.items()]
     return ('<header class="site-header"><div class="header-inner">'
-            '<a class="wordmark" href="/" aria-label="LUSAR — главная">LUSAR</a>'
-            '<nav class="main-nav" aria-label="Основная навигация">' +
+            '<a class="wordmark" href="/" aria-label="LUSAR — главная">'
+            '<svg viewBox="0 0 32 32" width="27" height="27" fill="none" stroke="currentColor" '
+            'stroke-width=".9" aria-hidden="true"><path d="M16 1v30M1 16h30M5.4 5.4l21.2 21.2M5.4 26.6L26.6 5.4"/>'
+            '<circle cx="16" cy="16" r="4"/></svg><span>LUSAR</span></a>'
+            '<nav class="main-nav" id="main-nav" aria-label="Основная навигация">' +
             nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог →") +
             nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты →") + link("ai", "Lusar AI") +
+            '<a class="mobile-favorites" href="/favorites">Избранное</a>' +
             '</nav><nav class="header-tools" aria-label="Поиск и покупки">' + tools +
             '<button class="icon-link" id="theme-toggle" type="button" aria-label="Светлая тема" title="Светлая тема" '
-            'aria-pressed="false" hidden>' + nav_icon("theme") +
+            'aria-pressed="false" hidden>' + nav_icon("theme") + '</button>'
+            '<button class="icon-link menu-toggle" id="menu-toggle" type="button" aria-label="Меню" '
+            'aria-controls="main-nav" aria-expanded="false" hidden>' + nav_icon("menu") +
             '</button></nav></div></header><script src="/site-nav.js" defer></script>')
 
 
@@ -129,7 +136,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         if attrs:
             analytics = ' data-analytics-enabled="true"' + attrs
     target.write_text(f"""<!doctype html>
-<html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"></head>
 <body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
 <main id="main" tabindex="-1"{' class="home"' if not path else ' class="catalog-page"' if path == "catalog" else ''}>{f"<h1>{html.escape(title)}</h1>" if path and path != "catalog" else ""}{body}</main>
@@ -227,16 +234,23 @@ def product_grid(items, *, filters=True):
         '<script src="/product-filters.js" defer></script>'
     )
 
-def category_cards(keys):
+products_with_photos = {}
+for item in data["products"]:
+    if item["images"]:
+        products_with_photos.setdefault(item["categoryId"], []).append(item)
+
+
+def category_cards(keys, *, eager=False):
     short_names = {"pendants": "Подвесы", "outdoor": "Уличный свет"}
+    loading = "eager" if eager else "lazy"
     cards = []
     for key in keys:
         category = categories[key]
-        item = next((item for item in data["products"] if item["categoryId"] == key and item["images"]), None)
+        products = products_with_photos.get(key)
         photo = ""
-        if item:
-            url = html.escape(item["images"][0]["url"], quote=True)
-            photo = f'<img loading="lazy" decoding="async" src="{url}" alt="">'
+        if products:
+            url = html.escape(products[0]["images"][0]["url"], quote=True)
+            photo = f'<img loading="{loading}" decoding="async" src="{url}" alt="">'
         label = html.escape(short_names.get(key, category["name"]))
         cards.append(
             f'<li><a href="/{category_path(key).strip("/")}"><span class="category-photo">{photo}</span>'
@@ -245,12 +259,15 @@ def category_cards(keys):
     return '<ul class="category-cards">' + "".join(cards) + '</ul>'
 
 
-write("", "Свет в деталях", """
+home_categories = [key for key in ("chandeliers", "pendants", "sconces", "outdoor") if key in categories]
+featured_products = [products[1] if len(products) > 1 else products[0]
+                     for key in home_categories if (products := products_with_photos.get(key))]
+
+write("", "Свет для жизни", """
 <section class="home-hero" aria-labelledby="home-title">
 <div class="hero-copy">
-  <p class="eyebrow">Свет для дома и проектов</p>
-  <h1 id="home-title">Свет в деталях</h1>
-  <p class="lead">Люстры, бра и архитектурный свет.</p>
+  <h1 id="home-title">Свет для жизни</h1>
+  <p class="lead">Светильники для дома и проектов.</p>
   <div class="hero-actions"><a class="button-link" href="/catalog">Открыть каталог <span aria-hidden="true">↗</span></a>
   <a href="/ai">Примерить с Lusar AI</a></div>
 </div>
@@ -270,14 +287,19 @@ write("", "Свет в деталях", """
 <script src="/scenes.js" defer></script>
 """ + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
       link("rooms", "По комнатам →") + '</div>' +
-      category_cards([key for key in ("chandeliers", "pendants", "sconces", "outdoor") if key in categories]) +
+      category_cards(home_categories) +
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +
       link("catalog", "Все светильники →") + '</div>' +
-      product_grid(data["products"][:4], filters=False) + '</section>')
+      product_grid(featured_products or data["products"][:4], filters=False) + '</section>' +
+      '<section class="home-rooms"><img src="/scenes/lusar-scene-evening.webp" alt="" '
+      'width="1536" height="1024" loading="lazy" decoding="async">'
+      '<div><div class="section-heading"><h2>Свет по комнатам</h2>' + link("rooms", "Все комнаты →") + '</div>'
+      '<ul>' + "".join(f'<li>{link("rooms/" + key, name + " →")}</li>'
+                       for key, (name, *_) in ROOMS.items()) + '</ul></div></section>')
 write("catalog", "Каталог освещения",
       '<div class="section-heading catalog-heading"><h1>Каталог освещения</h1><nav aria-label="Подбор света">' +
       '<a href="#catalog-products">К товарам</a>' + link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' +
-      '<section aria-label="Категории">' + category_cards(categories) + '</section>' +
+      '<section aria-label="Категории">' + category_cards(categories, eager=True) + '</section>' +
       '<section class="catalog-products" id="catalog-products"><h2>Все светильники</h2>' +
       product_grid(data["products"]) + '</section>')
 for key, category in categories.items():
@@ -538,6 +560,7 @@ ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xm
 (OUT / "analytics.js").write_bytes((ROOT / "analytics.js").read_bytes())
 (OUT / "scenes.js").write_bytes((ROOT / "scenes.js").read_bytes())
 (OUT / "site-nav.js").write_bytes((ROOT / "site-nav.js").read_bytes())
+(OUT / "favicon.svg").write_bytes((ROOT / "favicon.svg").read_bytes())
 (OUT / "order-status.js").write_bytes((ROOT / "order-status.js").read_bytes())
 (OUT / "receipt.js").write_bytes((ROOT / "receipt.js").read_bytes())
 (OUT / "product-gallery.js").write_bytes((ROOT / "product-gallery.js").read_bytes())

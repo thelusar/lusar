@@ -115,6 +115,12 @@ openPage("/catalog", page => {
 }
 openPage("/", page => {
   mobileLayout(page);
+  const menuToggle = page.querySelector("#menu-toggle");
+  const nav = page.querySelector("#main-nav");
+  const visible = element => element.getClientRects().length > 0;
+  require(visible(menuToggle) && !visible(nav), "Mobile menu should start closed");
+  menuToggle.click();
+  require(visible(nav) && menuToggle.getAttribute("aria-expanded") === "true", "Mobile menu did not open");
   const [catalog, rooms] = page.querySelectorAll(".nav-dropdown");
   const catalogTrigger = catalog.querySelector("summary");
   catalogTrigger.click();
@@ -126,7 +132,7 @@ openPage("/", page => {
   require(!rooms.open && page.activeElement === rooms.querySelector("summary"), "Escape did not restore menu focus");
   catalogTrigger.click();
   page.querySelector("#home-title").click();
-  require(!catalog.open, "Click outside did not close menu");
+  require(!catalog.open && !visible(nav), "Click outside did not close menu");
   const day = page.querySelector('[data-scene="day"]');
   day.click();
   const timeout = Date.now() + 5000;
