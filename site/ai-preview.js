@@ -20,14 +20,23 @@
   const resultStatus = document.querySelector("#ai-result-status");
   const results = document.querySelector("#ai-results");
   const render = document.querySelector("#ai-render");
+  const visualization = document.querySelector("#ai-visualization");
   let available = false;
   let objectUrl;
+  function resetResult() {
+    results.replaceChildren();
+    results.hidden = true;
+    visualization.hidden = true;
+    render.removeAttribute("src");
+    resultStatus.textContent = "";
+  }
   fetch("/api/ai", { cache: "no-store" }).then(response => response.ok ? response.json() : {}).then(data => {
     available = data.available === true;
     submit.disabled = !available;
     if (!available) resultStatus.textContent = "Lusar AI пока не подключён на этом стенде.";
   }).catch(() => { resultStatus.textContent = "Не удалось проверить доступность Lusar AI."; });
   input.addEventListener("change", () => {
+    resetResult();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = undefined;
     preview.hidden = true;
@@ -48,7 +57,7 @@
       if (objectUrl !== next) return;
       preview.src = next;
       preview.hidden = false;
-      status.textContent = "Фотография открыта. Она не отправлена на сервер.";
+      if (!input.disabled) status.textContent = "Фото готово к отправке.";
     }).catch(() => {
       if (objectUrl !== next) return;
       URL.revokeObjectURL(next);
@@ -63,11 +72,10 @@
     const file = input.files[0];
     if (!available || !file || !document.querySelector("#ai-consent").checked) return;
     submit.disabled = true;
-    results.replaceChildren();
-    results.hidden = true;
-    render.hidden = true;
-    render.removeAttribute("src");
-    resultStatus.textContent = product ? "Готовим примерку. Это может занять до двух минут." : "Подбираем светильники…";
+    input.disabled = true;
+    resetResult();
+    status.textContent = "Отправляем фото на обработку…";
+    resultStatus.textContent = "Готовим визуализацию. Это может занять несколько минут.";
     try {
       const photo = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -83,26 +91,29 @@
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Lusar AI временно недоступен.");
-      if (product) {
+      status.textContent = "Фото обработано.";
+      if (data.image) {
         render.src = data.image;
-        render.hidden = false;
-        resultStatus.textContent = "Примерная визуализация. Размеры и освещённость уточняйте по характеристикам товара.";
-      } else {
-        resultStatus.textContent = data.advice;
-        for (const item of data.products) {
-          const row = document.createElement("li");
-          const link = document.createElement("a");
-          link.href = item.path;
-          link.textContent = item.name;
-          row.append(link, document.createTextNode(" — " + item.reason));
-          results.append(row);
-        }
-        results.hidden = !results.childElementCount;
+        visualization.hidden = false;
       }
+      resultStatus.textContent = [data.advice, data.imageError].filter(Boolean).join(" ")
+        || (data.image ? "Визуализация готова." : "Подходящую визуализацию не удалось подготовить.");
+      for (const item of data.products || []) {
+        const row = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = item.path;
+        link.textContent = item.name;
+        if (item.inMockup) row.append(document.createTextNode("В примерке: "));
+        row.append(link, document.createTextNode(" — " + item.reason));
+        results.append(row);
+      }
+      results.hidden = !results.childElementCount;
     } catch (error) {
+      status.textContent = "Обработка не завершилась.";
       resultStatus.textContent = error instanceof Error && error.message
         ? error.message : "Не удалось обработать фото. Попробуйте ещё раз.";
     } finally {
+      input.disabled = false;
       submit.disabled = false;
     }
   });

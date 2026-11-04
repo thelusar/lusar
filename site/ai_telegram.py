@@ -1,5 +1,6 @@
 """Private Telegram entry point for the staging Lusar AI service."""
 
+import base64
 import hashlib
 import hmac
 import json
@@ -13,7 +14,7 @@ from time import sleep
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from lusar_ai import AIError, MAX_PHOTO, analyze
+from lusar_ai import AIError, MAX_PHOTO, analyze, multipart_payload
 
 
 WEBHOOK = "/api/telegram/lusar-ai"
@@ -30,9 +31,10 @@ class AIBot:
         self.seen = deque(maxlen=256)
         self.lock = Lock()
 
-    def request(self, method, payload):
-        request = Request(f"https://api.telegram.org/bot{self.token}/{method}", json.dumps(payload).encode(),
-                          {"Content-Type": "application/json"})
+    def request(self, method, payload, *, content_type="application/json"):
+        body = json.dumps(payload).encode() if content_type == "application/json" else payload
+        request = Request(f"https://api.telegram.org/bot{self.token}/{method}", body,
+                          {"Content-Type": content_type})
         with urlopen(request, timeout=12) as response:
             result = json.load(response)
         if not result.get("ok"):
@@ -42,6 +44,13 @@ class AIBot:
     def send(self, chat_id, message):
         self.request("sendMessage", {"chat_id": chat_id, "text": message[:4000],
                                      "link_preview_options": {"is_disabled": True}})
+
+    def send_mockup(self, chat_id, image):
+        photo = base64.b64decode(image.split(",", 1)[1], validate=True)
+        body, content_type = multipart_payload(
+            {"chat_id": chat_id, "caption": "Примерная визуализация светильников LUSAR в вашей комнате."},
+            [("photo", photo, "image/png")])
+        self.request("sendPhoto", body, content_type=content_type)
 
     def enqueue(self, update):
         with self.lock:
@@ -87,7 +96,8 @@ class AIBot:
             if chat_id not in self.allowed_users:
                 self.send(chat_id, f"Lusar AI сейчас тестируется. Ваш ID для доступа: {chat_id}.\n\n{privacy}")
                 return
-            self.send(chat_id, f"Пришлите фото комнаты с пожеланиями в подписи.\n\n{privacy}")
+            self.send(chat_id, "Пришлите фото комнаты с пожеланиями в подписи. "
+                               f"Я верну примерку светильников и ссылки на модели.\n\n{privacy}")
             return
         if chat_id not in self.allowed_users:
             return
@@ -109,8 +119,19 @@ class AIBot:
             self.send(chat_id, str(error))
             return
         lines = [answer["advice"]]
+        mockup_sent = False
+        if answer.get("image"):
+            try:
+                self.send_mockup(chat_id, answer["image"])
+                mockup_sent = True
+            except (OSError, ValueError, IndexError):
+                logging.warning("LUSAR AI: Telegram не принял визуализацию.")
+                lines.append("Визуализацию не удалось отправить в Telegram. Ниже — подборка товаров.")
+        elif answer.get("imageError"):
+            lines.append(answer["imageError"])
         for item in answer["products"]:
-            lines.append(f"{item['name']} · {item['sku']}\n{item['reason']}\n{self.origin}{item['path']}")
+            label = "В примерке · " if mockup_sent and item["inMockup"] else ""
+            lines.append(f"{label}{item['name']} · {item['sku']}\n{item['reason']}\n{self.origin}{item['path']}")
         self.send(chat_id, "\n\n".join(lines) or "По этому фото не удалось подобрать светильники.")
 
 

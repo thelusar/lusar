@@ -342,20 +342,23 @@ write("legal/cookies", "Политика cookie", """
 Выбор статистики можно изменить через «Настройки cookie» в подвале.</p>
 """, draft=True)
 write("ai", "Lusar AI", """
-<p id="ai-mode">Подбор освещения по фотографии комнаты.</p>
+<p id="ai-mode">Загрузите фото комнаты. Lusar AI подберёт светильники из каталога и покажет, как они могут выглядеть в вашем интерьере.</p>
 <p id="ai-product" hidden><a id="ai-product-link"></a></p>
 <form id="ai-form">
   <label>Фото комнаты <input id="ai-photo" type="file" accept="image/jpeg,image/png,image/webp" required></label>
   <p>JPEG, PNG или WebP, до 4 МБ. Выберите фото без людей и личных данных.</p>
   <label>Пожелания <textarea id="ai-wishes" maxlength="1000" rows="3" placeholder="Например: тёплый свет над столом"></textarea></label>
   <label><input id="ai-consent" type="checkbox" required> Согласен на отправку фото и пожеланий в OpenAI для обработки.</label>
-  <button id="ai-submit" type="submit" disabled>Подобрать свет</button>
+  <button id="ai-submit" type="submit" disabled>Подобрать и примерить свет</button>
 </form>
 <img id="ai-photo-preview" class="ai-photo-preview" alt="Предпросмотр фотографии комнаты" hidden>
 <p id="ai-photo-status" role="status"></p>
 <p id="ai-result-status" role="status"></p>
+<figure id="ai-visualization" hidden>
+  <img id="ai-render" class="ai-photo-preview" alt="Примерная визуализация светильников в комнате">
+  <figcaption>Визуализация создана ИИ. Размеры и освещённость уточняйте по характеристикам товара.</figcaption>
+</figure>
 <ul id="ai-results" hidden></ul>
-<img id="ai-render" class="ai-photo-preview" alt="Примерная визуализация светильника в комнате" hidden>
 <script src="/ai-preview.js" defer></script>
 """ + (f'<p><a href="https://t.me/{AI_TELEGRAM_USERNAME}">Открыть Lusar AI в Telegram</a></p>'
        if AI_TELEGRAM_USERNAME else ""), draft=True)
