@@ -11,6 +11,7 @@ from collections import deque
 from queue import Full, Queue
 from threading import Lock, Thread
 from time import sleep
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
@@ -19,6 +20,27 @@ from lusar_ai import AIError, MAX_PHOTO, analyze, multipart_payload
 
 WEBHOOK = "/api/telegram/lusar-ai"
 MAX_UPDATE = 64 * 1024
+
+
+def connection_error(error):
+    if isinstance(error, HTTPError):
+        with error:
+            try:
+                description = str(json.loads(error.read(4096)).get("description", "")).lower()
+            except (OSError, ValueError, AttributeError):
+                description = ""
+        if error.code in {401, 404}:
+            return f"Telegram отклонил токен бота (HTTP {error.code})"
+        if "webhook" in description and ("resolve" in description or "getaddrinfo" in description):
+            return "Telegram не смог разрешить адрес Render"
+        if "webhook" in description and ("ssl" in description or "certificate" in description):
+            return "Telegram отклонил TLS-сертификат адреса Render"
+        return f"Telegram вернул HTTP {error.code}"
+    if isinstance(error, TimeoutError) or isinstance(getattr(error, "reason", None), TimeoutError):
+        return "истекло время ожидания ответа Telegram"
+    if isinstance(error, (URLError, OSError)):
+        return "сетевая ошибка при обращении к Telegram"
+    return "Telegram вернул неожиданный ответ"
 
 
 class AIBot:
@@ -31,11 +53,11 @@ class AIBot:
         self.seen = deque(maxlen=256)
         self.lock = Lock()
 
-    def request(self, method, payload, *, content_type="application/json"):
+    def request(self, method, payload, *, content_type="application/json", timeout=12):
         body = json.dumps(payload).encode() if content_type == "application/json" else payload
         request = Request(f"https://api.telegram.org/bot{self.token}/{method}", body,
                           {"Content-Type": content_type})
-        with urlopen(request, timeout=12) as response:
+        with urlopen(request, timeout=timeout) as response:
             result = json.load(response)
         if not result.get("ok"):
             raise ValueError("Telegram request rejected")
@@ -64,23 +86,75 @@ class AIBot:
             self.seen.append(update_id)
             return True
 
-    def run(self):
-        for attempt in range(3):
+    def connect(self):
+        target = self.origin + WEBHOOK
+        for attempt in range(1, 4):
             try:
-                self.request("setWebhook", {"url": self.origin + WEBHOOK, "secret_token": self.secret,
-                                            "allowed_updates": ["message"], "max_connections": 2})
-            except (OSError, ValueError):
-                logging.warning("LUSAR AI: не удалось подключить webhook Telegram (попытка %s).", attempt + 1)
-                sleep(5)
+                self.request("getMe", {})
+            except (OSError, ValueError) as error:
+                logging.warning("LUSAR AI: getMe, попытка %s: %s.", attempt, connection_error(error))
+                if isinstance(error, HTTPError) and error.code in {401, 404}:
+                    return None
             else:
-                logging.info("LUSAR AI: webhook Telegram подключён.")
-                break
+                try:
+                    self.request("setWebhook", {"url": target, "secret_token": self.secret,
+                                                "allowed_updates": ["message"], "max_connections": 2}, timeout=40)
+                    return "webhook"
+                except (OSError, ValueError) as error:
+                    logging.warning("LUSAR AI: setWebhook, попытка %s: %s.", attempt, connection_error(error))
+                try:
+                    current = self.request("getWebhookInfo", {})["url"]
+                except (OSError, ValueError, KeyError, TypeError) as error:
+                    logging.warning("LUSAR AI: getWebhookInfo: %s.", connection_error(error))
+                else:
+                    if current == target:
+                        return "webhook"
+                    if not current and attempt == 3:
+                        return "polling"
+            if attempt < 3:
+                sleep(5)
+        return None
+
+    def process_safely(self, update):
+        try:
+            self.process(update)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            logging.warning("LUSAR AI: не удалось обработать обновление Telegram: %s.", connection_error(error))
+
+    def poll(self):
+        offset = None
+        while True:
+            query = {"timeout": 20, "allowed_updates": ["message"]}
+            if offset is not None:
+                query["offset"] = offset
+            try:
+                updates = self.request("getUpdates", query, timeout=30)
+                for update in updates:
+                    self.process_safely(update)
+                    offset = update["update_id"] + 1
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                if isinstance(error, HTTPError) and error.code == 409:
+                    try:
+                        if self.request("getWebhookInfo", {})["url"] == self.origin + WEBHOOK:
+                            return
+                    except (OSError, ValueError, KeyError, TypeError):
+                        pass
+                logging.warning("LUSAR AI: getUpdates: %s.", connection_error(error))
+                sleep(10)
+
+    def run(self):
+        sleep(8)
+        mode = self.connect()
+        if mode == "polling":
+            logging.warning("LUSAR AI: webhook не зарегистрирован. Временно читаем Telegram через getUpdates.")
+            self.poll()
+            mode = "webhook"
+        if mode == "webhook":
+            logging.info("LUSAR AI: webhook Telegram подключён.")
         while True:
             update = self.pending.get()
             try:
-                self.process(update)
-            except (OSError, ValueError, KeyError, TypeError):
-                logging.warning("LUSAR AI: не удалось обработать обновление Telegram.")
+                self.process_safely(update)
             finally:
                 self.pending.task_done()
 
