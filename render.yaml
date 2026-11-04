@@ -14,3 +14,5 @@ services:
         value: "114074884"
       - key: LUSAR_GA4_ID
         value: "G-DT02DVCBZF"
+      - key: LUSAR_AI_TELEGRAM_USERNAME
+        value: "LusarAiBot"

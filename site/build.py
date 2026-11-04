@@ -3,6 +3,7 @@ import html
 import json
 import os
 import re
+import warnings
 from pathlib import Path
 from urllib.parse import quote, urlencode
 from xml.etree import ElementTree
@@ -17,9 +18,12 @@ ANALYTICS_IDS = {
     "google-analytics": os.environ.get("LUSAR_GA4_ID", "").strip(),
     "yandex-metrica": os.environ.get("LUSAR_YANDEX_METRICA_ID", "").strip(),
 }
-AI_TELEGRAM_USERNAME = os.environ.get("LUSAR_AI_TELEGRAM_USERNAME", "").strip().lstrip("@")
-if AI_TELEGRAM_USERNAME and not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{1,28}[Bb][Oo][Tt]", AI_TELEGRAM_USERNAME):
-    raise ValueError("Invalid Lusar AI Telegram username")
+AI_TELEGRAM_USERNAME = os.environ.get("LUSAR_AI_TELEGRAM_USERNAME", "").strip()
+AI_TELEGRAM_USERNAME = re.sub(r"^(?:https?://)?(?:www\.)?t\.me/", "", AI_TELEGRAM_USERNAME, flags=re.IGNORECASE)
+AI_TELEGRAM_USERNAME = AI_TELEGRAM_USERNAME.removeprefix("@").removesuffix("/")
+if AI_TELEGRAM_USERNAME and not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{1,28}bot", AI_TELEGRAM_USERNAME, flags=re.IGNORECASE):
+    warnings.warn("Invalid LUSAR_AI_TELEGRAM_USERNAME; Telegram link omitted.")
+    AI_TELEGRAM_USERNAME = ""
 for provider, pattern in (("google-analytics", r"G-[A-Z0-9]+"), ("yandex-metrica", r"[1-9][0-9]{0,11}")):
     if ANALYTICS_IDS[provider] and not re.fullmatch(pattern, ANALYTICS_IDS[provider]):
         raise ValueError(f"Invalid analytics ID: {provider}")
