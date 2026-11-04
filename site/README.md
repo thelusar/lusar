@@ -30,3 +30,20 @@ In Render, create a Blueprint from `thelusar/lusar` and select `lusar-next`. The
 `postgres/001_orders.sql` is the initial migration for the separate integration database. With `DATABASE_URL` set on Render, staging applies it at startup and stores orders, status history and queued notifications in PostgreSQL. Without the variable, staging uses temporary SQLite and its data is lost on restart. Keep the connection URL in Render's environment settings.
 
 To enable Telegram notices on staging, add `LUSAR_TELEGRAM_BOT_TOKEN`, `LUSAR_TELEGRAM_CHAT_ID` (the negative ID of the private staff group), and `LUSAR_MANAGER_ORIGIN` (the HTTPS staging origin) in Render's Environment settings and redeploy. Add the bot to the group with permission to post. Once enabled, staging sends pending notices while the service is running. Each message contains the order number and a link to the protected manager page. Telegram failures are retried and a notice may repeat if Telegram accepts it before the delivery is recorded in the database.
+
+## Staging analytics and Lusar AI
+
+Add these values in Render's Environment settings and select **Save, rebuild, and deploy**:
+
+| Variable | Value |
+| --- | --- |
+| `LUSAR_GA4_ID` | Measurement ID for the staging GA4 web stream (`G-…`). Turn off enhanced measurement in the test stream to check the explicit storefront events. |
+| `LUSAR_YANDEX_METRICA_ID` | Numeric ID for a separate staging counter. Leave session replay and form analysis off. |
+| `OPENAI_API_KEY` | Secret key for the OpenAI API project. Verify API billing and model access in that project. |
+| `LUSAR_AI_TELEGRAM_BOT_TOKEN` | Token for the separate Lusar AI bot. |
+| `LUSAR_AI_TELEGRAM_USERNAME` | Public username of the AI bot, without `@`. Enables a link from the Lusar AI page. |
+| `LUSAR_AI_TELEGRAM_USER_IDS` | Comma-separated IDs of the Telegram accounts allowed to test photo recommendations. Start the AI bot to see your own ID. |
+
+Analytics providers start after the visitor allows statistics. The storefront sends page views and `view_item`, `add_to_cart`, `begin_checkout`, and `generate_lead`. Configure the same event names as JavaScript goals in Metrica. View visits and events in GA4 Realtime and use Metrica's tag debugger to confirm goals.
+
+The password-protected Lusar AI page uses the published catalog snapshot for photo recommendations. The product card opens the mockup mode with the selected product and uses its catalog image as a reference. The Telegram bot registers its webhook on Render and uses the same recommendation logic. The preview shares a limit of 20 AI requests per hour per running instance. Keep this preview for invited testers and synthetic or test photos.

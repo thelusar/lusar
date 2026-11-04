@@ -167,7 +167,6 @@ checkout?.addEventListener("submit", async event => {
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
-    window.lusarAnalytics?.submitted();
     checkout.hidden = true;
     items.hidden = true;
     document.querySelector("#cart-summary").hidden = true;
@@ -180,10 +179,13 @@ checkout?.addEventListener("submit", async event => {
     try { save({}); } catch {}
     try {
       sessionStorage.setItem("lusar-order-receipt", JSON.stringify({
-        number: result.number, trackingToken: result.trackingToken
+        number: result.number, trackingToken: result.trackingToken,
+        leadPending: response.status === 201 && document.documentElement.dataset.analyticsConsent === "granted"
       }));
       location.replace("/checkout/received");
-    } catch {}
+    } catch {
+      if (response.status === 201) window.lusarAnalytics?.submitted();
+    }
   } catch (error) {
     status.textContent = error.message || "Не удалось отправить заявку. Попробуйте ещё раз.";
     submit.disabled = false;

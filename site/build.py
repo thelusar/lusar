@@ -1,6 +1,7 @@
 """Build the LUSAR navigation preview from the public storefront snapshot."""
 import html
 import json
+import os
 import re
 from pathlib import Path
 from urllib.parse import quote, urlencode
@@ -12,6 +13,16 @@ ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "dist"
 PUBLIC_ORIGIN = "https://lusar.am"
 SERVICE_HOURS = "09:30–19:00"
+ANALYTICS_IDS = {
+    "google-analytics": os.environ.get("LUSAR_GA4_ID", "").strip(),
+    "yandex-metrica": os.environ.get("LUSAR_YANDEX_METRICA_ID", "").strip(),
+}
+AI_TELEGRAM_USERNAME = os.environ.get("LUSAR_AI_TELEGRAM_USERNAME", "").strip().lstrip("@")
+if AI_TELEGRAM_USERNAME and not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{1,28}[Bb][Oo][Tt]", AI_TELEGRAM_USERNAME):
+    raise ValueError("Invalid Lusar AI Telegram username")
+for provider, pattern in (("google-analytics", r"G-[A-Z0-9]+"), ("yandex-metrica", r"[1-9][0-9]{0,11}")):
+    if ANALYTICS_IDS[provider] and not re.fullmatch(pattern, ANALYTICS_IDS[provider]):
+        raise ValueError(f"Invalid analytics ID: {provider}")
 indexable = []
 data = json.loads((ROOT.parent / "storefront.json").read_text(encoding="utf-8-sig"))
 validate(data)
@@ -64,8 +75,13 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     if structured_data and not draft:
         serialized = json.dumps(structured_data, ensure_ascii=False).replace("<", "\\u003c")
         metadata += f'<script type="application/ld+json">{serialized}</script>'
+    analytics = ""
+    if path not in {"ai", "order-status"} and not (path == "account" or path.startswith("account/")):
+        attrs = "".join(f' data-{provider}="{value}"' for provider, value in ANALYTICS_IDS.items() if value)
+        if attrs:
+            analytics = ' data-analytics-enabled="true"' + attrs
     target.write_text(f"""<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"></head>
 <body><a class="skip-link" href="#main">К содержанию</a><header>{link("", "LUSAR")}<nav aria-label="Основная навигация">{link("catalog/", "Каталог")} {link("ai/", "Lusar AI")} {link("search", "Поиск")} {link("compare", "Сравнение")}
 {link("favorites/", "Избранное")} {link("cart/", "Корзина")} {link("account/", "Кабинет")}</nav>
@@ -104,7 +120,7 @@ EXTRA = [
     ("professionals/request", "Запрос на проект"), ("services", "Услуги LUSAR"),
     ("journal/guides", "Как выбрать свет"), ("compare", "Сравнение"),
     ("search", "Поиск"), ("selection", "Подборка"),
-    ("legal/terms", "Условия продажи"), ("legal/privacy", "Конфиденциальность"),
+    ("legal/terms", "Публичная оферта и условия продажи"), ("legal/privacy", "Конфиденциальность"),
     ("legal/cookies", "Политика cookie"), ("legal/loyalty", "Условия акций и скидок"),
     ("legal/ai", "Условия использования Lusar AI и аккаунта"),
 ]
@@ -328,13 +344,21 @@ write("legal/cookies", "Политика cookie", """
 write("ai", "Lusar AI", """
 <p id="ai-mode">Подбор освещения по фотографии комнаты.</p>
 <p id="ai-product" hidden><a id="ai-product-link"></a></p>
-<p>Визуализация и подбор в разработке. Здесь можно проверить, как загрузится фотография. Она остаётся в браузере.</p>
-<label>Фото комнаты <input id="ai-photo" type="file" accept="image/jpeg,image/png,image/webp"></label>
-<p>JPEG, PNG или WebP, до 10 МБ.</p>
+<form id="ai-form">
+  <label>Фото комнаты <input id="ai-photo" type="file" accept="image/jpeg,image/png,image/webp" required></label>
+  <p>JPEG, PNG или WebP, до 4 МБ. Выберите фото без людей и личных данных.</p>
+  <label>Пожелания <textarea id="ai-wishes" maxlength="1000" rows="3" placeholder="Например: тёплый свет над столом"></textarea></label>
+  <label><input id="ai-consent" type="checkbox" required> Согласен на отправку фото и пожеланий в OpenAI для обработки.</label>
+  <button id="ai-submit" type="submit" disabled>Подобрать свет</button>
+</form>
 <img id="ai-photo-preview" class="ai-photo-preview" alt="Предпросмотр фотографии комнаты" hidden>
 <p id="ai-photo-status" role="status"></p>
+<p id="ai-result-status" role="status"></p>
+<ul id="ai-results" hidden></ul>
+<img id="ai-render" class="ai-photo-preview" alt="Примерная визуализация светильника в комнате" hidden>
 <script src="/ai-preview.js" defer></script>
-""", draft=True)
+""" + (f'<p><a href="https://t.me/{AI_TELEGRAM_USERNAME}">Открыть Lusar AI в Telegram</a></p>'
+       if AI_TELEGRAM_USERNAME else ""), draft=True)
 write("rooms", "Подобрать свет по комнате",
       "<p>Выберите помещение, чтобы посмотреть идеи по освещению и перейти в подходящие категории.</p>" +
       listing([(f"rooms/{key}", title) for key, (title, _, _) in ROOMS.items()]))
