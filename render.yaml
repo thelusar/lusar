@@ -10,3 +10,5 @@ services:
     envVars:
       - key: LUSAR_STAGING_PASSWORD
         generateValue: true
+      - key: LUSAR_YANDEX_METRICA_ID
+        value: "114074884"
