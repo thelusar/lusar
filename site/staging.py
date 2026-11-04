@@ -59,7 +59,7 @@ def main():
         with serve.ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), StagingHandler) as server:
             if order_storage.DATABASE_URL and os.environ.get("LUSAR_TELEGRAM_BOT_TOKEN"):
                 try:
-                    sender = notify_orders.sender_from_environment()
+                    sender = notify_orders.sender_from_environment(expected_group="LUSAR — заявки")
                 except ValueError as error:
                     logging.warning("Уведомления LUSAR отключены. %s", error)
                 else:

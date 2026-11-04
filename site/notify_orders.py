@@ -13,6 +13,17 @@ import order_storage
 import serve
 
 
+def telegram_error_details(error):
+    try:
+        with error:
+            body = json.loads(error.read(8192))
+        if isinstance(body, dict):
+            return body
+    except (OSError, ValueError):
+        pass
+    return {}
+
+
 def deliver_pending(send, *, limit=20):
     if not order_storage.available(serve.DATABASE):
         return
@@ -41,9 +52,11 @@ def deliver_pending(send, *, limit=20):
                 WHERE number = ? AND attempts = ? AND sent_at IS NULL""", (error is None, error, number, claimed[0]))
         if error:
             logging.warning("Уведомление LUSAR %s не доставлено: %s", number, error)
+        else:
+            logging.info("Уведомление LUSAR %s доставлено в Telegram.", number)
 
 
-def sender_from_environment():
+def sender_from_environment(*, expected_group=None):
     token = os.environ.get("LUSAR_TELEGRAM_BOT_TOKEN", "")
     chat = os.environ.get("LUSAR_TELEGRAM_CHAT_ID", "")
     origin = os.environ.get("LUSAR_MANAGER_ORIGIN", "").rstrip("/")
@@ -52,19 +65,50 @@ def sender_from_environment():
         raise ValueError("Укажите токен бота и ID закрытого чата в настройках окружения.")
     if parsed.scheme != "https" or not parsed.netloc or parsed.path or parsed.query or parsed.fragment or parsed.username:
         raise ValueError("Укажите HTTPS-адрес панели в LUSAR_MANAGER_ORIGIN.")
+    chat_id = int(chat)
+
+    def request_telegram(method, payload):
+        request = Request(f"https://api.telegram.org/bot{token}/{method}", json.dumps(payload).encode(),
+                          {"Content-Type": "application/json"})
+        with urlopen(request, timeout=10) as response:
+            return json.load(response)
+
+    def find_group(candidate):
+        try:
+            result = request_telegram("getChat", {"chat_id": candidate}).get("result", {})
+        except (OSError, ValueError):
+            return False
+        return (result.get("id") == candidate and result.get("title") == expected_group
+                and result.get("type") in {"group", "supergroup"}
+                and not (result.get("username") or result.get("active_usernames")))
 
     def send(number):
-        payload = json.dumps({
-            "chat_id": chat,
+        nonlocal chat_id
+        message = {
+            "chat_id": chat_id,
             "text": f"Новая заявка LUSAR №{number}\n{origin}/manager/orders/#{number}",
             "link_preview_options": {"is_disabled": True},
-        }).encode()
-        request = Request(f"https://api.telegram.org/bot{token}/sendMessage", payload,
-                          {"Content-Type": "application/json"})
+        }
         try:
-            with urlopen(request, timeout=10) as response:
-                return None if json.load(response).get("ok") else "Telegram не принял уведомление"
+            return None if request_telegram("sendMessage", message).get("ok") else "Telegram не принял уведомление"
         except HTTPError as error:
+            details = telegram_error_details(error)
+            description = str(details.get("description", "")).lower()
+            parameters = details.get("parameters") or {}
+            migrated = parameters.get("migrate_to_chat_id")
+            if error.code == 400 and ("chat not found" in description or type(migrated) is int):
+                candidate = migrated if type(migrated) is int else (
+                    chat_id - 10**12 if -10**12 < chat_id < 0 else chat_id + 10**12
+                )
+                if expected_group and candidate < 0 and candidate != chat_id and find_group(candidate):
+                    chat_id = candidate
+                    logging.info("LUSAR: Telegram подтвердил ID закрытой группы %s. Очередь повторит отправку.", chat_id)
+                    return "Telegram подтвердил другой формат ID группы"
+                return "Telegram не нашёл группу по указанному ID или у бота нет доступа"
+            if error.code == 401:
+                return "Telegram отклонил токен бота (HTTP 401)"
+            if error.code == 403 or "not enough rights" in description or "write forbidden" in description:
+                return "Telegram не разрешил боту писать в группу"
             return f"Telegram HTTP {error.code}"
         except (URLError, TimeoutError, ValueError):
             return "Telegram временно недоступен"
