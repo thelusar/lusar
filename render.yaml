@@ -12,3 +12,5 @@ services:
         generateValue: true
       - key: LUSAR_YANDEX_METRICA_ID
         value: "114074884"
+      - key: LUSAR_GA4_ID
+        value: "G-DT02DVCBZF"
