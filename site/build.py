@@ -70,7 +70,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
 <body><a class="skip-link" href="#main">К содержанию</a><header>{link("", "LUSAR")}<nav aria-label="Основная навигация">{link("catalog/", "Каталог")} {link("ai/", "Lusar AI")} {link("search", "Поиск")} {link("compare", "Сравнение")}
 {link("favorites/", "Избранное")} {link("cart/", "Корзина")} {link("account/", "Кабинет")}</nav>
 <button id="theme-toggle" type="button" aria-pressed="false" hidden>Светлая тема</button></header>
-<main id="main" tabindex="-1"{' class="home"' if not path else ''}><h1>{html.escape(title)}</h1>{body}</main>
+<main id="main" tabindex="-1"{' class="home"' if not path else ''}>{f"<h1>{html.escape(title)}</h1>" if path else ""}{body}</main>
 <footer>{' '.join(link(path + "/", name) for path, name in FOOTER)}
 <button type="button" id="cookie-settings" hidden>Настройки cookie</button></footer>
 <section id="cookie-panel" class="cookie-panel" aria-labelledby="cookie-heading" hidden>
@@ -162,10 +162,8 @@ def product_grid(items):
         "".join(cards) + '</ul><script src="/product-filters.js" defer></script>'
     )
 
-write("", "Свет, который меняет пространство",
-      '<p class="lead">Освещение для дома, интерьера и архитектуры.</p>' +
-      listing([("catalog/", "Смотреть каталог"), ("ai/", "Подобрать свет с Lusar AI")]) +
-      """
+write("", "Свет, который меняет пространство", """
+<section class="home-hero" aria-labelledby="home-title">
 <figure class="light-scene">
   <img id="scene-image" src="/scenes/lusar-hero.webp" width="1536" height="1024"
        fetchpriority="high" alt="Тёплый свет подвеса и мягкая подсветка вокруг обеденного стола">
@@ -178,8 +176,20 @@ write("", "Свет, который меняет пространство",
     <p id="scene-caption" role="status">Подвес освещает стол, а подсветка добавляет глубину стенам.</p>
   </figcaption>
 </figure>
+<div class="hero-copy">
+  <p class="eyebrow">LUSAR / Освещение</p>
+  <h1 id="home-title">Свет, который меняет пространство</h1>
+  <p class="lead">Люстры, бра и архитектурный свет для дома и проектов.</p>
+  <div class="hero-actions"><a href="/catalog">Смотреть каталог</a><a href="/ai">Подобрать свет с Lusar AI</a></div>
+</div>
+</section>
 <script src="/scenes.js" defer></script>
-""" + '<p>' + link("rooms", "Подобрать по комнате") + '</p>')
+""" + '<section class="home-collection"><p class="eyebrow">Каталог</p><h2>Выберите свой свет</h2>' +
+      '<p>Начните с типа светильника или подберите освещение под комнату.</p>' +
+      listing([(category_path(key), category["name"]) for key, category in categories.items()]) +
+      '<p>' + link("rooms", "Подобрать по комнате →") + '</p></section>' +
+      '<section class="home-collection"><p class="eyebrow">Коллекция LUSAR</p><h2>Светильники в каталоге</h2>' +
+      product_grid(data["products"][:4]) + '</section>')
 write("catalog", "Каталог освещения",
       "<h2>По типу светильника</h2>" +
       listing([(category_path(key), item["name"]) for key, item in categories.items()]) +
