@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: lusar-staging
+    runtime: python
+    branch: lusar-next
+    plan: free
+    buildCommand: python site/build.py
+    startCommand: python site/staging.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: LUSAR_STAGING_PASSWORD
+        generateValue: true

@@ -20,3 +20,7 @@ The check uses Edge by default. Pass `--browser` with a Chrome executable path t
 The build reads the public catalog snapshot in `storefront.json`. Refresh with `python site/sync_catalog.py`, or validate a previously fetched public export with `python site/sync_catalog.py --input <path>`, then rebuild.
 
 Production requires hosting for the order service, manager authentication, storage and redirects. GitHub Pages can serve the static output only. Telegram delivery, analytics, customer accounts and Lusar AI require production configuration or implementation. Keep credentials and databases out of Git.
+
+## Render staging
+
+In Render, create a Blueprint from `thelusar/lusar` and select `lusar-next`. The root `render.yaml` defines a free test service. Open its generated Render URL and sign in as `manager` using the generated `LUSAR_STAGING_PASSWORD` from the service's Environment settings. Use synthetic orders only. The staging database is reset when the process restarts, and the whole preview is password protected and excluded from indexing. Leave the production domain connected to the existing site.
