@@ -2,6 +2,8 @@
 import copy
 import http.client
 import json
+import os
+import re
 import secrets
 import sys
 import tempfile
@@ -9,6 +11,7 @@ import threading
 import time
 import unittest
 import uuid
+from unittest.mock import patch
 from http.cookies import SimpleCookie
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
@@ -20,6 +23,7 @@ from joserfc import jwt
 from joserfc.jwk import RSAKey, KeySet
 
 import customer_accounts as accounts
+import notify_orders
 import order_storage
 import serve
 
@@ -57,15 +61,16 @@ class Client:
         self.server = server
         self.cookies = {}
 
-    def request(self, path, data=None, csrf=None, origin=None):
+    def request(self, path, data=None, csrf=None, origin=None, *, form=False):
         connection = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=15)
         headers = {'Cookie': '; '.join(key + '=' + value for key, value in self.cookies.items())}
         if data is not None:
-            headers['Content-Type'] = 'application/json'
+            headers['Content-Type'] = 'application/x-www-form-urlencoded' if form else 'application/json'
             headers['Origin'] = origin or self.server.customer_accounts.config.origin
             if csrf is not None:
                 headers['X-Lusar-CSRF'] = csrf
-        connection.request('POST' if data is not None else 'GET', path, json.dumps(data) if data is not None else None, headers)
+        body = (urlencode(data) if form else json.dumps(data)) if data is not None else None
+        connection.request('POST' if data is not None else 'GET', path, body, headers)
         response = connection.getresponse()
         raw = response.read()
         result = json.loads(raw) if raw and response.headers.get_content_type() == 'application/json' else raw.decode('utf-8')
@@ -80,13 +85,13 @@ class Client:
         connection.close()
         return status, result, headers
 
-    def login(self, user='alice'):
+    def login(self, user='alice', destination='/account'):
         self.server.customer_accounts.provider.user = user
-        status, _, headers = self.request('/auth/start')
+        status, _, headers = self.request('/auth/start?' + urlencode({'return': destination}))
         assert status == 303
         parameters = parse_qs(urlsplit(headers['Location']).query)
         status, _, headers = self.request('/auth/callback?' + urlencode({'state': parameters['state'][0], 'code': 'local-code'}))
-        assert status == 303 and headers['Location'] == '/account'
+        assert status == 303 and headers['Location'] == destination
         return self.request('/api/account/me')[1]
 
 
@@ -247,6 +252,82 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(self.client.request('/api/account/state', state, csrf)[0], 200)
         self.assertEqual(self.client.request('/api/account/state', state, csrf)[0], 409)
         self.assertEqual(bob.request('/api/account/me')[1]['state']['cart'], {})
+
+    def test_staff_access_order_audit_and_revocation(self):
+        orders_path = '/manager/orders/'
+        access_path = '/manager/access'
+        self.assertEqual(self.client.request(orders_path)[0], 401)
+        customer = self.client.login('customer')
+        result = self.submit(self.order(quantity=2, mode='first'))
+        self.assertEqual(result[0], 201)
+        number = result[1]['number']
+        notices = []
+        notify_orders.deliver_pending(notices.append)
+        notify_orders.deliver_pending(notices.append)
+        self.assertEqual(notices, [number])
+        status, denied, _ = self.client.request(orders_path)
+        self.assertEqual(status, 403)
+        self.assertIn(customer['profile']['id'], denied)
+        self.assertNotIn(number, denied)
+        self.assertEqual(self.client.request('/manager/orders/status', {}, form=True)[0], 403)
+
+        owner = Client(self.server)
+        owner_id = owner.login('owner')['profile']['id']
+        manager = Client(self.server)
+        manager_id = manager.login('manager', orders_path)['profile']['id']
+        with patch.dict(os.environ, {'LUSAR_STAFF_ADMIN_ID': owner_id}):
+            def form_token(client, path, action):
+                status, page, _ = client.request(path)
+                self.assertEqual(status, 200)
+                return re.search(f'action="{action}".*?name="token" value="([a-f0-9]+)"', page).group(1)
+
+            grant = {'account': manager_id, 'role': 'manager', 'token': form_token(owner, access_path, access_path)}
+            self.assertEqual(owner.request(access_path, grant, origin='https://attacker.example', form=True)[0], 403)
+            self.assertEqual(owner.request(access_path, grant, form=True)[0], 303)
+            self.assertEqual(manager.request(access_path)[0], 403)
+            self.assertEqual(manager.request(access_path, grant, form=True)[0], 403)
+            self.assertEqual(owner.request(access_path, {**grant, 'role': 'admin'}, form=True)[0], 303)
+            manager_access_token = form_token(manager, access_path, access_path)
+            self.assertEqual(manager.request(access_path, {'account': owner_id, 'role': 'remove',
+                                                           'token': manager_access_token}, form=True)[0], 409)
+            self.assertEqual(owner.request(access_path, grant, form=True)[0], 303)
+
+            status_path = '/manager/orders/status'
+            adjust_path = '/manager/orders/adjust'
+            start = {'number': number, 'current': 'new', 'target': 'in_progress',
+                     'token': form_token(manager, orders_path, status_path)}
+            self.assertEqual(owner.request(status_path, start, form=True)[0], 403)
+            self.assertEqual(manager.request(status_path, start, form=True)[0], 303)
+            self.assertEqual(manager.request(status_path, start, form=True)[0], 409)
+            payment = {'number': number, 'action': 'payment', 'value': 'store',
+                       'token': form_token(manager, orders_path, adjust_path)}
+            self.assertEqual(manager.request(adjust_path, payment, form=True)[0], 303)
+            complete = {**start, 'current': 'in_progress', 'target': 'completed',
+                        'token': form_token(manager, orders_path, status_path)}
+            self.assertEqual(manager.request(status_path, complete, form=True)[0], 303)
+            order_before = self.client.request('/api/account/orders')[1]['orders'][0]
+            self.assertEqual(order_before['status'], 'completed')
+            self.assertTrue(order_before['paid'])
+
+            returned = {'number': number, 'action': 'return', 'value': PRODUCT['id'], 'quantity': '1',
+                        'token': form_token(manager, orders_path, adjust_path)}
+            self.assertEqual(manager.request(adjust_path, returned, form=True)[0], 303)
+            order_after = self.client.request('/api/account/orders')[1]['orders'][0]
+            self.assertTrue(order_after['returned'])
+            self.assertLess(order_after['remainingTotal'], order_before['total'])
+            refund = {'number': number, 'action': 'refund_paid', 'value': '0',
+                      'token': form_token(manager, orders_path, adjust_path)}
+            self.assertEqual(manager.request(adjust_path, refund, form=True)[0], 303)
+            self.assertIn('manager@example.test', owner.request(orders_path)[1])
+            self.assertNotIn('manager@example.test', self.client.request('/api/account/orders')[1]['orders'][0].values())
+            with order_storage.connect(serve.DATABASE) as db:
+                events = db.execute('SELECT action, actor_id FROM order_staff_activity WHERE number = ? ORDER BY id', (number,)).fetchall()
+            self.assertEqual(events, [(action, manager_id) for action in ['status', 'payment', 'status', 'return', 'refund_paid']])
+
+            final_return = {**returned, 'token': form_token(manager, orders_path, adjust_path)}
+            self.assertEqual(owner.request(access_path, {**grant, 'role': 'remove'}, form=True)[0], 303)
+            self.assertEqual(manager.request(orders_path)[0], 403)
+            self.assertEqual(manager.request(adjust_path, final_return, form=True)[0], 403)
 
 
 if __name__ == '__main__':

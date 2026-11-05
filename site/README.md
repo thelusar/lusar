@@ -9,7 +9,7 @@ python site/serve.py
 
 Open `http://127.0.0.1:8080/`. The preview serves clean URLs, including the redirects from the existing catalog, and stores test orders in a local SQLite database outside the public directory.
 
-For the local manager view, set `LUSAR_LOCAL_MANAGER_PASSWORD` before starting the server, then open `/manager/orders/` with username `manager`. Use test data only. The preview server and its shared manager login are local development tools.
+For the local manager view without Auth0, set `LUSAR_LOCAL_MANAGER_PASSWORD` before starting the loopback preview, then open `/manager/orders/` with username `manager`. Use test data only.
 
 ```powershell
 python site/check_checkout.py
@@ -54,9 +54,15 @@ The account pages use server-side customer sessions and Auth0 Universal Login fo
 
 In Render, create a Blueprint from `thelusar/lusar` and select `lusar-next`. The root `render.yaml` defines a free test service. Open its generated Render URL and sign in as `manager` using the generated `LUSAR_STAGING_PASSWORD` from the service's Environment settings. Use synthetic orders only. The preview is password protected and excluded from indexing. Leave the production domain connected to the existing site.
 
+### Staff access
+
+Before deploying the staff panel, sign in to the staging storefront as the intended owner, open `/api/account/me`, and put the value of `profile.id` in `LUSAR_STAFF_ADMIN_ID` in Render. The owner can open `/manager/orders/` and follow **Доступ сотрудников**. Ask each employee to sign in with their own Auth0 identity, open the order panel, and pass their account code to the owner. Assign **Менеджер** for orders or **Администратор** for orders and access management. Use the account code from the exact sign-in method the employee will use. Changing a role or revoking access applies to existing sessions. Only a Render administrator can change which account is the initial owner.
+
+The shared staging password opens the test site. The order panel requires an individual account with a staff role. Changes to status, payment and returns appear in **Журнал заказа**, with the account that performed them. Earlier history remains in the database. Check access in separate browser sessions for a customer, manager and administrator before using the panel.
+
 ## PostgreSQL preparation
 
-`postgres/001_orders.sql` is the initial migration for the separate integration database; `002_accounts.sql` adds customer records, sessions, shopping state and order ownership. With `DATABASE_URL` set on Render, staging applies pending migrations at startup. Without the variable, staging uses temporary SQLite and its data is lost on restart. Keep the connection URL in Render's environment settings.
+`postgres/001_orders.sql` is the initial migration for the separate integration database. `002_accounts.sql` adds customer records, sessions, shopping state and order ownership. `003_staff.sql` adds staff roles and the order audit trail. With `DATABASE_URL` set on Render, staging applies pending migrations at startup. Without the variable, staging uses temporary SQLite and its data is lost on restart. Keep the connection URL in Render's environment settings.
 
 To enable Telegram notices on staging, add `LUSAR_TELEGRAM_BOT_TOKEN`, `LUSAR_TELEGRAM_CHAT_ID` (the negative ID of the private staff group), and `LUSAR_MANAGER_ORIGIN` (the HTTPS staging origin) in Render's Environment settings and redeploy. Add the bot to the group with permission to post. Once enabled, staging sends pending notices while the service is running. Each message contains the order number and a link to the protected manager page. Telegram failures are retried and a notice may repeat if Telegram accepts it before the delivery is recorded in the database.
 

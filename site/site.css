@@ -751,3 +751,13 @@ a[data-signed-in] { color: var(--accent); }
  .account-nav button { margin-top: .5rem; }
 }
 @media (max-width: 23rem) { .account-stats { grid-template-columns: 1fr; } }
+
+.staff-panel { max-width: 74rem; overflow-wrap: anywhere; }
+.staff-panel h1 { font-size: clamp(1.9rem, 4vw, 2.75rem); }
+.staff-panel h2 { font-size: 1.35rem; }
+.staff-panel article { margin-block: 1rem; padding: 1rem; border: 1px solid var(--line); }
+.staff-panel form { display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: end; margin-block: .75rem; }
+.staff-panel label { display: grid; gap: .25rem; max-width: 100%; }
+.staff-panel select, .staff-panel input { max-width: 100%; min-width: 0; }
+.staff-panel input[type="number"] { width: 6rem; }
+.staff-panel details { margin-top: .75rem; }

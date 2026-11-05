@@ -16,6 +16,7 @@ from contextlib import closing
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 import order_storage
 import customer_accounts
+import staff
 from threading import Lock
 from loyalty import FIRST_ORDER_PERCENT
 from sync_catalog import revision
@@ -35,12 +36,12 @@ CUSTOMER_SERVICE_LOCK = Lock()
 PAYMENT_METHODS = {"store": "В магазине", "receipt": "По чеку менеджера", "delivery": "При получении"}
 
 
-def status_token(number, status):
-    return hmac.new(MANAGER_FORM_KEY, f"{number}:{status}".encode(), "sha256").hexdigest()
+def status_token(number, status, key=MANAGER_FORM_KEY):
+    return hmac.new(key, f"{number}:{status}".encode(), "sha256").hexdigest()
 
 
-def adjustment_token(number, status, payload):
-    return status_token(number, status + ":" + hashlib.sha256(payload.encode()).hexdigest())
+def adjustment_token(number, status, payload, key=MANAGER_FORM_KEY):
+    return status_token(number, status + ":" + hashlib.sha256(payload.encode()).hexdigest(), key)
 
 
 def apply_adjustment(order, status, action, value, quantity):
@@ -105,6 +106,8 @@ def order_amount(lines, promo, *, account_percent=0, first_order=False):
             "firstOrderDiscount": first_order_discount, "discount": discount, "total": subtotal - discount}
 
 class Handler(SimpleHTTPRequestHandler):
+    local_manager_preview = True
+
     def __init__(self, *args, **kwargs):
         service = getattr(args[2], "catalog_service", None)
         if service:
@@ -148,21 +151,37 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        if self.command != "HEAD":
+            self.wfile.write(body)
 
-    def manager_authorized(self):
-        password = os.environ.get("LUSAR_LOCAL_MANAGER_PASSWORD")
-        if not password:
-            self.send_error(404)
-            return False
+    def manager_actor(self, destination=staff.ORDERS_PATH):
+        service = self.customer_service()
+        if service.config.enabled:
+            try:
+                actor = staff.identity(self)
+            except order_storage.DatabaseError:
+                self.reply(503, {"error": "Панель сотрудников временно недоступна."})
+                return None
+            if actor and actor.role:
+                return actor
+            if self.command == "POST":
+                self.reply(403, {"error": "Войдите в аккаунт с правами сотрудника."})
+            else:
+                staff.sign_in_page(self, destination, actor)
+            return None
+        password = os.environ.get("LUSAR_LOCAL_MANAGER_PASSWORD") if self.local_manager_preview else None
+        if not password or self.client_address[0] not in {"127.0.0.1", "::1"}:
+            staff.sign_in_page(self, destination, None)
+            return None
         expected = b"Basic " + base64.b64encode(f"manager:{password}".encode())
         if not secrets.compare_digest(self.headers.get("Authorization", "").encode(), expected):
             self.send_response(401)
             self.send_header("WWW-Authenticate", 'Basic realm="LUSAR local preview"')
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
-            return False
-        return True
+            return None
+        service.ensure()
+        return staff.Actor(None, "Локальный просмотр", "manager", MANAGER_FORM_KEY)
 
     def redirect_permanently(self, location):
         self.send_response(301)
@@ -223,6 +242,8 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_HEAD() if self.command == "HEAD" else super().do_GET()
 
     def do_HEAD(self):
+        if urlsplit(self.path).path.rstrip('/') in {staff.ORDERS_PATH.rstrip('/'), staff.ACCESS_PATH}:
+            return self.do_GET()
         return self.public_redirect()
 
     def do_GET(self):
@@ -231,14 +252,33 @@ class Handler(SimpleHTTPRequestHandler):
         if urlsplit(self.path).path == "/api/catalog":
             data = self.catalog_data()
             return self.reply(200, {**data, "revision": revision(data)})
-        if self.path != "/manager/orders/":
-            return self.public_redirect()
-        if not self.manager_authorized():
+        path = urlsplit(self.path).path.rstrip('/')
+        if path == staff.ACCESS_PATH:
+            actor = self.manager_actor(staff.ACCESS_PATH)
+            if actor:
+                try:
+                    return staff.access_page(self, actor)
+                except order_storage.DatabaseError:
+                    return self.reply(503, {"error": "Список сотрудников временно недоступен."})
             return
-        rows = []
-        if order_storage.available(DATABASE):
+        if path != staff.ORDERS_PATH.rstrip('/'):
+            return self.public_redirect()
+        actor = self.manager_actor()
+        if not actor:
+            return
+        self.manager_orders(actor)
+
+    def manager_orders(self, actor):
+        try:
             with order_storage.connect(DATABASE) as db:
                 rows = db.execute("SELECT number, status, created, payload FROM orders ORDER BY created DESC").fetchall()
+                events = db.execute("SELECT number, action, detail, actor_email, changed "
+                                    "FROM order_staff_activity ORDER BY id DESC").fetchall()
+        except order_storage.DatabaseError:
+            return self.reply(503, {"error": "Список заказов временно недоступен."})
+        history = {}
+        for number, *event in events:
+            history.setdefault(number, []).append(event)
         cards = []
         for number, status, created, raw in rows:
             order = json.loads(raw)
@@ -257,23 +297,20 @@ class Handler(SimpleHTTPRequestHandler):
             controls = (f'<form method="post" action="/manager/orders/status">'
                         f'<input type="hidden" name="number" value="{html.escape(number, quote=True)}">'
                         f'<input type="hidden" name="current" value="{html.escape(status, quote=True)}">'
-                        f'<input type="hidden" name="token" value="{status_token(number, status)}">'
+                        f'<input type="hidden" name="token" value="{status_token(number, status, actor.form_key)}">'
                         f'<label>Новый статус <select name="target">{options}</select></label>'
                         '<button>Сохранить статус</button></form>') if options else ""
             cards.append(f'<article id="{html.escape(number, quote=True)}"><h2>{html.escape(number)}</h2><p>{html.escape(str(created))} · '
                          f'{html.escape(STATUS_LABELS.get(status, status))}</p>'
                          f'<p>{details}</p><ul>{lines}</ul><p>{summary}</p>{controls}'
-                         f'{self.adjustment_controls(number, status, raw, order)}</article>')
-        content = "".join(cards) or "<p>Заявок пока нет.</p>"
-        body = ('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="robots" content="noindex">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Заказы LUSAR</title>'
-                '<link rel="stylesheet" href="/site.css"><main><h1>Заказы LUSAR</h1>' + content + "</main></html>").encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+                         f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}'
+                         f'{staff.history_markup(history.get(number))}</article>')
+        toolbar = f'<p>{html.escape(actor.email)} · {staff.ROLE_NAMES[actor.role]}</p>'
+        if actor.role == 'admin':
+            toolbar += f'<nav><a href="{staff.ACCESS_PATH}">Доступ сотрудников</a></nav>'
+        if actor.id:
+            toolbar += '<p><a href="/account">Личный кабинет и выход</a></p>'
+        return staff.page(self, 200, "Заказы LUSAR", toolbar + ("".join(cards) or "<p>Заявок пока нет.</p>"))
 
     def do_POST(self):
         if self.customer_service().post(self):
@@ -284,6 +321,14 @@ class Handler(SimpleHTTPRequestHandler):
             return self.adjust_order()
         if self.path == "/manager/orders/status":
             return self.change_order_status()
+        if self.path == staff.ACCESS_PATH:
+            actor = self.manager_actor(staff.ACCESS_PATH)
+            if actor:
+                try:
+                    return staff.update_access(self, actor)
+                except order_storage.DatabaseError:
+                    return self.reply(503, {"error": "Не удалось сохранить доступ."})
+            return
         if self.path != "/api/orders":
             return self.reply(404, {"error": "Страница не найдена."})
         if self.headers.get_content_type() != "application/json":
@@ -435,7 +480,8 @@ class Handler(SimpleHTTPRequestHandler):
         return self.reply(200, {"number": number, "status": STATUS_LABELS.get(row[0], row[0])})
 
     def change_order_status(self):
-        if not self.manager_authorized():
+        actor = self.manager_actor()
+        if not actor or not staff.require_origin(self, actor):
             return
         if self.headers.get_content_type() != "application/x-www-form-urlencoded":
             return self.reply(415, {"error": "Неверный формат формы."})
@@ -447,7 +493,7 @@ class Handler(SimpleHTTPRequestHandler):
             number, current, target, token = (fields[name][0] for name in ("number", "current", "target", "token"))
         except (ValueError, KeyError):
             return self.reply(400, {"error": "Проверьте данные формы."})
-        if not hmac.compare_digest(token.encode(), status_token(number, current).encode()):
+        if not hmac.compare_digest(token.encode(), status_token(number, current, actor.form_key).encode()):
             return self.reply(403, {"error": "Откройте список заказов и повторите действие."})
         if target not in TRANSITIONS.get(current, ()):
             return self.reply(409, {"error": "Этот переход недоступен."})
@@ -455,6 +501,9 @@ class Handler(SimpleHTTPRequestHandler):
             return self.reply(404, {"error": "Заказ не найден."})
         try:
             with order_storage.connect(DATABASE, write=True) as db:
+                db.execute("BEGIN IMMEDIATE")
+                if not staff.write_allowed(self, actor, db):
+                    return
                 result = db.execute("UPDATE orders SET status = ? WHERE number = ? AND status = ? "
                                     "AND (? != 'cancelled' OR json_extract(payload, '$.payment') IS NULL)",
                                     (target, number, current, target))
@@ -465,6 +514,7 @@ class Handler(SimpleHTTPRequestHandler):
                     changed TEXT DEFAULT CURRENT_TIMESTAMP)""")
                 db.execute("INSERT INTO order_status_history (number, previous, current) VALUES (?, ?, ?)",
                            (number, current, target))
+                staff.record(db, number, actor, 'status', f'{STATUS_LABELS[current]} → {STATUS_LABELS[target]}')
         except order_storage.DatabaseError:
             return self.reply(503, {"error": "Не удалось сохранить статус. Повторите попытку."})
         self.send_response(303)
@@ -472,10 +522,10 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
 
-    def adjustment_controls(self, number, status, raw, order):
+    def adjustment_controls(self, number, status, raw, order, key):
         form = (f'<form method="post" action="/manager/orders/adjust">'
                 f'<input type="hidden" name="number" value="{html.escape(number, quote=True)}">'
-                f'<input type="hidden" name="token" value="{adjustment_token(number, status, raw)}">')
+                f'<input type="hidden" name="token" value="{adjustment_token(number, status, raw, key)}">')
         if not order.get("payment"):
             if status not in {"in_progress", "completed"} or order.get("total") is None:
                 return "<p>Оплата не отмечена.</p>"
@@ -508,7 +558,8 @@ class Handler(SimpleHTTPRequestHandler):
                 '<button name="action" value="return">Оформить возврат позиции</button></form>')
 
     def adjust_order(self):
-        if not self.manager_authorized():
+        actor = self.manager_actor()
+        if not actor or not staff.require_origin(self, actor):
             return
         if self.headers.get_content_type() != "application/x-www-form-urlencoded":
             return self.reply(415, {"error": "Неверный формат формы."})
@@ -526,11 +577,13 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             with order_storage.connect(DATABASE, write=True) as db:
                 db.execute("BEGIN IMMEDIATE")
+                if not staff.write_allowed(self, actor, db):
+                    return
                 row = db.execute("SELECT status, payload FROM orders WHERE number = ?", (number,)).fetchone()
                 if not row:
                     return self.reply(404, {"error": "Заказ не найден."})
                 status, raw = row
-                if not hmac.compare_digest(token.encode(), adjustment_token(number, status, raw).encode()):
+                if not hmac.compare_digest(token.encode(), adjustment_token(number, status, raw, actor.form_key).encode()):
                     return self.reply(409, {"error": "Заказ изменился. Обновите список заказов."})
                 order = json.loads(raw)
                 try:
@@ -539,6 +592,15 @@ class Handler(SimpleHTTPRequestHandler):
                     return self.reply(409, {"error": str(error)})
                 db.execute("UPDATE orders SET status = ?, payload = ? WHERE number = ?",
                            (target, json.dumps(order, ensure_ascii=False), number))
+                if action == 'payment':
+                    detail = f'{PAYMENT_METHODS[value]} · {order["payment"]["amount"]} ֏'
+                else:
+                    entry = order['returns'][-1 if action == 'return' else int(value)]
+                    item = next(line for line in order['items'] if line['id'] == entry['id'])
+                    detail = f'{item["name"]} · {entry["quantity"]} шт. · {entry["refundDue"]} ֏'
+                    if target != status:
+                        detail += f' · {STATUS_LABELS[status]} → {STATUS_LABELS[target]}'
+                staff.record(db, number, actor, action, detail)
                 if target != status:
                     db.execute("""CREATE TABLE IF NOT EXISTS order_status_history (
                         number TEXT NOT NULL, previous TEXT NOT NULL, current TEXT NOT NULL,

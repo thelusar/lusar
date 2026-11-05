@@ -13,10 +13,13 @@ import lusar_ai
 import notify_orders
 import serve
 import order_storage
+import staff
 from catalog_runtime import CatalogService, CatalogUnavailable
 
 
 class StagingHandler(serve.Handler):
+    local_manager_preview = False
+
     def end_headers(self):
         self.send_header("X-Robots-Tag", "noindex, nofollow")
         self.send_header("Referrer-Policy", "no-referrer")
@@ -36,7 +39,8 @@ class StagingHandler(serve.Handler):
         if self.path == "/healthz":
             return self.reply(200, {"ok": True, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite",
                                     "catalog": self.server.catalog_service.status(),
-                                    "accounts": {"configured": self.customer_service().config.enabled}})
+                                    "accounts": {"configured": self.customer_service().config.enabled},
+                                    "staff": {"owner_configured": staff.owner_id() is not None}})
         if self.staging_authorized():
             if self.path == "/api/ai":
                 return self.reply(200, {"available": bool(os.environ.get("OPENAI_API_KEY", "").strip())})
@@ -105,7 +109,6 @@ def main():
     password = os.environ.get("LUSAR_STAGING_PASSWORD", "")
     if len(password) < 24:
         raise SystemExit("Set LUSAR_STAGING_PASSWORD to a generated secret of at least 24 characters.")
-    os.environ["LUSAR_LOCAL_MANAGER_PASSWORD"] = password
     StagingHandler.staging_auth = b"Basic " + base64.b64encode(f"manager:{password}".encode())
     try:
         order_storage.initialize()

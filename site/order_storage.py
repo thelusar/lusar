@@ -33,6 +33,7 @@ def initialize(local_path=None):
                 if 'customer_id' not in {row[1] for row in db.execute('PRAGMA table_info(orders)')}:
                     db.execute('ALTER TABLE orders ADD COLUMN customer_id TEXT REFERENCES customers(id)')
                 db.execute('CREATE INDEX IF NOT EXISTS orders_customer_created_idx ON orders(customer_id, created DESC)')
+                db.executescript((Path(__file__).parent / 'sqlite/003_staff.sql').read_text(encoding='utf-8'))
         return
     with psycopg.connect(DATABASE_URL, connect_timeout=5) as db:
         db.execute("SELECT pg_advisory_xact_lock(435312701)")
