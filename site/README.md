@@ -16,6 +16,8 @@ python site/check_checkout.py
 python site/check_catalog.py
 python site/check_cart.py
 python site/check_catalog_sync.py
+python site/check_accounts.py
+python site/check_account_ui.py
 ```
 
 The check uses Edge by default. Pass `--browser` with a Chrome executable path to run it in Chrome. It creates a temporary database and checks the storefront and manager flow at mobile width.
@@ -40,7 +42,13 @@ Every new order checks the public feed again, compares the displayed prices and 
 
 `check_catalog_sync.py` uses an isolated feed and database to verify updates, removal of all published products, malformed exports, failed builds, old-price rejection, saved-order stability and browser refresh without losing contacts. It does not edit the panel or send real customer notifications.
 
-Production requires hosting for the order service, manager authentication, storage and redirects. GitHub Pages can serve the static output only. Telegram delivery, analytics, customer accounts and Lusar AI require production configuration or implementation. Keep credentials and databases out of Git.
+Production requires hosting for the order service, manager authentication, storage and redirects. GitHub Pages can serve the static output only. Telegram delivery, analytics, customer accounts and Lusar AI require production configuration. Keep credentials and databases out of Git.
+
+## Customer accounts
+
+The account pages use server-side customer sessions and Auth0 Universal Login for Google and email registration. Passwords never enter LUSAR. Without provider configuration the pages display an unavailable sign-in notice; guest checkout remains available. See [ACCOUNTS-SETUP.md](ACCOUNTS-SETUP.md) for exact callback URLs, Google connection, mail provider, Render variables, ownership and activation checks. The external provider is not activated by this code change.
+
+`check_accounts.py` verifies signed identity claims, state/PKCE, CSRF, session revocation, customer isolation, first-order reservation, loyalty/returns, address ownership and optimistic shopping-state versions. `check_account_ui.py` exercises actual account pages and checkout in Chrome using a local signed identity provider, an isolated database and synthetic orders, including three widths, three languages and both themes. Neither test verifies delivery through real Google, Auth0 or email.
 
 ## Render staging
 
@@ -48,7 +56,7 @@ In Render, create a Blueprint from `thelusar/lusar` and select `lusar-next`. The
 
 ## PostgreSQL preparation
 
-`postgres/001_orders.sql` is the initial migration for the separate integration database. With `DATABASE_URL` set on Render, staging applies it at startup and stores orders, status history and queued notifications in PostgreSQL. Without the variable, staging uses temporary SQLite and its data is lost on restart. Keep the connection URL in Render's environment settings.
+`postgres/001_orders.sql` is the initial migration for the separate integration database; `002_accounts.sql` adds customer records, sessions, shopping state and order ownership. With `DATABASE_URL` set on Render, staging applies pending migrations at startup. Without the variable, staging uses temporary SQLite and its data is lost on restart. Keep the connection URL in Render's environment settings.
 
 To enable Telegram notices on staging, add `LUSAR_TELEGRAM_BOT_TOKEN`, `LUSAR_TELEGRAM_CHAT_ID` (the negative ID of the private staff group), and `LUSAR_MANAGER_ORIGIN` (the HTTPS staging origin) in Render's Environment settings and redeploy. Add the bot to the group with permission to post. Once enabled, staging sends pending notices while the service is running. Each message contains the order number and a link to the protected manager page. Telegram failures are retried and a notice may repeat if Telegram accepts it before the delivery is recorded in the database.
 

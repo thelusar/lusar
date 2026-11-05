@@ -31,6 +31,7 @@ let cart = readCart();
 function save(next) {
   localStorage.setItem(cartKey, JSON.stringify(next));
   cart = next;
+  document.dispatchEvent(new Event('lusar-shopping-change'));
 }
 
 for (const add of document.querySelectorAll("[data-add]")) {
@@ -181,20 +182,32 @@ function updatePromoTotal() {
   const priced = !unavailable && !unpriced;
   const subtotal = priced ? lines.reduce((sum,[id,count]) => sum + products[id].price * count, 0) : 0;
   const code = promoField.value.trim().toUpperCase();
-  const valid = !code || Object.hasOwn(promotions,code);
-  const nominal = valid && code && priced ? promotions[code] : 0;
-  const discount = nominal === "10%" ? Math.floor(subtotal / 10) : Math.min(nominal,Math.floor(subtotal / 5));
+  const account=window.lusarAccount?.value;
+  const mode=document.querySelector('#discount-mode')?.value||'none';
+  const first=account?.authenticated && mode==='first' && priced;
+  const accountPercent=account?.authenticated && mode==='loyalty' ? account.loyalty.discountPercent : 0;
+  const accountDiscount=priced?Math.floor(subtotal*accountPercent/100):0;
+  const firstDiscount=first?Math.floor(subtotal/10):0;
+  const valid = first || !code || Object.hasOwn(promotions,code);
+  const nominal = valid && code && priced && !first ? promotions[code] : 0;
+  const afterAccount=subtotal-accountDiscount;
+  const discount = nominal === "10%" ? Math.floor(afterAccount / 10) : Math.min(nominal,Math.floor(afterAccount / 5));
+  document.querySelector('#order-account-discount').textContent='−'+formatMoney(accountDiscount);
+  document.querySelector('#order-account-discount-row').hidden=!accountDiscount;
+  document.querySelector('#order-first-discount').textContent='−'+formatMoney(firstDiscount);
+  document.querySelector('#order-first-discount-row').hidden=!firstDiscount;
   document.querySelector("#order-subtotal").textContent = priced ? formatMoney(subtotal) : "—";
-  document.querySelector("#order-total").textContent = priced ? formatMoney(subtotal - discount) : "Цена по запросу";
+  document.querySelector("#order-total").textContent = priced ? formatMoney(subtotal - discount-accountDiscount-firstDiscount) : "Цена по запросу";
   document.querySelector("#order-discount").textContent = "−" + formatMoney(discount);
   document.querySelector("#order-discount-row").hidden = !discount;
   document.querySelector("#cart-summary").textContent = unavailable ? "Уберите недоступные товары, чтобы оформить заявку." : "";
   const promoStatus = document.querySelector("#promo-total");
-  promoStatus.textContent = unpriced ? "Менеджер подтвердит цену и скидку по этой заявке." : !valid ? "Промокод не найден." : code ? "Промокод применён." : "";
-  promoField.disabled = submitting || unpriced || unavailable;
+  promoStatus.textContent = unpriced ? "Менеджер подтвердит цену и скидку по этой заявке." : !valid ? "Промокод не найден." : first ? "Скидка на первый заказ применяется отдельно." : code ? "Промокод применён." : "";
+  promoField.disabled = submitting || unpriced || unavailable || first;
   promoField.setAttribute("aria-invalid", String(priced && !valid));
   promoField.setCustomValidity(priced && !valid ? (window.lusarLocale?.text("Промокод не найден.") || "Промокод не найден.") : "");
-  const submit = document.querySelector("#checkout-submit"); if (submit) submit.disabled = submitting || unavailable || !lines.length;
+  const submit = document.querySelector("#checkout-submit"); if (submit) submit.disabled = submitting || unavailable || !lines.length || !!window.lusarAccount?.value.loading;
+  const modeField=document.querySelector('#discount-mode');if(modeField)modeField.disabled=submitting||unpriced||unavailable;
   return !priced || valid;
 }
 
@@ -217,13 +230,33 @@ if (items) window.lusarCartRefresh = data => {
   return true;
 };
 document.addEventListener("lusar-language-change", () => { if (items) updatePromoTotal(); });
+function accountCheckout(){
+  const data=window.lusarAccount?.value, panel=document.querySelector('#account-checkout-benefits');
+  if(!panel||!checkout)return;
+  panel.hidden=!data?.authenticated;
+  const signIn=document.querySelector('#checkout-sign-in');if(signIn)signIn.hidden=!data?.available||!!data?.authenticated;
+  if(!data?.authenticated){document.querySelector('#discount-mode').value='none';updatePromoTotal();return;}
+  const mode=document.querySelector('#discount-mode'), first=mode.querySelector('[value="first"]');
+  first.disabled=!data.loyalty.firstOrderAvailable;
+  if(!mode.dataset.chosen){mode.value=data.loyalty.firstOrderAvailable&&!promoField.value?'first':'loyalty';mode.dataset.chosen='true';}
+  if(mode.value==='first'&&!data.loyalty.firstOrderAvailable)mode.value='loyalty';
+  document.querySelector('#account-checkout-level').textContent=window.lusarLocale?.text('Ваша скидка')+' · '+data.loyalty.discountPercent+'%';
+  document.querySelector('#checkout-account-mode').textContent='Из личного кабинета';
+  for(const key of ['name','phone','email','address'])if(!checkout.elements[key].value)checkout.elements[key].value=data.profile[key]||'';
+  updatePromoTotal();
+}
+document.querySelector('#discount-mode')?.addEventListener('change',event=>{event.target.dataset.chosen='true';updatePromoTotal();});
+document.addEventListener('lusar-account-change',accountCheckout);
+document.addEventListener('lusar-account-error',event=>{if(items)cartMessage(event.detail);});
+window.lusarAccount?.ready.then(accountCheckout);
 let request;
 checkout?.addEventListener("submit", async event => {
   event.preventDefault();
-  if (submitting || !updatePromoTotal()) return;
+  if (submitting || window.lusarAccount?.value.loading || !updatePromoTotal()) return;
   const status = document.querySelector("#checkout-status");
   const submit = document.querySelector("#checkout-submit");
   const fields = Object.fromEntries(new FormData(checkout));
+  if(!window.lusarAccount?.value.authenticated)fields.discountMode='none';
   fields.name = fields.name.trim(); fields.phone = fields.phone.trim();
   if (!fields.name || !/^[+0-9() .-]+$/.test(fields.phone) || fields.phone.replace(/\D/g, "").length < 7 || fields.phone.replace(/\D/g, "").length > 15) {
     status.textContent = "Проверьте имя и номер телефона."; status.focus(); return;
@@ -233,11 +266,11 @@ checkout?.addEventListener("submit", async event => {
   const signature = JSON.stringify(payload);
   if (request?.signature !== signature) request = {signature, id:crypto.randomUUID()};
   submitting = true; checkout.setAttribute("aria-busy", "true"); status.textContent = "Отправляем заявку…";
-  const controls = [...document.querySelectorAll("#checkout input, #cart-items button, #cart-items input, #order-promo, #checkout-submit")].map(control => [control,control.disabled]);
+  const controls = [...document.querySelectorAll("#checkout input, #cart-items button, #cart-items input, #order-promo, #discount-mode, #checkout-submit")].map(control => [control,control.disabled]);
   for (const [control] of controls) control.disabled = true;
   submit.textContent = "Отправляем заявку…";
   try {
-    const response = await fetch("/api/orders", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({...payload,requestId:request.id})});
+    const response = await fetch("/api/orders", {method:"POST", headers:{"Content-Type":"application/json",...(window.lusarAccount?.value.authenticated?{'X-Lusar-CSRF':window.lusarAccount.value.csrfToken}:{})}, body:JSON.stringify({...payload,requestId:request.id})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Не удалось отправить заявку. Попробуйте ещё раз.");
     if (!/^LS-[A-F0-9]{12}$/.test(result.number)) throw new Error("Не удалось отправить заявку. Попробуйте ещё раз.");

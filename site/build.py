@@ -165,14 +165,16 @@ def write(path, title, body, draft=False, *, description="", image="", structure
                    if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/") or "data-add=" in body
                    else "")
     page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page", "cart": "cart-page", "checkout": "checkout-page", "checkout/received": "receipt-page"}.get(path, "content-page")
+    if 'id="account-member"' in body:
+        page_class = "account-page"
     if path.startswith("catalog/category/"):
         page_class = "catalog-page category-page"
     if path.startswith("catalog/product/"):
         page_class = "product-page"
-    page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received"} or page_class == "product-page" else f"<h1>{html.escape(title)}</h1>"
+    page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received"} or page_class in {"product-page", "account-page"} else f"<h1>{html.escape(title)}</h1>"
     target.write_text(f"""<!doctype html>
 <html lang="ru" data-catalog-revision="{CATALOG_REVISION}"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
-{robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><link rel="stylesheet" href="/site.css"></head>
+{robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><script src="/account-session.js" defer></script><link rel="stylesheet" href="/site.css"></head>
 <body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
 <main id="main" tabindex="-1" class="{page_class}">{page_heading}{body}</main>
 {footer_markup()}
@@ -597,6 +599,15 @@ write("account/loyalty", "Скидки и промокоды",
       "При возврате накопленная сумма пересчитывается.</p>"
       '<table><caption>Уровни программы лояльности</caption><thead><tr><th scope="col">Накоплено</th>'
       f'<th scope="col">Скидка</th></tr></thead><tbody>{loyalty_rows}</tbody></table>', draft=True)
+ACCOUNT_VIEWS = {"account": ("Личный кабинет", "overview"), "account/orders": ("Мои заказы", "orders"),
+                 "account/addresses": ("Адреса", "addresses"), "account/loyalty": ("Мои скидки", "loyalty"),
+                 "account/settings": ("Профиль", "settings"), "account/sign-in": ("Вход в LUSAR", "sign-in"),
+                 "account/register": ("Регистрация", "register"), "account/recovery": ("Восстановление доступа", "recovery")}
+for account_path, (account_title, account_view) in ACCOUNT_VIEWS.items():
+    account_body = (ROOT / "account-page.html").read_text(encoding="utf-8").replace("{{title}}", html.escape(account_title)).replace("{{view}}", account_view)
+    write(account_path, account_title, account_body, draft=True)
+
+
 def order_steps(current):
     return ('<nav class="order-steps" aria-label="Этапы заявки"><ol>' + ''.join(
         f'<li' + (' aria-current="step"' if index == current else '') + '>' +
@@ -612,7 +623,13 @@ def order_summary(checkout=False):
     return ('<aside id="order-summary" class="order-summary" aria-labelledby="order-summary-heading">'
             '<h2 id="order-summary-heading">Ваш заказ</h2><dl class="order-totals">'
             '<div><dt>Товары</dt><dd id="order-subtotal">—</dd></div>'
+            '<div id="order-account-discount-row" hidden><dt>Скидка кабинета</dt><dd id="order-account-discount">—</dd></div>'
+            '<div id="order-first-discount-row" hidden><dt>Скидка на первый заказ</dt><dd id="order-first-discount">—</dd></div>'
             '<div id="order-discount-row" hidden><dt>Скидка по промокоду</dt><dd id="order-discount">—</dd></div></dl>'
+            '<div id="account-checkout-benefits" class="account-checkout-benefits" hidden><label for="discount-mode">Выберите скидку</label>'
+            '<select id="discount-mode" name="discountMode" form="checkout"><option value="none">Только промокод</option>'
+            '<option value="first">10% на первый заказ</option><option value="loyalty">Скидка кабинета и промокод</option></select>'
+            '<p id="account-checkout-level"></p></div>'
             '<details class="order-promo"><summary>Промокод <span aria-hidden="true">＋</span></summary>'
             '<label class="visually-hidden" for="order-promo">Промокод</label>'
             f'<input id="order-promo" name="promo"{promo_form} autocomplete="off" maxlength="32" placeholder="Введите промокод" aria-describedby="promo-total">'
@@ -641,12 +658,13 @@ write("compare", "Сравнение светильников", '<p id="compare-
       '<div id="compare-table" class="comparison-scroll" role="region" aria-label="Таблица сравнения" tabindex="0"></div>'
       '<p>' + link("catalog", "Открыть каталог") + '</p>', draft=True)
 write("checkout", "Оформление заявки", order_steps(2) + """
-<div class="order-page-heading"><h1>Оформление заявки</h1><p>Без регистрации</p></div>
+<div class="order-page-heading"><h1>Оформление заявки</h1><p id="checkout-account-mode">Без регистрации</p></div>
 <div class="order-flow-layout" id="order-flow">
 <section class="checkout-content">
 <form id="checkout" hidden>
   <div class="checkout-form-heading"><span class="eyebrow">01</span><h2>Как с вами связаться</h2></div>
   <p class="checkout-form-note">Укажите имя и телефон. Остальное — по желанию.</p>
+  <a id="checkout-sign-in" href="/auth/start?return=/checkout" hidden>Войти и использовать скидку кабинета</a>
   <div class="checkout-fields">
     <label>Имя <input name="name" autocomplete="name" required maxlength="120" placeholder="Ваше имя"></label>
     <label>Телефон <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="40" placeholder="+374" aria-describedby="phone-help"></label>
@@ -725,6 +743,8 @@ ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xm
 (OUT / "scenes.js").write_bytes((ROOT / "scenes.js").read_bytes())
 (OUT / "site-nav.js").write_bytes((ROOT / "site-nav.js").read_bytes())
 (OUT / "catalog-live.js").write_bytes((ROOT / "catalog-live.js").read_bytes())
+(OUT / "account-session.js").write_bytes((ROOT / "account-session.js").read_bytes())
+(OUT / "account-page.js").write_bytes((ROOT / "account-page.js").read_bytes())
 (OUT / "favicon.svg").write_bytes((ROOT / "favicon.svg").read_bytes())
 (OUT / "order-status.js").write_bytes((ROOT / "order-status.js").read_bytes())
 (OUT / "receipt.js").write_bytes((ROOT / "receipt.js").read_bytes())

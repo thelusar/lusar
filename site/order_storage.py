@@ -1,7 +1,7 @@
 """Database connections for local previews and the PostgreSQL test deployment."""
 import os
 import sqlite3
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from pathlib import Path
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
@@ -25,16 +25,22 @@ class PostgresConnection:
         return cursor
 
 
-def initialize():
+def initialize(local_path=None):
     if not DATABASE_URL:
+        if local_path is not None:
+            with closing(sqlite3.connect(local_path)) as db, db:
+                db.executescript((Path(__file__).parent / 'sqlite/002_accounts.sql').read_text(encoding='utf-8'))
+                if 'customer_id' not in {row[1] for row in db.execute('PRAGMA table_info(orders)')}:
+                    db.execute('ALTER TABLE orders ADD COLUMN customer_id TEXT REFERENCES customers(id)')
+                db.execute('CREATE INDEX IF NOT EXISTS orders_customer_created_idx ON orders(customer_id, created DESC)')
         return
-    migration = Path(__file__).parent / "postgres" / "001_orders.sql"
     with psycopg.connect(DATABASE_URL, connect_timeout=5) as db:
         db.execute("SELECT pg_advisory_xact_lock(435312701)")
         db.execute("CREATE TABLE IF NOT EXISTS lusar_migrations (version text PRIMARY KEY)")
-        if not db.execute("SELECT 1 FROM lusar_migrations WHERE version = %s", (migration.name,)).fetchone():
-            db.execute(migration.read_text(encoding="utf-8"), prepare=False)
-            db.execute("INSERT INTO lusar_migrations (version) VALUES (%s)", (migration.name,))
+        for migration in sorted((Path(__file__).parent / 'postgres').glob('*.sql')):
+            if not db.execute("SELECT 1 FROM lusar_migrations WHERE version = %s", (migration.name,)).fetchone():
+                db.execute(migration.read_text(encoding="utf-8"), prepare=False)
+                db.execute("INSERT INTO lusar_migrations (version) VALUES (%s)", (migration.name,))
         db.execute("SELECT 1 FROM orders LIMIT 1")
 
 

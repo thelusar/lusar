@@ -1,0 +1,6 @@
+.env
+.env.*
+__pycache__/
+site/.local-deps/
+site/*.sqlite
+site/*.sqlite-*

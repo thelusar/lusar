@@ -1,0 +1,57 @@
+<section class="account-intro"><p class="eyebrow">LUSAR</p><h1>{{title}}</h1></section>
+<p id="account-loading" role="status">Загружаем кабинет…</p>
+<section id="account-guest" class="account-guest" hidden>
+  <div><h2>Ваш свет. Ваши привилегии.</h2><p>Заказы, адреса и скидки — в одном месте.</p>
+    <ul><li>История ваших заявок</li><li>Сохранённая корзина и избранное</li><li>Скидки за выполненные заказы</li></ul></div>
+  <div class="account-login-card">
+    <h2>Войти в LUSAR</h2>
+    <p id="account-auth-note" role="status"></p>
+    <a class="button-link account-google" data-auth-link href="/auth/start?connection=google"><span aria-hidden="true">G</span>Продолжить с Google</a>
+    <a class="button-link" data-auth-link href="/auth/start">Войти по email <span aria-hidden="true">↗</span></a>
+    <div class="account-login-links"><a data-auth-link href="/auth/start?screen=signup">Создать аккаунт</a><a href="/account/recovery">Восстановить доступ</a></div>
+    <p id="account-recovery-note" hidden>На странице входа выберите «Не помню пароль» и следуйте инструкции в письме.</p>
+    <a href="/catalog">Продолжить без входа</a>
+  </div>
+</section>
+<div id="account-member" class="account-layout" hidden>
+  <aside class="account-nav"><nav aria-label="Разделы личного кабинета">
+    <a href="/account">Обзор</a><a href="/account/orders">Мои заказы</a><a href="/account/addresses">Адреса</a>
+    <a href="/account/loyalty">Мои скидки</a><a href="/account/settings">Профиль</a><a href="/cart">Корзина</a><a href="/favorites">Избранное</a>
+  </nav><button type="button" data-account-logout class="text-button">Выйти</button></aside>
+  <section id="account-content" data-account-view="{{view}}"></section>
+</div>
+<p id="account-status" class="account-status" role="status" tabindex="-1"></p>
+<template id="account-overview-template">
+  <h2 id="account-greeting"></h2><div id="account-stats" class="account-stats"></div>
+  <div class="section-heading"><h2>Последние заказы</h2><a href="/account/orders">Все заказы →</a></div><div id="account-orders"></div>
+</template>
+<template id="account-orders-template">
+  <div id="account-orders"></div><button id="account-more-orders" type="button" hidden>Показать ещё</button>
+</template>
+<template id="account-addresses-template">
+  <div id="account-addresses" class="account-addresses"></div>
+  <form id="account-address-form" class="account-form">
+    <h2 id="address-form-heading">Добавить адрес</h2><input type="hidden" name="id">
+    <label>Название адреса <input name="label" maxlength="50" placeholder="Например, дом"></label>
+    <label>Адрес <textarea name="address" required maxlength="300" rows="2" autocomplete="street-address"></textarea></label>
+    <div class="account-form-actions"><button class="primary-action" type="submit">Сохранить адрес</button><button type="reset" id="account-address-cancel" hidden>Отменить</button></div>
+  </form>
+</template>
+<template id="account-settings-template">
+  <form id="account-profile-form" class="account-form">
+    <h2>Контактные данные</h2>
+    <label>Имя <input name="name" required maxlength="120" autocomplete="name"></label>
+    <label>Телефон <input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+    <label>Email <input name="email" type="email" readonly autocomplete="email"></label>
+    <button class="primary-action" type="submit">Сохранить изменения</button>
+  </form><p class="account-form-note">Email подтверждается при входе. Для смены пароля откройте восстановление доступа.</p>
+  <a href="/account/recovery">Восстановить доступ</a>
+</template>
+<template id="account-loyalty-template">
+  <div id="loyalty-summary" class="account-stats"></div>
+  <section class="account-loyalty-progress"><p id="loyalty-next"></p><progress id="loyalty-progress" max="1" value="0" aria-label="Прогресс скидки"></progress><p>Накопления бессрочные.</p></section>
+  <section class="account-first-order"><h2>10% на первый заказ</h2><p id="loyalty-first-order"></p></section>
+  <p class="account-form-note">Учитываются выполненные и оплаченные заказы после скидок. При возврате накопления пересчитываются.</p>
+  <a href="/cart">Перейти в корзину →</a>
+</template>
+<script src="/account-page.js" defer></script>

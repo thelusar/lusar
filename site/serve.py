@@ -15,6 +15,8 @@ from pathlib import Path
 from contextlib import closing
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 import order_storage
+import customer_accounts
+from threading import Lock
 from loyalty import FIRST_ORDER_PERCENT
 from sync_catalog import revision
 from catalog_runtime import CatalogUnavailable
@@ -29,6 +31,7 @@ STATUS_LABELS = {"new": "Новая заявка", "in_progress": "В проце
 TRANSITIONS = {"new": ("in_progress", "cancelled"), "in_progress": ("completed", "cancelled"),
                "completed": ("cancelled",), "cancelled": ()}
 MANAGER_FORM_KEY = secrets.token_bytes(32)
+CUSTOMER_SERVICE_LOCK = Lock()
 PAYMENT_METHODS = {"store": "В магазине", "receipt": "По чеку менеджера", "delivery": "При получении"}
 
 
@@ -69,7 +72,7 @@ def apply_adjustment(order, status, action, value, quantity):
     line["quantity"] -= quantity
     remaining = [line for line in remaining if line["quantity"]]
     amount = order_amount(remaining, order.get("promo", ""), account_percent=order.get("accountPercent", 0),
-                          first_order=bool(order.get("firstOrderDiscount")))
+                          first_order=bool(order.get("firstOrderApplied", order.get("firstOrderDiscount"))))
     previous = order.get("remainingAmount", order)
     refund = previous["total"] - amount["total"]
     order.setdefault("returns", []).append({"id": value, "quantity": quantity, "refundDue": refund})
@@ -111,6 +114,18 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             self.catalog_generation = None
             super().__init__(*args, directory=str(ROOT / "dist"), **kwargs)
+
+    def customer_service(self):
+        with CUSTOMER_SERVICE_LOCK:
+            if not hasattr(self.server, "customer_accounts"):
+                self.server.customer_accounts = customer_accounts.Service(DATABASE)
+            return self.server.customer_accounts
+
+    def log_request(self, code='-', size='-'):
+        if urlsplit(getattr(self, 'path', '')).path.startswith('/auth/'):
+            self.log_message('"%s %s" %s %s', self.command, urlsplit(self.path).path, code, size)
+        else:
+            super().log_request(code, size)
 
     def catalog_data(self):
         return self.catalog_generation.data if self.catalog_generation else json.loads(CATALOG.read_text(encoding="utf-8-sig"))
@@ -211,6 +226,8 @@ class Handler(SimpleHTTPRequestHandler):
         return self.public_redirect()
 
     def do_GET(self):
+        if self.customer_service().get(self):
+            return
         if urlsplit(self.path).path == "/api/catalog":
             data = self.catalog_data()
             return self.reply(200, {**data, "revision": revision(data)})
@@ -259,6 +276,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
+        if self.customer_service().post(self):
+            return
         if self.path == "/api/order-status":
             return self.guest_order_status()
         if self.path == "/manager/orders/adjust":
@@ -270,6 +289,14 @@ class Handler(SimpleHTTPRequestHandler):
         if self.headers.get_content_type() != "application/json":
             return self.reply(415, {"error": "Неверный формат заявки."})
         try:
+            account_service = self.customer_service()
+            session = account_service.session(self)
+            if session:
+                account_service.require_write(self, session)
+            elif self.headers.get('X-Lusar-CSRF'):
+                return self.reply(401, {"error": "Войдите в личный кабинет."})
+            elif self.headers.get('Origin') and self.headers.get('Origin') != (account_service.config.origin or 'http://' + self.headers.get('Host', '')):
+                return self.reply(403, {"error": "Откройте оформление заявки на сайте LUSAR."})
             size = int(self.headers.get("Content-Length", "0"))
             if not 0 < size <= 16000:
                 raise ValueError
@@ -277,6 +304,11 @@ class Handler(SimpleHTTPRequestHandler):
             if not isinstance(data, dict):
                 raise ValueError
             request_id = str(uuid.UUID(data["requestId"]))
+            discount_mode = data.get('discountMode', 'none')
+            if discount_mode not in {'none', 'first', 'loyalty'}:
+                raise ValueError
+            if discount_mode != 'none' and not session:
+                return self.reply(401, {"error": "Войдите в личный кабинет, чтобы использовать скидку."})
             promo = data.get("promo", "").strip().upper()
             if len(promo) > 32:
                 raise ValueError
@@ -299,10 +331,22 @@ class Handler(SimpleHTTPRequestHandler):
             if any(price is not None and (type(price) not in (int, float) or not math.isfinite(price) or price < 0)
                    for price in displayed_prices.values()):
                 raise ValueError
+        except customer_accounts.AccountError as error:
+            return self.reply(error.status, {"error": str(error)})
+        except order_storage.DatabaseError:
+            return self.reply(503, {"error": "Личный кабинет временно недоступен. Попробуйте позже."})
         except (AttributeError, ValueError, KeyError, TypeError):
             return self.reply(400, {"error": "Проверьте имя, телефон, email и состав корзины."})
 
-        fingerprint = hashlib.sha256(json.dumps([contact, cart, promo, displayed_prices], sort_keys=True).encode()).hexdigest()
+        identity = session['id'] if session else None
+        fingerprint_parts = [contact, cart, promo, displayed_prices]
+        if identity or discount_mode != 'none':
+            fingerprint_parts += [identity, discount_mode]
+        fingerprint = hashlib.sha256(json.dumps(fingerprint_parts, sort_keys=True).encode()).hexdigest()
+        try:
+            account_service.ensure()
+        except order_storage.DatabaseError:
+            return self.reply(503, {"error": "Не удалось сохранить заявку. Попробуйте позже."})
         catalog_error = None
         try:
             service = getattr(self.server, "catalog_service", None)
@@ -318,10 +362,10 @@ class Handler(SimpleHTTPRequestHandler):
                     number TEXT NOT NULL UNIQUE, payload TEXT NOT NULL,
                     status TEXT NOT NULL DEFAULT 'new', created TEXT DEFAULT CURRENT_TIMESTAMP)""")
                 db.execute("BEGIN IMMEDIATE")
-                existing = db.execute("SELECT number, fingerprint, payload FROM orders WHERE request_id = ?", (request_id,)).fetchone()
+                existing = db.execute("SELECT number, fingerprint, payload, customer_id FROM orders WHERE request_id = ?", (request_id,)).fetchone()
                 if existing:
-                    if existing[1] != fingerprint:
-                        return self.reply(409, {"error": "Заявка уже сохранена с другими данными. Номер: " + existing[0]})
+                    if existing[1] != fingerprint or existing[3] != identity:
+                        return self.reply(409, {"error": "Заявка уже сохранена с другими данными. Обновите страницу."})
                     token = json.loads(existing[2]).get("trackingToken")
                     return self.reply(200, {"number": existing[0], "trackingToken": token})
                 if catalog_error:
@@ -335,14 +379,26 @@ class Handler(SimpleHTTPRequestHandler):
                          for key, quantity in cart.items()]
                 number = "LS-" + secrets.token_hex(6).upper()
                 tracking_token = secrets.token_urlsafe(32)
+                account_percent = 0
+                first_order = False
+                if session:
+                    if not account_service.session(self, db):
+                        return self.reply(401, {"error": "Войдите в личный кабинет."})
+                    benefits = account_service.loyalty(db, identity)
+                    if discount_mode == 'first':
+                        if not benefits['firstOrderAvailable']:
+                            return self.reply(409, {"error": "Скидка на первый заказ сейчас недоступна. Обновите кабинет."})
+                        first_order = True
+                    elif discount_mode == 'loyalty':
+                        account_percent = benefits['discountPercent']
                 try:
-                    amount = order_amount(lines, promo)
+                    amount = order_amount(lines, promo, account_percent=account_percent, first_order=first_order)
                 except ValueError as error:
                     return self.reply(422, {"error": str(error)})
-                db.execute("INSERT INTO orders (request_id, fingerprint, number, payload) VALUES (?, ?, ?, ?)",
+                db.execute("INSERT INTO orders (request_id, fingerprint, number, payload, customer_id) VALUES (?, ?, ?, ?, ?)",
                            (request_id, fingerprint, number, json.dumps(
-                               {"contact": contact, "items": lines, "promo": promo, "trackingToken": tracking_token, **amount},
-                               ensure_ascii=False)))
+                               {"contact": contact, "items": lines, "promo": promo, "trackingToken": tracking_token,
+                                "accountPercent": account_percent, "firstOrderApplied": first_order, **amount}, ensure_ascii=False), identity))
                 db.execute("""CREATE TABLE IF NOT EXISTS order_notifications (
                     number TEXT PRIMARY KEY, sent_at TEXT,
                     attempts INTEGER NOT NULL DEFAULT 0,

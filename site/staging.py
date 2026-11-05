@@ -35,7 +35,8 @@ class StagingHandler(serve.Handler):
     def do_GET(self):
         if self.path == "/healthz":
             return self.reply(200, {"ok": True, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite",
-                                    "catalog": self.server.catalog_service.status()})
+                                    "catalog": self.server.catalog_service.status(),
+                                    "accounts": {"configured": self.customer_service().config.enabled}})
         if self.staging_authorized():
             if self.path == "/api/ai":
                 return self.reply(200, {"available": bool(os.environ.get("OPENAI_API_KEY", "").strip())})

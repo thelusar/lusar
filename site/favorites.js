@@ -19,6 +19,7 @@ if (favoriteButtons.length || favoriteList) {
     else favorites.delete(id);
     try {
       localStorage.setItem(favoriteKey, JSON.stringify([...favorites]));
+      document.dispatchEvent(new Event('lusar-shopping-change'));
     } catch {
       favoriteStatus.textContent = "Не удалось обновить избранное в этом браузере.";
       return;
