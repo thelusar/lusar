@@ -56,10 +56,18 @@ async function guestStatus(params) {
 function startShopping() {
 openPage("/catalog", page => {
   mobileLayout(page);
+  require(page.documentElement.lang === "en", "Language preference did not persist");
+  require(page.documentElement.dataset.theme === "light", "Theme preference did not persist");
+  require(page.querySelector("#product-filter-count").textContent.startsWith("Products:"), "Dynamic catalog counter was not translated");
+  const picker = page.querySelector("#language");
+  picker.value = "ru";
+  picker.dispatchEvent(new frame.contentWindow.Event("change", {bubbles: true}));
+  page.querySelector("#theme-toggle").click();
   require(page.querySelector('main a[href^="/catalog/category/"]'), "Missing categories");
   require(page.querySelector('.product-tiles a[href^="/catalog/product/"]'), "Missing catalog products");
   openPage(PRODUCT, page => {
     mobileLayout(page);
+    require(page.documentElement.lang === "ru" && page.documentElement.dataset.theme !== "light", "Restored preferences did not persist");
     page.querySelector("[data-add]").click();
     require(!page.querySelector("#cart-next").hidden, "Add confirmation missing");
     openPage("/cart", page => {
@@ -115,6 +123,22 @@ openPage("/catalog", page => {
 }
 openPage("/", page => {
   mobileLayout(page);
+  const picker = page.querySelector("#language");
+  const theme = page.querySelector("#theme-toggle");
+  require(picker.getClientRects().length && theme.getClientRects().length, "Language or theme control is hidden");
+  function selectLanguage(value) {
+    picker.value = value;
+    picker.dispatchEvent(new frame.contentWindow.Event("change", {bubbles: true}));
+    require(page.documentElement.lang === value, "Wrong document language");
+    mobileLayout(page);
+  }
+  selectLanguage("hy");
+  require(page.querySelector("#home-title").textContent === "Լույս՝ կյանքի համար", "Armenian home title is missing");
+  require(page.querySelector(".footer-group h2").textContent === "Լույսի ընտրություն", "Armenian footer is missing");
+  selectLanguage("en");
+  require(page.querySelector("#home-title").textContent === "Light for living", "English home title is missing");
+  theme.click();
+  require(page.documentElement.dataset.theme === "light" && theme.getAttribute("aria-label") === "Dark mode", "Light theme did not activate");
   const menuToggle = page.querySelector("#menu-toggle");
   const nav = page.querySelector("#main-nav");
   const visible = element => element.getClientRects().length > 0;
@@ -190,7 +214,7 @@ def main():
             assert status == "cancelled" and history == [("in_progress",), ("completed",), ("cancelled",)]
             assert saved["remainingAmount"]["total"] == 0
             assert saved["returns"][0]["refundDue"] == saved["total"] and saved["returns"][0]["refundPaid"]
-            print("390px mobile layout, light scene, checkout and manager workflow passed.")
+            print("Mobile layout, three interface languages, both themes, saved preferences, light scene, checkout and manager workflow passed.")
         finally:
             page.unlink(missing_ok=True)
 

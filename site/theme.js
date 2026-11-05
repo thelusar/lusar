@@ -9,7 +9,12 @@
     const button = document.querySelector("#theme-toggle");
     if (!button) return;
     function sync() {
-      button.setAttribute("aria-pressed", String(root.dataset.theme === "light"));
+      const light = root.dataset.theme === "light";
+      const source = light ? "Тёмная тема" : "Светлая тема";
+      const label = window.lusarLocale?.text(source) ?? source;
+      button.setAttribute("aria-pressed", String(light));
+      button.setAttribute("aria-label", label);
+      button.title = label;
     }
     button.addEventListener("click", () => {
       const next = root.dataset.theme === "light" ? "dark" : "light";
@@ -18,6 +23,7 @@
       sync();
     });
     sync();
+    document.addEventListener("lusar-language-change", sync);
     button.hidden = false;
   });
 })();

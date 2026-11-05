@@ -1,0 +1,268 @@
+(() => {
+  const translations = {
+    "Каталог": ["Կատալոգ", "Catalog"],
+    "По комнатам": ["Ըստ սենյակի", "By room"],
+    "Контакты": ["Կապ", "Contact"],
+    "Поиск": ["Որոնում", "Search"],
+    "Избранное": ["Նախընտրածներ", "Wishlist"],
+    "Личный кабинет": ["Անձնական էջ", "Account"],
+    "Корзина": ["Զամբյուղ", "Bag"],
+    "Сравнение": ["Համեմատություն", "Compare"],
+    "Меню": ["Մենյու", "Menu"],
+    "Язык сайта": ["Կայքի լեզուն", "Site language"],
+    "Светлая тема": ["Լուսավոր թեմա", "Light mode"],
+    "Тёмная тема": ["Մուգ թեմա", "Dark mode"],
+    "Основная навигация": ["Հիմնական մենյու", "Main navigation"],
+    "Поиск и покупки": ["Որոնում և գնումներ", "Search and shopping"],
+    "К содержанию": ["Անցնել բովանդակությանը", "Skip to content"],
+    "Весь каталог": ["Ամբողջ կատալոգը", "View catalog"],
+    "Все комнаты": ["Բոլոր սենյակները", "All rooms"],
+    "Свет для жизни": ["Լույս՝ կյանքի համար", "Light for living"],
+    "Светильники для дома и проектов.": ["Լուսատուներ տան և նախագծերի համար։", "Lighting for homes and projects."],
+    "Открыть каталог": ["Բացել կատալոգը", "Explore the catalog"],
+    "Примерить с Lusar AI": ["Փորձել Lusar AI-ով", "Try with Lusar AI"],
+    "Выберите свой свет": ["Ընտրեք ձեր լույսը", "Find your light"],
+    "Из каталога": ["Կատալոգից", "From the catalog"],
+    "Все светильники": ["Բոլոր լուսատուները", "All lighting"],
+    "Свет по комнатам": ["Լույս՝ ըստ սենյակի", "Lighting by room"],
+    "Сценарий освещения": ["Լուսավորության սցենար", "Lighting scene"],
+    "День": ["Ցերեկ", "Day"],
+    "Тёплый": ["Ջերմ", "Warm"],
+    "Вечер": ["Երեկո", "Evening"],
+    "Тёплый свет над столом": ["Ջերմ լույս սեղանի վերևում", "Warm light above the table"],
+    "Дневной свет из окна": ["Ցերեկային լույս պատուհանից", "Daylight from the window"],
+    "Мягкий свет в полутени": ["Մեղմ լույս կիսաստվերում", "Soft light in the evening"],
+    "Выбор света": ["Լույսի ընտրություն", "Explore"],
+    "Покупателям": ["Գնորդներին", "Customer care"],
+    "О LUSAR": ["LUSAR-ի մասին", "About LUSAR"],
+    "Бренды": ["Ապրանքանիշեր", "Brands"],
+    "Статьи": ["Հոդվածներ", "Journal"],
+    "Акции": ["Առաջարկներ", "Offers"],
+    "Доставка": ["Առաքում", "Delivery"],
+    "Оплата": ["Վճարում", "Payment"],
+    "Гарантия и возврат": ["Երաշխիք և վերադարձ", "Warranty and returns"],
+    "Частые вопросы": ["Հաճախ տրվող հարցեր", "FAQ"],
+    "Поддержка": ["Աջակցություն", "Support"],
+    "О нас": ["Մեր մասին", "About us"],
+    "Наши партнёры": ["Մեր գործընկերները", "Our partners"],
+    "Новости": ["Նորություններ", "News"],
+    "Правовая информация": ["Իրավական տեղեկություն", "Legal information"],
+    "Карта сайта": ["Կայքի քարտեզ", "Sitemap"],
+    "Настройки cookie": ["Cookie-ի կարգավորումներ", "Cookie settings"],
+    "Только необходимые": ["Միայն անհրաժեշտները", "Essential only"],
+    "Разрешить статистику": ["Թույլատրել վիճակագրությունը", "Allow analytics"],
+    "Подробнее о cookie": ["Ավելին cookie-ի մասին", "About cookies"],
+    "Браузер хранит настройки сайта и корзину. Сбор статистики можно разрешить или отключить отдельно.": [
+      "Դիտարկիչը պահում է կայքի կարգավորումներն ու զամբյուղը։ Վիճակագրության հավաքումը կարող եք թույլատրել կամ անջատել առանձին։",
+      "Your browser stores site preferences and your bag. You can allow or disable analytics separately."
+    ],
+    "Люстры": ["Ջահեր", "Chandeliers"],
+    "Подвесы": ["Կախովի լուսատուներ", "Pendants"],
+    "Подвесные светильники": ["Կախովի լուսատուներ", "Pendant lights"],
+    "Бра": ["Պատի լուսատուներ", "Wall lights"],
+    "Прожекторы": ["Լուսարձակներ", "Floodlights"],
+    "Уличный свет": ["Արտաքին լուսավորություն", "Outdoor lighting"],
+    "Уличное освещение": ["Արտաքին լուսավորություն", "Outdoor lighting"],
+    "Гостиная": ["Հյուրասենյակ", "Living room"],
+    "Спальня": ["Ննջասենյակ", "Bedroom"],
+    "Кухня и столовая": ["Խոհանոց և ճաշասենյակ", "Kitchen and dining"],
+    "Рабочая зона": ["Աշխատանքային գոտի", "Workspace"],
+    "Улица и терраса": ["Բակ և տեռասա", "Outdoors and terrace"],
+    "Каталог освещения": ["Լուսավորության կատալոգ", "Lighting catalog"],
+    "К товарам": ["Դիտել ապրանքները", "View products"],
+    "Все категории": ["Բոլոր բաժինները", "All categories"],
+    "Подкатегории": ["Ենթաբաժիններ", "Subcategories"],
+    "Цена до, ֏": ["Առավելագույն գին, ֏", "Maximum price, ֏"],
+    "Сортировка": ["Տեսակավորում", "Sort by"],
+    "Как в каталоге": ["Ըստ կատալոգի", "Featured"],
+    "Сначала дешевле": ["Սկզբում՝ մատչելիները", "Price low to high"],
+    "Сначала дороже": ["Սկզբում՝ թանկերը", "Price high to low"],
+    "Сбросить": ["Մաքրել", "Reset"],
+    "По выбранной цене товаров нет.": ["Այս գնով ապրանքներ չկան։", "No products at this price."],
+    "Цена по запросу": ["Գինը՝ հարցմամբ", "Price on request"],
+    "Наличие уточнит менеджер.": ["Առկայությունը կճշտի մենեջերը։", "Your manager will confirm availability."],
+    "Добавить в корзину": ["Ավելացնել զամբյուղում", "Add to bag"],
+    "Добавить в избранное": ["Ավելացնել նախընտրածներում", "Add to wishlist"],
+    "Добавить к сравнению": ["Ավելացնել համեմատությանը", "Add to comparison"],
+    "Открыть корзину": ["Բացել զամբյուղը", "View bag"],
+    "Продолжить покупки": ["Շարունակել գնումները", "Continue shopping"],
+    "Оформить заявку": ["Ուղարկել հայտ", "Request an order"],
+    "Оформление заявки": ["Պատվերի հայտ", "Order request"],
+    "Отправить заявку": ["Ուղարկել հայտը", "Send request"],
+    "Количество": ["Քանակ", "Quantity"],
+    "Удалить": ["Հեռացնել", "Remove"],
+    "Корзина пока пуста.": ["Զամբյուղը դեռ դատարկ է։", "Your bag is empty."],
+    "Итоговую сумму подтвердит менеджер.": ["Վերջնական գումարը կհաստատի մենեջերը։", "Your manager will confirm the total."],
+    "Имя": ["Անուն", "Name"],
+    "Телефон": ["Հեռախոս", "Phone"],
+    "Email (необязательно)": ["Էլ. փոստ (ոչ պարտադիր)", "Email (optional)"],
+    "Адрес (необязательно)": ["Հասցե (ոչ պարտադիր)", "Address (optional)"],
+    "Промокод": ["Պրոմոկոդ", "Promo code"],
+    "Промокод не найден.": ["Պրոմոկոդը չի գտնվել։", "Promo code not found."],
+    "Менеджер уточнит наличие, итоговую сумму и способ оплаты.": [
+      "Մենեջերը կճշտի առկայությունը, վերջնական գումարը և վճարման եղանակը։",
+      "Your manager will confirm availability, the total and payment method."
+    ],
+    "Страница в разработке": ["Էջը մշակման փուլում է", "Page in development"],
+    "Страница в разработке.": ["Էջը մշակման փուլում է։", "Page in development."],
+    "Страница не найдена": ["Էջը չի գտնվել", "Page not found"],
+    "Вернуться в каталог": ["Վերադառնալ կատալոգ", "Back to catalog"],
+    "Закрыть": ["Փակել", "Close"],
+    "10% на первый заказ": ["10% առաջին պատվերի համար", "10% off your first order"],
+    "Посмотреть условия": ["Դիտել պայմանները", "View terms"],
+    "Зарегистрируйтесь и получите скидку на первую покупку.": [
+      "Գրանցվեք և ստացեք զեղչ առաջին գնումի համար։", "Register for a discount on your first purchase."
+    ],
+    "Поиск по каталогу": ["Որոնում կատալոգում", "Search the catalog"],
+    "Название, артикул или характеристика": ["Անվանում, արտիկուլ կամ բնութագիր", "Name, SKU or specification"],
+    "Найти": ["Գտնել", "Search"],
+    "Фото комнаты": ["Սենյակի լուսանկար", "Room photo"],
+    "Пожелания": ["Ցանկություններ", "Your preferences"],
+    "Подобрать и примерить свет": ["Ընտրել և փորձել լուսավորություն", "Find and visualize lighting"],
+    "Например: тёплый свет над столом": ["Օրինակ՝ ջերմ լույս սեղանի վերևում", "For example, warm light above the table"],
+    "Согласен на отправку фото и пожеланий в OpenAI для обработки.": [
+      "Համաձայն եմ լուսանկարն ու ցանկություններն ուղարկել OpenAI՝ մշակման համար։",
+      "I consent to sending my photo and preferences to OpenAI for processing."
+    ],
+    "Подобрать свет по комнате": ["Ընտրել լուսավորություն՝ ըստ սենյակի", "Choose lighting by room"],
+    "Все помещения": ["Բոլոր սենյակները", "All rooms"],
+    "Что посмотреть в каталоге": ["Ինչ դիտել կատալոգում", "Explore in the catalog"],
+    "Все бренды": ["Բոլոր ապրանքանիշերը", "All brands"],
+    "Товары бренда": ["Ապրանքանիշի ապրանքները", "Brand products"],
+    "Главная": ["Գլխավոր", "Home"],
+    "Магазины": ["Խանութներ", "Stores"],
+    "Скидки и промокоды": ["Զեղչեր և պրոմոկոդեր", "Discounts and promo codes"],
+    "Бренд:": ["Ապրանքանիշ՝", "Brand:"],
+    "Подтверждение заявки": ["Հայտի հաստատում", "Request confirmation"],
+    "Проверить статус заявки": ["Ստուգել հայտի կարգավիճակը", "Check request status"],
+    "Статус заявки": ["Հայտի կարգավիճակ", "Request status"],
+    "Менеджер свяжется с вами, чтобы подтвердить наличие, итоговую сумму и способ получения.": [
+      "Մենեջերը կկապվի ձեզ հետ՝ հաստատելու առկայությունը, վերջնական գումարը և ստացման եղանակը։",
+      "Your manager will contact you to confirm availability, the total and delivery or collection."
+    ],
+    "Сохранить ссылку на статус заявки": ["Պահպանել հայտի կարգավիճակի հղումը", "Save the request tracking link"],
+    "Убрать из избранного": ["Հեռացնել նախընտրածներից", "Remove from wishlist"],
+    "В избранном пока нет товаров.": ["Նախընտրածների ցանկը դեռ դատարկ է։", "Your wishlist is empty."],
+    "Товар добавлен в избранное.": ["Ապրանքն ավելացվել է նախընտրածներում։", "Added to your wishlist."],
+    "Товар удалён из избранного.": ["Ապրանքը հեռացվել է նախընտրածներից։", "Removed from your wishlist."],
+    "Товар сейчас недоступен.": ["Ապրանքն այժմ հասանելի չէ։", "This product is currently unavailable."],
+    "Сейчас статистика разрешена.": ["Վիճակագրության հավաքումը թույլատրված է։", "Analytics are currently allowed."],
+    "Сейчас выбраны только необходимые настройки.": ["Ընտրված են միայն անհրաժեշտ կարգավորումները։", "Only essential settings are enabled."],
+    "Выбор действует на этой странице. Браузер не сохранил настройки.": [
+      "Ընտրությունը գործում է այս էջում։ Դիտարկիչը չի պահպանել կարգավորումները։",
+      "Your choice applies to this page. The browser could not save your preferences."
+    ],
+    "Высота": ["Բարձրություն", "Height"],
+    "Глубина": ["Խորություն", "Depth"],
+    "Длина подвеса": ["Կախոցի երկարություն", "Suspension length"],
+    "Защита IP": ["IP պաշտպանություն", "IP rating"],
+    "Индекс цветопередачи CRI / Ra": ["Գունարտադրման ինդեքս CRI / Ra", "Color rendering index CRI / Ra"],
+    "Источник света": ["Լույսի աղբյուր", "Light source"],
+    "Количество ламп": ["Լամպերի քանակ", "Number of lamps"],
+    "Материал": ["Նյութ", "Material"],
+    "Мощность": ["Հզորություն", "Power"],
+    "Напряжение питания": ["Սնուցման լարում", "Supply voltage"],
+    "Регулируемый подвес": ["Կարգավորվող կախոց", "Adjustable suspension"],
+    "Световой поток": ["Լուսային հոսք", "Luminous flux"],
+    "Угол рассеивания": ["Լույսի տարածման անկյուն", "Beam angle"],
+    "Цвет корпуса": ["Կորպուսի գույն", "Finish"],
+    "Цвет свечения": ["Լույսի գույն", "Light color"],
+    "Цветовая температура": ["Գունային ջերմաստիճան", "Color temperature"],
+    "Цоколь": ["Լամպակոթ", "Lamp base"],
+    "Ширина": ["Լայնություն", "Width"]
+  };
+  const labels = {ru: "RU", hy: "Հայ", en: "EN"};
+  let language = "ru";
+  try {
+    const saved = localStorage.getItem("lusar-language");
+    if (Object.hasOwn(labels, saved)) language = saved;
+  } catch {}
+
+  function text(source) {
+    const trimmed = source.trim();
+    const arrow = trimmed.match(/^(.*?)\s*([→↗])$/u);
+    const base = arrow ? arrow[1] : trimmed;
+    let translated = language === "ru" ? base : translations[base]?.[language === "hy" ? 0 : 1];
+    if (translated === undefined) {
+      const count = trimmed.match(/^Товаров: (\d+)$/u);
+      if (count) translated = language === "hy" ? "Ապրանքներ՝ " + count[1] : language === "en" ? "Products: " + count[1] : trimmed;
+    }
+    if (translated === undefined && language !== "ru") {
+      const sku = trimmed.match(/^Артикул (.+)$/u);
+      const receipt = trimmed.match(/^Заявка №(LS-[A-F0-9]{12}) получена\.$/u);
+      const quantity = trimmed.match(/^Товар в корзине\. Количество: (\d+)\.$/u);
+      const hours = trimmed.match(/^Часы связи с менеджером: (.+)\.$/u);
+      if (sku) translated = (language === "hy" ? "Արտիկուլ " : "SKU ") + sku[1];
+      if (receipt) translated = language === "hy" ? "Հայտը №" + receipt[1] + " ստացվել է։" : "Request #" + receipt[1] + " received.";
+      if (quantity) translated = language === "hy" ? "Ավելացվել է զամբյուղում։ Քանակ՝ " + quantity[1] + "։" : "Added to bag. Quantity: " + quantity[1] + ".";
+      if (hours) translated = (language === "hy" ? "Կապի ժամերը՝ " : "Contact hours: ") + hours[1] + ".";
+    }
+    if (translated === undefined) return source;
+    const result = translated + (arrow ? " " + arrow[2] : "");
+    return source.replace(trimmed, result);
+  }
+
+  const nodes = new WeakMap();
+  const attributes = new WeakMap();
+  const excluded = "script, style, noscript, textarea, .language-control, [data-locale-source]";
+
+  function translateNode(node) {
+    if (!node.parentElement || node.parentElement.closest(excluded)) return;
+    const previous = nodes.get(node);
+    const source = previous?.rendered === node.data ? previous.source : node.data;
+    const rendered = text(source);
+    nodes.set(node, {source, rendered});
+    if (node.data !== rendered) node.data = rendered;
+  }
+
+  function translateElement(element) {
+    if (element.closest(excluded)) return;
+    let original = attributes.get(element);
+    if (!original) {
+      original = {};
+      for (const name of ["aria-label", "title", "placeholder"]) {
+        if (element.hasAttribute(name)) original[name] = element.getAttribute(name);
+      }
+      attributes.set(element, original);
+    }
+    for (const [name, source] of Object.entries(original)) element.setAttribute(name, text(source));
+  }
+
+  function translateTree(root) {
+    if (root.nodeType === Node.TEXT_NODE) {
+      translateNode(root);
+      return;
+    }
+    if (root.nodeType !== Node.ELEMENT_NODE) return;
+    translateElement(root);
+    for (const element of root.querySelectorAll("[aria-label], [title], [placeholder]")) translateElement(element);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) translateNode(walker.currentNode);
+  }
+
+  const originalTitle = document.title;
+  const picker = document.querySelector("#language");
+  function apply() {
+    document.documentElement.lang = language;
+    picker.value = language;
+    document.querySelector("#language-display").textContent = labels[language];
+    translateTree(document.body);
+    document.title = text(originalTitle.replace(/ — LUSAR$/u, "")) + " — LUSAR";
+    document.dispatchEvent(new Event("lusar-language-change"));
+  }
+
+  window.lusarLocale = {text};
+  picker.addEventListener("change", () => {
+    language = picker.value;
+    try { localStorage.setItem("lusar-language", language); } catch {}
+    apply();
+  });
+  apply();
+  picker.parentElement.hidden = false;
+  new MutationObserver(changes => {
+    for (const change of changes) {
+      if (change.type === "characterData") translateNode(change.target);
+      else for (const node of change.addedNodes) translateTree(node);
+    }
+  }).observe(document.body, {subtree: true, childList: true, characterData: true});
+})();

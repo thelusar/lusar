@@ -65,6 +65,7 @@ NAV_ICONS = {
     "cart": '<path d="M5 8h14l1 13H4Zm4 1V6a3 3 0 0 1 6 0v3"/>',
     "account": '<circle cx="12" cy="8" r="3.2"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/>',
     "theme": '<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
+    "moon": '<path d="M20.4 15.1A8.9 8.9 0 0 1 8.9 3.6a8.9 8.9 0 1 0 11.5 11.5Z"/>',
     "menu": '<path d="M4 7h16M4 12h16M4 17h16"/>',
 }
 
@@ -84,6 +85,13 @@ def nav_dropdown(title, items, path, overview):
             f'</ul><p>{link(path, overview)}</p></div></details>')
 
 
+def wordmark():
+    return ('<a class="wordmark" href="/" aria-label="LUSAR — главная">'
+            '<svg viewBox="0 0 32 32" width="27" height="27" fill="none" stroke="currentColor" '
+            'stroke-width=".9" aria-hidden="true"><path d="M16 1v30M1 16h30M5.4 5.4l21.2 21.2M5.4 26.6L26.6 5.4"/>'
+            '<circle cx="16" cy="16" r="4"/></svg><span>LUSAR</span></a>')
+
+
 def header_markup():
     shortcuts = (("search", "Поиск"), ("favorites", "Избранное"),
                  ("account", "Личный кабинет"), ("cart", "Корзина"))
@@ -94,20 +102,35 @@ def header_markup():
     catalog_links.append(("compare", "Сравнение"))
     room_links = [("rooms/" + key, name) for key, (name, *_) in ROOMS.items()]
     return ('<header class="site-header"><div class="header-inner">'
-            '<a class="wordmark" href="/" aria-label="LUSAR — главная">'
-            '<svg viewBox="0 0 32 32" width="27" height="27" fill="none" stroke="currentColor" '
-            'stroke-width=".9" aria-hidden="true"><path d="M16 1v30M1 16h30M5.4 5.4l21.2 21.2M5.4 26.6L26.6 5.4"/>'
-            '<circle cx="16" cy="16" r="4"/></svg><span>LUSAR</span></a>'
+            + wordmark() +
             '<nav class="main-nav" id="main-nav" aria-label="Основная навигация">' +
             nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог →") +
             nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты →") + link("ai", "Lusar AI") +
-            '<a class="mobile-favorites" href="/favorites">Избранное</a>' +
+            link("contacts", "Контакты") +
+            '<a class="mobile-shortcut" href="/favorites">' + nav_icon("favorites") + '<span>Избранное</span></a>' +
+            '<a class="mobile-shortcut" href="/account">' + nav_icon("account") + '<span>Личный кабинет</span></a>' +
             '</nav><nav class="header-tools" aria-label="Поиск и покупки">' + tools +
-            '<button class="icon-link" id="theme-toggle" type="button" aria-label="Светлая тема" title="Светлая тема" '
-            'aria-pressed="false" hidden>' + nav_icon("theme") + '</button>'
+            '<div class="language-control" hidden><span id="language-display" aria-hidden="true">RU</span>'
+            '<select id="language" aria-label="Язык сайта">'
+            '<option value="ru" lang="ru">Русский</option><option value="hy" lang="hy">Հայերեն</option>'
+            '<option value="en" lang="en">English</option></select></div>'
+            '<button class="icon-link" id="theme-toggle" type="button" aria-label="Светлая тема" '
+            'aria-pressed="false" hidden><span class="theme-sun">' + nav_icon("theme") +
+            '</span><span class="theme-moon">' + nav_icon("moon") + '</span></button>'
             '<button class="icon-link menu-toggle" id="menu-toggle" type="button" aria-label="Меню" '
             'aria-controls="main-nav" aria-expanded="false" hidden>' + nav_icon("menu") +
             '</button></nav></div></header><script src="/site-nav.js" defer></script>')
+
+
+def footer_markup():
+    groups = "".join(f'<section class="footer-group"><h2>{title}</h2><ul>' +
+                     "".join(f"<li>{link(path, label)}</li>" for path, label in items) +
+                     "</ul></section>" for title, items in FOOTER_GROUPS)
+    return ('<footer class="site-footer"><div class="footer-main"><div class="footer-brand">' +
+            wordmark() + '<p>Светильники для дома и проектов.</p></div>' + groups +
+            '</div><div class="footer-bottom"><span>© LUSAR</span>' +
+            "".join(link(path, label) for path, label in FOOTER_LEGAL) +
+            '<button type="button" id="cookie-settings" hidden>Настройки cookie</button></div></footer>')
 
 
 def write(path, title, body, draft=False, *, description="", image="", structured_data=None):
@@ -137,11 +160,10 @@ def write(path, title, body, draft=False, *, description="", image="", structure
             analytics = ' data-analytics-enabled="true"' + attrs
     target.write_text(f"""<!doctype html>
 <html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
-{robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><link rel="stylesheet" href="/site.css"></head>
+{robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><link rel="stylesheet" href="/site.css"></head>
 <body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
 <main id="main" tabindex="-1"{' class="home"' if not path else ' class="catalog-page"' if path == "catalog" else ''}>{f"<h1>{html.escape(title)}</h1>" if path and path != "catalog" else ""}{body}</main>
-<footer>{' '.join(link(path + "/", name) for path, name in FOOTER)}
-<button type="button" id="cookie-settings" hidden>Настройки cookie</button></footer>
+{footer_markup()}
 <section id="cookie-panel" class="cookie-panel" aria-labelledby="cookie-heading" hidden>
   <h2 id="cookie-heading" tabindex="-1">Настройки cookie</h2>
   <p>Браузер хранит настройки сайта и корзину. Сбор статистики можно разрешить или отключить отдельно.</p>
@@ -153,13 +175,15 @@ def write(path, title, body, draft=False, *, description="", image="", structure
 {'<dialog id="first-order-promo" aria-labelledby="promo-heading"><h2 id="promo-heading">10% на первый заказ</h2><p>Зарегистрируйтесь и получите скидку на первую покупку.</p><p>' + link("offers/", "Посмотреть условия") + '</p><form method="dialog"><button>Закрыть</button></form></dialog>' if path.rstrip("/") == "catalog" or path.startswith("catalog/product/") else ""}
 <script src="/analytics.js" defer></script><script src="/cart.js" defer></script><script src="/cookie-settings.js" defer></script></body></html>""", encoding="utf-8")
 
-FOOTER = [
-    ("contacts", "Контакты"), ("about", "О нас"), ("brands", "Бренды"),
-    ("partners", "Наши партнёры"), ("journal", "Статьи"), ("news", "Новости"),
-    ("offers", "Акции"), ("delivery", "Доставка"), ("payment", "Оплата"),
-    ("returns", "Гарантия и возврат"), ("faq", "FAQ"), ("support", "Поддержка"),
-    ("legal", "Правовая информация"), ("sitemap", "Карта сайта"),
-]
+FOOTER_GROUPS = (
+    ("Выбор света", (("catalog", "Каталог"), ("rooms", "По комнатам"), ("brands", "Бренды"),
+                     ("journal", "Статьи"), ("offers", "Акции"))),
+    ("Покупателям", (("delivery", "Доставка"), ("payment", "Оплата"), ("returns", "Гарантия и возврат"),
+                     ("faq", "Частые вопросы"), ("support", "Поддержка"))),
+    ("О LUSAR", (("about", "О нас"), ("contacts", "Контакты"), ("partners", "Наши партнёры"), ("news", "Новости"))),
+)
+FOOTER_LEGAL = (("legal", "Правовая информация"), ("sitemap", "Карта сайта"))
+FOOTER = [item for _, items in FOOTER_GROUPS for item in items if item[0] not in {"catalog", "rooms"}] + list(FOOTER_LEGAL)
 EXTRA = [
     ("rooms", "Подобрать по комнате"), ("ai", "Lusar AI"), ("favorites", "Избранное"),
     ("cart", "Корзина"), ("checkout", "Оформление заявки"), ("checkout/received", "Подтверждение заявки"),
@@ -217,7 +241,7 @@ def product_grid(items, *, filters=True):
             photo = f'<img loading="lazy" decoding="async" src="{url}" alt="">'
         cards.append(
             f'<li data-price="{item["price"] if item["price"] is not None else ""}"><a href="/{product_path(item).strip("/")}">{photo}'
-            f'<span class="tile-name">{html.escape(item["name"])}</span>'
+            f'<span class="tile-name" data-locale-source>{html.escape(item["name"])}</span>'
             f'<span class="tile-sku">{html.escape(item["sku"])}</span>'
             f'<span class="tile-price">{html.escape(display_price(item))}</span></a></li>'
         )
@@ -358,7 +382,7 @@ for item in data["products"]:
           f'<p>{link("catalog", "Каталог")} · {link(category_path(item["categoryId"]), categories[item["categoryId"]]["name"])}</p>'
           f'<p>Артикул {html.escape(item["sku"])}</p>{brand_link}<p class="lead">{price}</p>'
           '<p>Наличие уточнит менеджер.</p>'
-          f'{photos}<p>{html.escape(item["description"])}</p>'
+          f'{photos}<p data-locale-source>{html.escape(item["description"])}</p>'
           f'<dl>{specs}</dl><button type="button" data-add="{html.escape(item["id"], quote=True)}">Добавить в корзину</button>'
           f' <button type="button" data-favorite="{html.escape(item["id"], quote=True)}" aria-pressed="false">В избранное</button>'
           '<p id="favorite-status" role="status"></p>'
@@ -430,7 +454,7 @@ write("support", "Поддержка и сервис", f"""
 """ + '<p>' + link("contacts", "Телефон и адрес") + ' · ' + link("order-status", "Проверить статус заявки") + ' · ' + link("faq", "Частые вопросы") + '</p>', draft=True)
 write("legal/cookies", "Политика cookie", """
 <p>Страница в разработке.</p>
-<p>В текущей сборке настройки темы, корзина и избранное сохраняются в браузере.
+<p>В текущей сборке настройки темы и языка, корзина и избранное сохраняются в браузере.
 Выбор статистики можно изменить через «Настройки cookie» в подвале.</p>
 """, draft=True)
 write("ai", "Lusar AI", """
@@ -556,6 +580,7 @@ ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xm
 (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {PUBLIC_ORIGIN}/sitemap.xml\n", encoding="utf-8")
 (OUT / "site.css").write_bytes((ROOT / "site.css").read_bytes())
 (OUT / "theme.js").write_bytes((ROOT / "theme.js").read_bytes())
+(OUT / "locale.js").write_bytes((ROOT / "locale.js").read_bytes())
 (OUT / "cookie-settings.js").write_bytes((ROOT / "cookie-settings.js").read_bytes())
 (OUT / "analytics.js").write_bytes((ROOT / "analytics.js").read_bytes())
 (OUT / "scenes.js").write_bytes((ROOT / "scenes.js").read_bytes())

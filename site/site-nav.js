@@ -2,7 +2,7 @@
   const header = document.querySelector(".site-header");
   const nav = header.querySelector(".main-nav");
   const menuToggle = header.querySelector("#menu-toggle");
-  const narrow = matchMedia("(max-width: 48rem)");
+  const narrow = matchMedia("(max-width: 58rem)");
   const dropdowns = [...nav.querySelectorAll(".nav-dropdown")];
 
   function setMenu(open) {
