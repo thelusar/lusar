@@ -135,14 +135,20 @@ function checkUnavailableCart() {
 }
 async function checkMenuResize(page) {
   const originalWidth = frame.width;
-  const settleResize = () => new Promise(resolve => setTimeout(resolve, 100));
+  const settleResize = async condition => {
+    const deadline = Date.now() + 1500;
+    while (!condition() && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+  };
   try {
     frame.width = "1100";
-    await settleResize();
+    await settleResize(() => frame.contentWindow.innerWidth === 1100);
     page.querySelector(".nav-dropdown summary").focus();
     frame.width = originalWidth;
-    await settleResize();
-    require(page.activeElement === page.querySelector("#menu-toggle"), "Focus remained inside the hidden mobile menu");
+    await settleResize(() => page.activeElement === page.querySelector("#menu-toggle"));
+    require(page.activeElement === page.querySelector("#menu-toggle"),
+      "Menu focus after resize: " + page.activeElement.tagName + "/" + page.activeElement.id + ", width " + page.documentElement.clientWidth);
     checkUnavailableCart();
   } catch (error) {
     output.textContent = "FAIL: " + error.message;

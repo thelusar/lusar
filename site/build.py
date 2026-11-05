@@ -67,6 +67,8 @@ NAV_ICONS = {
     "theme": '<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
     "moon": '<path d="M20.4 15.1A8.9 8.9 0 0 1 8.9 3.6a8.9 8.9 0 1 0 11.5 11.5Z"/>',
     "menu": '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    "spark": '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/>',
+    "upload": '<path d="M12 16V4m-4 4 4-4 4 4M4 15v5h16v-5"/>',
 }
 
 
@@ -161,11 +163,15 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     cart_script = ('<script src="/cart.js" defer></script>'
                    if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/")
                    else "")
+    page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page"}.get(path, "content-page")
+    if path.startswith("catalog/product/"):
+        page_class = "product-page"
+    page_heading = "" if path in {"", "catalog", "ai"} or page_class == "product-page" else f"<h1>{html.escape(title)}</h1>"
     target.write_text(f"""<!doctype html>
 <html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><link rel="stylesheet" href="/site.css"></head>
 <body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
-<main id="main" tabindex="-1"{' class="home"' if not path else ' class="catalog-page"' if path == "catalog" else ''}>{f"<h1>{html.escape(title)}</h1>" if path and path != "catalog" else ""}{body}</main>
+<main id="main" tabindex="-1" class="{page_class}">{page_heading}{body}</main>
 {footer_markup()}
 <section id="cookie-panel" class="cookie-panel" aria-labelledby="cookie-heading" hidden>
   <h2 id="cookie-heading" tabindex="-1">Настройки cookie</h2>
@@ -240,13 +246,14 @@ def product_grid(items, *, filters=True):
     for item in items:
         photo = ""
         if item["images"]:
-            url = html.escape(item["images"][0]["url"], quote=True)
-            photo = f'<img loading="lazy" decoding="async" src="{url}" alt="">'
+            url = html.escape(item["images"][min(1, len(item["images"]) - 1)]["url"], quote=True)
+            photo = f'<img loading="lazy" decoding="async" src="{url}" alt="" width="640" height="640">'
         cards.append(
-            f'<li data-price="{item["price"] if item["price"] is not None else ""}"><a href="/{product_path(item).strip("/")}">{photo}'
+            f'<li data-price="{item["price"] if item["price"] is not None else ""}"><a href="/{product_path(item).strip("/")}">'
+            f'<span class="product-thumb">{photo}<span class="card-arrow" aria-hidden="true">↗</span></span>'
             f'<span class="tile-name" data-locale-source>{html.escape(item["name"])}</span>'
-            f'<span class="tile-sku">{html.escape(item["sku"])}</span>'
-            f'<span class="tile-price">{html.escape(display_price(item))}</span></a></li>'
+            f'<span class="tile-meta"><span class="tile-sku">{html.escape(item["sku"])}</span>'
+            f'<span class="tile-price">{html.escape(display_price(item))}</span></span></a></li>'
         )
     grid = '<ul class="tiles product-tiles">' + "".join(cards) + '</ul>'
     if not filters:
@@ -318,11 +325,18 @@ write("", "Свет для жизни", """
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +
       link("catalog", "Все светильники →") + '</div>' +
       product_grid(featured_products or data["products"][:4], filters=False) + '</section>' +
-      '<section class="home-rooms"><img src="/scenes/lusar-scene-evening.webp" alt="" '
-      'width="1536" height="1024" loading="lazy" decoding="async">'
-      '<div><div class="section-heading"><h2>Свет по комнатам</h2>' + link("rooms", "Все комнаты →") + '</div>'
-      '<ul>' + "".join(f'<li>{link("rooms/" + key, name + " →")}</li>'
-                       for key, (name, *_) in ROOMS.items()) + '</ul></div></section>',
+      '<section class="home-rooms"><div class="section-heading"><h2>Свет по комнатам</h2>' +
+      link("rooms", "Все комнаты →") + '</div><ul>' +
+      "".join(f'<li><a href="/rooms/{key}"><span class="room-number" aria-hidden="true">{index:02}</span>'
+              f'<span>{html.escape(name)}</span><span aria-hidden="true">↗</span></a></li>'
+              for index, (key, (name, *_)) in enumerate(ROOMS.items(), 1)) +
+      '</ul></section><section class="home-ai"><div class="home-ai-photo">'
+      '<img src="/scenes/ai-interior.jpg" alt="" width="1536" height="1024" loading="lazy" decoding="async">'
+      '<span class="image-caption">Пример интерьера</span></div><div class="home-ai-copy">'
+      '<span class="eyebrow">' + nav_icon("spark") + ' Lusar AI</span><h2>Ваш интерьер. Новый свет.</h2>'
+      '<p>Загрузите фото комнаты и примерьте светильники из каталога.</p>'
+      '<a class="button-link" href="/ai">Начать примерку <span aria-hidden="true">↗</span></a>'
+      '</div></section>',
       description="Светильники LUSAR для дома и проектов. Каталог освещения и примерка светильников в вашем интерьере с Lusar AI.")
 write("catalog", "Каталог освещения",
       '<div class="section-heading catalog-heading"><h1>Каталог освещения</h1><nav aria-label="Подбор света">' +
@@ -384,18 +398,25 @@ for item in data["products"]:
         structured_data["offers"] = {"@type": "Offer", "url": product_url,
                                      "price": item["price"], "priceCurrency": "AMD"}
     write(product_path(item), item["name"],
-          f'<p>{link("catalog", "Каталог")} · {link(category_path(item["categoryId"]), categories[item["categoryId"]]["name"])}</p>'
-          f'<p>Артикул {html.escape(item["sku"])}</p>{brand_link}<p class="lead">{price}</p>'
-          '<p>Наличие уточнит менеджер.</p>'
-          f'{photos}<p data-locale-source>{html.escape(item["description"])}</p>'
-          f'<dl>{specs}</dl><button type="button" data-add="{html.escape(item["id"], quote=True)}">Добавить в корзину</button>'
-          f' <button type="button" data-favorite="{html.escape(item["id"], quote=True)}" aria-pressed="false">В избранное</button>'
+          f'<nav class="breadcrumbs" aria-label="Навигация по каталогу">{link("catalog", "Каталог")} <span aria-hidden="true">/</span> '
+          f'{link(category_path(item["categoryId"]), categories[item["categoryId"]]["name"])}</nav>'
+          f'<section class="product-layout">{photos}<div class="product-info">'
+          f'<p class="eyebrow">Артикул {html.escape(item["sku"])}</p>'
+          f'<h1 data-locale-source>{html.escape(item["name"])}</h1><p class="product-price">{price}</p>'
+          '<p class="availability"><span aria-hidden="true"></span>Наличие уточнит менеджер.</p>'
+          f'<div class="product-actions"><button class="primary-action" type="button" data-add="{html.escape(item["id"], quote=True)}">Добавить в корзину</button>'
+          f'<button type="button" data-favorite="{html.escape(item["id"], quote=True)}" aria-pressed="false">{nav_icon("favorites")}<span>В избранное</span></button></div>'
           '<p id="favorite-status" role="status"></p>'
-          f'<button type="button" data-compare="{html.escape(item["id"], quote=True)}" aria-pressed="false">Сравнить</button>'
+          f'<button class="text-button" type="button" data-compare="{html.escape(item["id"], quote=True)}" aria-pressed="false">Сравнить</button>'
           f'<p id="compare-status" role="status"></p><p>{link("compare", "Открыть сравнение")}</p>'
           f'<p role="status" id="cart-status"></p><p id="cart-next" hidden>{link("cart/", "Перейти в корзину")}</p>'
-          f'<p>{link("ai?product=" + quote(item["id"], safe=""), "Примерить в моей комнате")} · '
-          f'{link("support?product=" + quote(item["id"], safe=""), "Уточнить по товару")}</p>',
+          '<div class="product-ai-note">' + nav_icon("spark") +
+          f'<div>{link("ai?product=" + quote(item["id"], safe=""), "Примерить в моей комнате")}'
+          '<p>Посмотрите, как светильник впишется в ваш интерьер.</p></div></div>'
+          f'<p>{link("support?product=" + quote(item["id"], safe=""), "Уточнить по товару")}</p>'
+          '</div></section><div class="product-details"><section><h2>О светильнике</h2>'
+          f'<p data-locale-source>{html.escape(item["description"])}</p>{brand_link}</section>'
+          f'<section><h2>Характеристики</h2><dl>{specs}</dl></section></div>',
           description=" ".join(item["description"].split())[:160],
           image=photo_urls[0] if photo_urls else "", structured_data=structured_data)
 
@@ -404,7 +425,12 @@ for path, title in FOOTER + EXTRA:
         continue
     children = [(p + "/", name) for p, name in EXTRA if p.rpartition("/")[0] == path]
     write(path, title, '<p>Страница в разработке</p>' + (listing(children) if children else ""), draft=True)
-write("payment", "Оплата", "<p>Оформите заявку на сайте. Менеджер подтвердит сумму и согласует оплату в магазине, по чеку или при получении.</p>")
+write("payment", "Оплата", '<p class="lead">Выберите удобный способ оплаты при подтверждении заказа.</p>'
+      '<div class="info-cards"><section><span class="eyebrow">01</span><h2>В магазине</h2>'
+      '<p>После подтверждения заказа менеджером.</p></section><section><span class="eyebrow">02</span>'
+      '<h2>По чеку менеджера</h2><p>Менеджер пришлёт данные для оплаты.</p></section>'
+      '<section><span class="eyebrow">03</span><h2>При получении</h2>'
+      '<p>Способ оплаты согласует менеджер.</p></section></div>')
 store_path = "stores/yerevan-arshakunyats"
 store_address = "Ереван, проспект Аршакуняц, 210/1"
 d50_path = "stores/yerevan-smbat-zoravar"
@@ -418,9 +444,13 @@ store_routes = (
     f'<a href="https://yandex.com/maps/?{html.escape(yandex_query, quote=True)}">Найти адрес в Яндекс Картах</a>'
 )
 write("contacts", "Контакты LUSAR",
-      f'<p>Общий телефон магазинов: {store_phone}</p>'
-      f'<p>Магазины открыты ежедневно, {SERVICE_HOURS}. Часы связи с менеджером по заявкам: {SERVICE_HOURS}.</p>' +
-      listing([(store_path, store_address), (d50_path, d50_address + ", павильон D50")]))
+      '<p class="lead">Ждём вас в наших магазинах в Ереване.</p><div class="contact-layout">'
+      '<div class="info-cards"><section><span class="eyebrow">01 · LUSAR</span><h2>Аршакуняц</h2>'
+      f'<address>{store_address}</address><p>Ярмарка «Еранкюни»</p>{link(store_path, "Как добраться →")}</section>'
+      '<section><span class="eyebrow">02 · LUSAR</span><h2>Смбата Зоравара</h2>'
+      f'<address>{d50_address}</address><p>Павильон D50</p>{link(d50_path, "Как добраться →")}</section></div>'
+      '<aside class="contact-aside"><p class="eyebrow">На связи</p>' + store_phone +
+      f'<p>Ежедневно · {SERVICE_HOURS}</p><p>{link("order-status", "Проверить статус заявки")}</p></aside></div>')
 write("stores", "Магазины LUSAR", listing([(store_path, store_address), (d50_path, d50_address + ", павильон D50")]))
 write(store_path, "Магазин LUSAR в Ереване",
       f'<address>{store_address}. Территория ярмарки «Еранкюни», Шенгавит.</address>'
@@ -446,9 +476,11 @@ FAQ = [
     ("Почему скидка по промокоду меньше его номинала?", "Промокод уменьшает стоимость товаров максимум на 20%. Например, при заказе на 10 000 ֏ код на 5 000 ֏ даст скидку 2 000 ֏."),
 ]
 write("faq", "Частые вопросы",
+      '<div class="faq-layout"><aside><p class="lead">Поможем с заказом и выбором света.</p>' +
+      link("support", "Задать вопрос →") + '</aside><div class="faq-list">' +
       "".join(f'<details><summary>{html.escape(question)}</summary><p>{html.escape(answer)}</p></details>'
-              for question, answer in FAQ) +
-      '<p>' + link("payment", "Подробнее об оплате") + ' · ' + link("support", "Поддержка") + '</p>')
+              for question, answer in FAQ) + '</div></div><p>' +
+      link("payment", "Подробнее об оплате") + ' · ' + link("support", "Поддержка") + '</p>')
 write("support", "Поддержка и сервис", f"""
 <p id="support-product" hidden>Вопрос по товару <a id="support-product-link"></a></p>
 <p>Если вопрос связан с заказом, сохраните его номер. Если нужна информация о светильнике, укажите артикул.</p>
@@ -462,26 +494,9 @@ write("legal/cookies", "Политика cookie", """
 <p>В текущей сборке настройки темы и языка, корзина и избранное сохраняются в браузере.
 Выбор статистики можно изменить через «Настройки cookie» в подвале.</p>
 """, draft=True)
-write("ai", "Lusar AI", """
-<p id="ai-mode">Загрузите фото комнаты. Lusar AI подберёт светильники из каталога и покажет, как они могут выглядеть в вашем интерьере.</p>
-<p id="ai-product" hidden><a id="ai-product-link"></a></p>
-<form id="ai-form">
-  <label>Фото комнаты <input id="ai-photo" type="file" accept="image/jpeg,image/png,image/webp" required></label>
-  <p>JPEG, PNG или WebP, до 4 МБ. Выберите фото без людей и личных данных.</p>
-  <label>Пожелания <textarea id="ai-wishes" maxlength="1000" rows="3" placeholder="Например: тёплый свет над столом"></textarea></label>
-  <label><input id="ai-consent" type="checkbox" required> Согласен на отправку фото и пожеланий в OpenAI для обработки.</label>
-  <button id="ai-submit" type="submit" disabled>Подобрать и примерить свет</button>
-</form>
-<img id="ai-photo-preview" class="ai-photo-preview" alt="Предпросмотр фотографии комнаты" hidden>
-<p id="ai-photo-status" role="status"></p>
-<p id="ai-result-status" role="status"></p>
-<figure id="ai-visualization" hidden>
-  <img id="ai-render" class="ai-photo-preview" alt="Примерная визуализация светильников в комнате">
-  <figcaption>Визуализация создана ИИ. Размеры и освещённость уточняйте по характеристикам товара.</figcaption>
-</figure>
-<ul id="ai-results" hidden></ul>
-<script src="/ai-preview.js" defer></script>
-""" + (f'<p><a href="https://t.me/{AI_TELEGRAM_USERNAME}">Открыть Lusar AI в Telegram</a></p>'
+write("ai", "Lusar AI", (ROOT / "ai-page.html").read_text(encoding="utf-8")
+      .replace("<!-- spark-icon -->", nav_icon("spark")).replace("<!-- upload-icon -->", nav_icon("upload")) +
+      (f'<p class="ai-telegram"><a href="https://t.me/{AI_TELEGRAM_USERNAME}">Открыть Lusar AI в Telegram</a></p>'
        if AI_TELEGRAM_USERNAME else ""), draft=True)
 write("rooms", "Подобрать свет по комнате",
       "<p>Выберите помещение, чтобы посмотреть идеи по освещению и перейти в подходящие категории.</p>" +
@@ -597,12 +612,13 @@ ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xm
 (OUT / "product-filters.js").write_bytes((ROOT / "product-filters.js").read_bytes())
 (OUT / "ai-preview.js").write_text(
     "const aiProducts = " + json.dumps({
-        item["id"]: {"name": item["name"], "path": "/" + product_path(item).rstrip("/")}
+        item["id"]: {"name": item["name"], "path": "/" + product_path(item).rstrip("/"),
+                     "image": item["images"][0]["url"] if item["images"] else ""}
         for item in data["products"]
     }, ensure_ascii=False) + ";\n" + (ROOT / "ai-preview.js").read_text(encoding="utf-8"), encoding="utf-8"
 )
 (OUT / "scenes").mkdir(exist_ok=True)
-for name in ("lusar-hero.webp", "lusar-scene-day.webp", "lusar-scene-evening.webp"):
+for name in ("lusar-hero.webp", "lusar-scene-day.webp", "lusar-scene-evening.webp", "ai-interior.jpg"):
     (OUT / "scenes" / name).write_bytes((ROOT / "scenes" / name).read_bytes())
 search_index = [
     {"name": item["name"], "path": "/" + product_path(item).rstrip("/"), "sku": item["sku"],

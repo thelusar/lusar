@@ -21,11 +21,16 @@
   header.dataset.navOpen = "false";
   menuToggle.hidden = false;
   menuToggle.addEventListener("click", () => setMenu(header.dataset.navOpen !== "true"));
+  function restoreVisibleFocus() {
+    if (nav.contains(document.activeElement) && getComputedStyle(nav).display === "none") {
+      menuToggle.focus();
+    }
+  }
   narrow.addEventListener("change", () => {
-    const restoreFocus = narrow.matches && nav.contains(document.activeElement);
     setMenu(false);
-    if (restoreFocus) menuToggle.focus();
+    restoreVisibleFocus();
   });
+  window.addEventListener("resize", restoreVisibleFocus);
   header.addEventListener("focusout", event => {
     if (event.relatedTarget && !header.contains(event.relatedTarget)) setMenu(false);
   });

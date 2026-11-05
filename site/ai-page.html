@@ -1,0 +1,58 @@
+<section class="ai-intro">
+  <span class="eyebrow"><!-- spark-icon --> Lusar AI</span>
+  <h1>Примерьте новый свет</h1>
+  <p id="ai-mode">Ваше фото, ваши пожелания и светильники из каталога LUSAR.</p>
+</section>
+<div class="ai-workspace">
+  <form id="ai-form" class="ai-controls">
+    <div class="ai-step-heading"><span aria-hidden="true">01</span><h2>Ваша комната</h2></div>
+    <p id="ai-product" hidden><a id="ai-product-link"></a></p>
+    <label id="ai-dropzone" class="upload-zone" for="ai-photo">
+      <span class="upload-symbol" aria-hidden="true"><!-- upload-icon --></span>
+      <strong id="ai-file-label">Загрузите фото комнаты</strong>
+      <span>Выберите файл или перетащите сюда</span>
+      <span class="upload-formats">JPEG, PNG, WebP · до 4 МБ</span>
+      <input id="ai-photo" type="file" accept="image/jpeg,image/png,image/webp" required>
+    </label>
+    <p id="ai-photo-status" role="status"></p>
+    <div class="ai-step-heading"><span aria-hidden="true">02</span><label for="ai-wishes">Какой свет вам нравится?</label></div>
+    <textarea id="ai-wishes" maxlength="1000" rows="3" placeholder="Например: тёплый свет над столом"></textarea>
+    <div class="ai-presets" role="group" aria-label="Идеи для примерки">
+      <button type="button" data-ai-wish="Тёплый свет" aria-pressed="false">Тёплый свет</button>
+      <button type="button" data-ai-wish="Современный стиль" aria-pressed="false">Современный стиль</button>
+      <button type="button" data-ai-wish="Мягкое освещение" aria-pressed="false">Мягкое освещение</button>
+    </div>
+    <label class="ai-consent"><input id="ai-consent" type="checkbox" required>
+      <span>Согласен на отправку фото и пожеланий в OpenAI для обработки.</span>
+    </label>
+    <button id="ai-submit" class="primary-action" type="submit" disabled>Подобрать и примерить свет <span aria-hidden="true">↗</span></button>
+    <p class="ai-photo-note">Используйте фото без людей и личных данных.</p>
+  </form>
+  <section class="ai-stage" aria-label="Примерка освещения">
+    <div class="ai-stage-heading"><h2>Ваша примерка</h2><span class="ai-badge"><!-- spark-icon --> Lusar AI</span></div>
+    <div class="ai-preview-shell">
+      <div id="ai-empty" class="ai-empty">
+        <img src="/scenes/ai-interior.jpg" alt="Уголок для чтения с тёплым светом торшера" width="1536" height="1024">
+        <span class="image-caption">Пример интерьера</span>
+        <div class="ai-empty-copy"><span aria-hidden="true"><!-- spark-icon --></span><h3>Место для вашего интерьера</h3><p>Загрузите фото, чтобы начать примерку.</p></div>
+      </div>
+      <img id="ai-photo-preview" class="ai-photo-preview" alt="Предпросмотр фотографии комнаты" hidden>
+      <figure id="ai-visualization" hidden>
+        <div class="ai-comparison">
+          <img id="ai-before" alt="Комната до примерки">
+          <img id="ai-render" alt="Примерная визуализация светильников в комнате">
+          <span class="comparison-line" aria-hidden="true"></span>
+          <span class="comparison-label comparison-before">До</span><span class="comparison-label comparison-after">После</span>
+        </div>
+        <label class="comparison-control" for="ai-compare"><span>До</span><input id="ai-compare" type="range" min="0" max="100" value="50" aria-label="Сравнить до и после"><span>После</span></label>
+        <figcaption>Визуализация создана ИИ. Размеры и освещённость уточняйте по характеристикам товара.</figcaption>
+      </figure>
+      <div id="ai-progress" class="ai-progress" hidden><span class="ai-spinner" aria-hidden="true"></span><strong>Создаём вашу примерку</strong><span>Это может занять несколько минут.</span></div>
+    </div>
+    <p id="ai-result-status" role="status"></p>
+    <ul id="ai-results" class="ai-result-products" hidden></ul>
+    <details id="ai-advice" hidden><summary>Почему эти светильники</summary><p id="ai-advice-text"></p></details>
+    <a class="ai-edit-link" href="#ai-form">Изменить пожелания ↑</a>
+  </section>
+</div>
+<script src="/ai-preview.js" defer></script>
