@@ -13,9 +13,12 @@ For the local manager view, set `LUSAR_LOCAL_MANAGER_PASSWORD` before starting t
 
 ```powershell
 python site/check_checkout.py
+python site/check_catalog.py
 ```
 
 The check uses Edge by default. Pass `--browser` with a Chrome executable path to run it in Chrome. It creates a temporary database and checks the storefront and manager flow at mobile width.
+
+The catalog check exercises combined search and filters, filter URLs, quick add and wishlist persistence, photo navigation and zoom, and responsive layouts in all interface languages. It uses the local snapshot and makes no AI requests.
 
 The build reads the public catalog snapshot in `storefront.json`. Refresh with `python site/sync_catalog.py`, or validate a previously fetched public export with `python site/sync_catalog.py --input <path>`, then rebuild.
 

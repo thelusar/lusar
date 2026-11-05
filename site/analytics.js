@@ -87,7 +87,7 @@
   window.addEventListener("lusar:analytics-consent", event => {
     if (!event.detail.granted) return disableProviders();
     enableProviders();
-    const product = document.querySelector("[data-add]");
+    const product = document.querySelector(".product-info [data-add]");
     if (product && !viewed) {
       viewed = true;
       track("view_item", product.dataset.add);

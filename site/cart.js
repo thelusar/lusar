@@ -30,8 +30,7 @@ function save(next) {
   cart = next;
 }
 
-const add = document.querySelector("[data-add]");
-if (add) {
+for (const add of document.querySelectorAll("[data-add]")) {
   add.addEventListener("click", () => {
     const id = add.dataset.add;
     const status = document.querySelector("#cart-status");
@@ -44,6 +43,20 @@ if (add) {
     } catch {
       status.textContent = "Не удалось сохранить корзину в этом браузере.";
     }
+  });
+}
+
+const shoppingFeedback = document.querySelector(".catalog-shopping-feedback");
+if (shoppingFeedback) {
+  let trigger;
+  document.addEventListener("click", event => {
+    const action = event.target.closest("[data-add], [data-favorite]");
+    if (action) trigger = action;
+  });
+  shoppingFeedback.querySelector("[data-dismiss-shopping]").addEventListener("click", () => {
+    for (const status of shoppingFeedback.querySelectorAll('[role="status"]')) status.textContent = "";
+    shoppingFeedback.querySelector("#cart-next").hidden = true;
+    if (trigger?.isConnected && !trigger.closest("li[hidden]")) trigger.focus();
   });
 }
 

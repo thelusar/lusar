@@ -161,9 +161,11 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         if attrs:
             analytics = ' data-analytics-enabled="true"' + attrs
     cart_script = ('<script src="/cart.js" defer></script>'
-                   if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/")
+                   if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/") or "data-add=" in body
                    else "")
     page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page"}.get(path, "content-page")
+    if path.startswith("catalog/category/"):
+        page_class = "catalog-page category-page"
     if path.startswith("catalog/product/"):
         page_class = "product-page"
     page_heading = "" if path in {"", "catalog", "ai"} or page_class == "product-page" else f"<h1>{html.escape(title)}</h1>"
@@ -248,25 +250,70 @@ def product_grid(items, *, filters=True):
         if item["images"]:
             url = html.escape(item["images"][min(1, len(item["images"]) - 1)]["url"], quote=True)
             photo = f'<img loading="lazy" decoding="async" src="{url}" alt="" width="640" height="640">'
+        attributes = {a["label"]: a["value"].strip() for a in item["attributes"]}
+        keywords = " ".join([item["name"], item["sku"], item["brand"], categories[item["categoryId"]]["name"]] +
+                            [f'{a["label"]} {a["value"]} {a["unit"]}' for a in item["attributes"]])
+        metadata = {"price": item["price"] if item["price"] is not None else "", "category": item["categoryId"],
+                    "search": keywords, "socket": attributes.get("Цоколь", ""),
+                    "temperature": attributes.get("Цветовая температура", "")}
+        attrs = " ".join(f'data-{key}="{html.escape(str(value), quote=True)}"' for key, value in metadata.items())
+        identity = html.escape(item["id"], quote=True)
+        actions = ('<div class="card-actions">'
+                   f'<button type="button" data-favorite="{identity}" aria-label="В избранное" aria-pressed="false">'
+                   + nav_icon("favorites") + '</button>'
+                   f'<button type="button" data-add="{identity}" aria-label="Добавить в корзину">'
+                   + nav_icon("cart") + '</button></div>') if filters else ""
         cards.append(
-            f'<li data-price="{item["price"] if item["price"] is not None else ""}"><a href="/{product_path(item).strip("/")}">'
+            f'<li {attrs}><a href="/{product_path(item).strip("/")}">'
             f'<span class="product-thumb">{photo}<span class="card-arrow" aria-hidden="true">↗</span></span>'
             f'<span class="tile-name" data-locale-source>{html.escape(item["name"])}</span>'
             f'<span class="tile-meta"><span class="tile-sku">{html.escape(item["sku"])}</span>'
-            f'<span class="tile-price">{html.escape(display_price(item))}</span></span></a></li>'
+            f'<span class="tile-price">{html.escape(display_price(item))}</span></span></a>{actions}</li>'
         )
     grid = '<ul class="tiles product-tiles">' + "".join(cards) + '</ul>'
     if not filters:
         return grid
+
+    def select(name, label, choices):
+        if len(choices) < 2:
+            return ""
+        options = ''.join(f'<option value="{html.escape(value, quote=True)}">{html.escape(title)}</option>'
+                          for value, title in choices)
+        return (f'<label>{label}<select name="{name}"><option value="">Все</option>' + options + '</select></label>')
+
+    category_ids = {item["categoryId"] for item in items}
+    category_filter = select("category", "Тип светильника", [(key, value["name"]) for key, value in categories.items() if key in category_ids])
+    facets = ""
+    for name, label, attribute in (("socket", "Цоколь", "Цоколь"), ("temperature", "Температура света", "Цветовая температура")):
+        values = sorted({a["value"].strip() for item in items for a in item["attributes"] if a["label"] == attribute and a["value"].strip()})
+        facets += select(name, label, [(value, value + (" K" if name == "temperature" else "")) for value in values])
     return (
-        '<form id="product-filters" class="product-filters" hidden>'
-        '<label>Цена до, ֏ <input name="maximum" type="number" min="0" step="any"></label>'
-        '<label>Сортировка <select name="sort"><option value="default">Как в каталоге</option>'
-        '<option value="low">Сначала дешевле</option><option value="high">Сначала дороже</option></select></label>'
-        '<button type="reset">Сбросить</button></form>'
-        '<p id="product-filter-count" role="status"></p>' + grid +
+        '<form id="product-filters" class="product-filters" role="search" aria-label="Подбор светильников" hidden>'
+        '<div class="catalog-toolbar"><label class="catalog-search"><span class="visually-hidden">Поиск по каталогу</span>'
+        '<span>' + nav_icon("search") + '<input name="q" type="search" placeholder="Название или артикул" autocomplete="off"></span></label>'
+        '<label><span class="visually-hidden">Сортировка</span><select name="sort"><option value="default">Как в каталоге</option>'
+        '<option value="low">Сначала дешевле</option><option value="high">Сначала дороже</option></select></label></div>'
+        '<details class="catalog-filter-panel"><summary>Фильтры<span aria-hidden="true">＋</span></summary><div class="catalog-filter-fields">'
+        + category_filter + '<label>Цена от, ֏ <input name="minimum" type="number" min="0" step="any" inputmode="decimal"></label>'
+        '<label>Цена до, ֏ <input name="maximum" type="number" min="0" step="any" inputmode="decimal"></label>' + facets +
+        '</div></details><div class="catalog-result-bar"><p id="product-filter-count" role="status"></p>'
+        '<button type="reset" class="text-button">Сбросить фильтры</button></div></form>'
+        '<div class="catalog-shopping-feedback"><button type="button" data-dismiss-shopping aria-label="Закрыть уведомление">×</button>'
+        '<p id="cart-status" role="status"></p><p id="favorite-status" role="status"></p>'
+        '<p id="cart-next" hidden>' + link("cart", "Перейти в корзину") + '</p></div>' + grid +
+        '<section class="catalog-empty" id="catalog-empty" hidden><h2>Ничего не найдено</h2>'
+        '<p>Попробуйте изменить запрос или сбросить фильтры.</p><button type="reset" form="product-filters">Сбросить фильтры</button></section>'
         '<script src="/product-filters.js" defer></script>'
     )
+
+
+def category_navigation(active=""):
+    links = '<a href="/catalog"' + (' aria-current="page"' if not active else '') + '>Все светильники</a>'
+    links += ''.join(f'<a href="/{category_path(key).strip("/")}"' +
+                     (' aria-current="page"' if key == active else '') + f'>{html.escape(category["name"])}</a>'
+                     for key, category in categories.items())
+    return '<nav class="catalog-categories" aria-label="Категории">' + links + '</nav>'
+
 
 products_with_photos = {}
 for item in data["products"]:
@@ -340,15 +387,14 @@ write("", "Свет для жизни", """
       description="Светильники LUSAR для дома и проектов. Каталог освещения и примерка светильников в вашем интерьере с Lusar AI.")
 write("catalog", "Каталог освещения",
       '<div class="section-heading catalog-heading"><h1>Каталог освещения</h1><nav aria-label="Подбор света">' +
-      '<a href="#catalog-products">К товарам</a>' + link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' +
-      '<section aria-label="Категории">' + category_cards(categories, eager=True) + '</section>' +
-      '<section class="catalog-products" id="catalog-products"><h2>Все светильники</h2>' +
-      product_grid(data["products"]) + '</section>',
+      link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' + category_navigation() +
+      '<section class="catalog-products" id="catalog-products" aria-label="Все светильники">' +
+      product_grid(sorted(data["products"], key=lambda item: list(categories).index(item["categoryId"]))) + '</section>',
       description="Каталог LUSAR. Люстры, подвесные и настенные светильники, прожекторы и уличное освещение. Цены в армянских драмах.")
 for key, category in categories.items():
     children = [(category_path(child), item["name"]) for child, item in categories.items() if item.get("parentId") == key]
     products = [item for item in data["products"] if item["categoryId"] == key]
-    body = f'<p>{link("catalog", "Все категории")}</p>'
+    body = category_navigation(key)
     if children:
         body += "<h2>Подкатегории</h2>" + listing(children)
     if products or not children:
@@ -369,14 +415,23 @@ for item in data["products"]:
             f'<section class="product-gallery" aria-label="Фотографии товара">'
             f'<a class="product-photo" id="product-photo-link" href="{first_url}" aria-label="Увеличить фото">'
             f'<img id="product-photo" src="{first_url}" alt="{name}" fetchpriority="high"></a>'
+            '<div class="gallery-navigation" hidden><button type="button" data-gallery-step="-1" aria-label="Предыдущее фото">←</button>'
+            f'<span id="gallery-counter" aria-live="polite">1 / {len(item["images"])}</span>'
+            '<button type="button" data-gallery-step="1" aria-label="Следующее фото">→</button></div>'
             f'<div class="photo-thumbnails">{thumbnails}</div>'
             f'<dialog id="product-photo-dialog" aria-label="Увеличенное фото товара">'
             '<form method="dialog"><button>Закрыть</button></form>'
-            f'<img id="product-photo-large" alt="{name}"></dialog></section>'
+            f'<img id="product-photo-large" alt="{name}">'
+            '<div class="gallery-modal-navigation" hidden><button type="button" data-gallery-step="-1" aria-label="Предыдущее фото">←</button>'
+            '<span class="gallery-modal-counter"></span><button type="button" data-gallery-step="1" aria-label="Следующее фото">→</button></div>'
+            '</dialog></section>'
             '<script src="/product-gallery.js" defer></script>'
         )
     specs = "".join(f'<dt>{html.escape(a["label"])}</dt><dd>{html.escape(a["value"])} {html.escape(a["unit"])}</dd>' for a in item["attributes"])
     price = display_price(item)
+    highlights = [a for a in item["attributes"] if a["label"] in {"Цоколь", "Мощность", "Цветовая температура", "Защита IP", "Диаметр"}][:3]
+    highlights_html = '<dl class="product-highlights">' + ''.join(
+        f'<div><dt>{html.escape(a["label"])}</dt><dd>{html.escape(a["value"])} {html.escape(a["unit"])}</dd></div>' for a in highlights) + '</dl>' if highlights else ''
     brand_id = product_brand_ids.get(item["id"])
     brand_link = f'<p>Бренд: {link(brand_path(brand_id), brands[brand_id]["name"])}</p>' if brand_id else ""
     if not brand_id and item["brand"].strip():
@@ -397,18 +452,22 @@ for item in data["products"]:
     if item["price"] is not None:
         structured_data["offers"] = {"@type": "Offer", "url": product_url,
                                      "price": item["price"], "priceCurrency": "AMD"}
+    related = [candidate for candidate in data["products"] if candidate["categoryId"] == item["categoryId"] and candidate["id"] != item["id"]][:4]
+    related_section = ('<section class="related-products"><div class="section-heading"><h2>В этой категории</h2>' +
+                       link(category_path(item["categoryId"]), "Все модели →") + '</div>' + product_grid(related, filters=False) + '</section>') if related else ""
     write(product_path(item), item["name"],
           f'<nav class="breadcrumbs" aria-label="Навигация по каталогу">{link("catalog", "Каталог")} <span aria-hidden="true">/</span> '
           f'{link(category_path(item["categoryId"]), categories[item["categoryId"]]["name"])}</nav>'
           f'<section class="product-layout">{photos}<div class="product-info">'
           f'<p class="eyebrow">Артикул {html.escape(item["sku"])}</p>'
           f'<h1 data-locale-source>{html.escape(item["name"])}</h1><p class="product-price">{price}</p>'
-          '<p class="availability"><span aria-hidden="true"></span>Наличие уточнит менеджер.</p>'
+          '<p class="availability"><span aria-hidden="true"></span>Наличие уточнит менеджер.</p>' + highlights_html +
           f'<div class="product-actions"><button class="primary-action" type="button" data-add="{html.escape(item["id"], quote=True)}">Добавить в корзину</button>'
           f'<button type="button" data-favorite="{html.escape(item["id"], quote=True)}" aria-pressed="false">{nav_icon("favorites")}<span>В избранное</span></button></div>'
           '<p id="favorite-status" role="status"></p>'
+          '<div class="product-secondary-actions">'
           f'<button class="text-button" type="button" data-compare="{html.escape(item["id"], quote=True)}" aria-pressed="false">Сравнить</button>'
-          f'<p id="compare-status" role="status"></p><p>{link("compare", "Открыть сравнение")}</p>'
+          f'{link("compare", "Открыть сравнение")}</div><p id="compare-status" role="status"></p>'
           f'<p role="status" id="cart-status"></p><p id="cart-next" hidden>{link("cart/", "Перейти в корзину")}</p>'
           '<div class="product-ai-note">' + nav_icon("spark") +
           f'<div>{link("ai?product=" + quote(item["id"], safe=""), "Примерить в моей комнате")}'
@@ -416,7 +475,7 @@ for item in data["products"]:
           f'<p>{link("support?product=" + quote(item["id"], safe=""), "Уточнить по товару")}</p>'
           '</div></section><div class="product-details"><section><h2>О светильнике</h2>'
           f'<p data-locale-source>{html.escape(item["description"])}</p>{brand_link}</section>'
-          f'<section><h2>Характеристики</h2><dl>{specs}</dl></section></div>',
+          f'<section><h2>Характеристики</h2><dl>{specs}</dl></section></div>' + related_section,
           description=" ".join(item["description"].split())[:160],
           image=photo_urls[0] if photo_urls else "", structured_data=structured_data)
 

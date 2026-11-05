@@ -1,9 +1,9 @@
 const favoriteKey = "lusar-favorites";
-const favoriteButton = document.querySelector("[data-favorite]");
+const favoriteButtons = [...document.querySelectorAll("[data-favorite]")];
 const favoriteList = document.querySelector("#favorite-items");
 const favoriteStatus = document.querySelector("#favorite-status");
 
-if (favoriteButton || favoriteList) {
+if (favoriteButtons.length || favoriteList) {
   function readFavorites() {
     try {
       const saved = JSON.parse(localStorage.getItem(favoriteKey));
@@ -24,18 +24,15 @@ if (favoriteButton || favoriteList) {
       return;
     }
     renderFavorites();
-    if (favoriteButton || favoriteList.children.length) {
+    if (favoriteButtons.length || favoriteList.children.length) {
       favoriteStatus.textContent = saved ? "Товар добавлен в избранное." : "Товар удалён из избранного.";
     }
   }
 
   function renderFavorites() {
     const favorites = readFavorites();
-    if (favoriteButton) {
-      const saved = favorites.has(favoriteButton.dataset.favorite);
-      favoriteButton.setAttribute("aria-pressed", String(saved));
-      return;
-    }
+    for (const button of favoriteButtons) button.setAttribute("aria-pressed", String(favorites.has(button.dataset.favorite)));
+    if (!favoriteList) return;
     favoriteList.replaceChildren();
     for (const id of favorites) {
       const item = document.createElement("li");
@@ -65,8 +62,8 @@ if (favoriteButton || favoriteList) {
     favoriteStatus.tabIndex = -1;
   }
 
-  favoriteButton?.addEventListener("click", () => {
-    const id = favoriteButton.dataset.favorite;
+  for (const button of favoriteButtons) button.addEventListener("click", () => {
+    const id = button.dataset.favorite;
     changeFavorite(id, !readFavorites().has(id));
   });
   window.addEventListener("storage", event => {
