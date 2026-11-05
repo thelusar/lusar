@@ -110,8 +110,8 @@ openPage("/catalog", page => {
         form.elements.phone.value = "+37400000000";
         form.elements.promo.value = "LUSAR5000";
         form.elements.promo.dispatchEvent(new Event("input"));
-        require(frame.contentDocument.querySelector("#promo-total").textContent.includes("Итог") ||
-          frame.contentDocument.querySelector("#promo-total").textContent.includes("итог"), "Promo preview missing");
+        require(!frame.contentDocument.querySelector("#order-discount-row").hidden &&
+          frame.contentDocument.querySelector("#order-total").textContent.includes("֏"), "Promo preview missing");
         frame.onload = receiptReady;
         form.requestSubmit();
       };
@@ -146,6 +146,9 @@ async function checkMenuResize(page) {
     await settleResize(() => frame.contentWindow.innerWidth === 1100);
     page.querySelector(".nav-dropdown summary").focus();
     frame.width = originalWidth;
+    // Headless virtual time may coalesce iframe resize notifications; deliver the settled viewport event.
+    await settleResize(() => frame.contentWindow.innerWidth < 928);
+    frame.contentWindow.dispatchEvent(new frame.contentWindow.Event("resize"));
     await settleResize(() => page.activeElement === page.querySelector("#menu-toggle"));
     require(page.activeElement === page.querySelector("#menu-toggle"),
       "Menu focus after resize: " + page.activeElement.tagName + "/" + page.activeElement.id + ", width " + page.documentElement.clientWidth);

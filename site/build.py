@@ -163,12 +163,12 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     cart_script = ('<script src="/cart.js" defer></script>'
                    if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/") or "data-add=" in body
                    else "")
-    page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page"}.get(path, "content-page")
+    page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page", "cart": "cart-page", "checkout": "checkout-page", "checkout/received": "receipt-page"}.get(path, "content-page")
     if path.startswith("catalog/category/"):
         page_class = "catalog-page category-page"
     if path.startswith("catalog/product/"):
         page_class = "product-page"
-    page_heading = "" if path in {"", "catalog", "ai"} or page_class == "product-page" else f"<h1>{html.escape(title)}</h1>"
+    page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received"} or page_class == "product-page" else f"<h1>{html.escape(title)}</h1>"
     target.write_text(f"""<!doctype html>
 <html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><link rel="stylesheet" href="/site.css"></head>
@@ -593,39 +593,95 @@ write("account/loyalty", "Скидки и промокоды",
       "При возврате накопленная сумма пересчитывается.</p>"
       '<table><caption>Уровни программы лояльности</caption><thead><tr><th scope="col">Накоплено</th>'
       f'<th scope="col">Скидка</th></tr></thead><tbody>{loyalty_rows}</tbody></table>', draft=True)
-write("cart", "Корзина", '<div id="cart-items"></div><p id="cart-summary" aria-live="polite"></p><p>' + link("offers/", "10% на первый заказ · условия акции") +
-      '</p><p id="checkout-link" hidden>' +
-      link("checkout/", "Оформить заявку") + '</p><p>' + link("catalog/", "Продолжить покупки") + '</p>', draft=True)
+def order_steps(current):
+    return ('<nav class="order-steps" aria-label="Этапы заявки"><ol>' + ''.join(
+        f'<li' + (' aria-current="step"' if index == current else '') + '>' +
+        (link(path, name) if index < current else f'<span>{name}</span>') + '</li>'
+        for index, (path, name) in enumerate((("cart", "Корзина"), ("checkout", "Контакты"), ("checkout/received", "Подтверждение")), 1)
+    ) + '</ol></nav>')
+
+
+def order_summary(checkout=False):
+    promo_form = ' form="checkout"' if checkout else ''
+    action = ('<button id="checkout-submit" class="primary-action" type="submit" form="checkout">Отправить заявку <span aria-hidden="true">↗</span></button>'
+              if checkout else '<p id="checkout-link" hidden><a class="button-link" href="/checkout">Оформить заявку <span aria-hidden="true">↗</span></a></p>')
+    return ('<aside id="order-summary" class="order-summary" aria-labelledby="order-summary-heading">'
+            '<h2 id="order-summary-heading">Ваш заказ</h2><dl class="order-totals">'
+            '<div><dt>Товары</dt><dd id="order-subtotal">—</dd></div>'
+            '<div id="order-discount-row" hidden><dt>Скидка по промокоду</dt><dd id="order-discount">—</dd></div></dl>'
+            '<details class="order-promo"><summary>Промокод <span aria-hidden="true">＋</span></summary>'
+            '<label class="visually-hidden" for="order-promo">Промокод</label>'
+            f'<input id="order-promo" name="promo"{promo_form} autocomplete="off" maxlength="32" placeholder="Введите промокод" aria-describedby="promo-total">'
+            '<p id="promo-total" role="status"></p></details>'
+            '<div class="order-grand-total"><span>Предварительный итог</span><strong id="order-total">—</strong></div>'
+            '<p id="cart-summary" role="status"></p>' + action +
+            '<p class="order-payment-note">Оплата после подтверждения.</p>'
+            '<p class="order-summary-note">Наличие, доставку и итоговую сумму уточнит менеджер.</p>'
+            '<a class="order-payment-link" href="/payment">Способы оплаты</a></aside>')
+
+
+def empty_bag():
+    return ('<section id="cart-empty" class="cart-empty" hidden>' + nav_icon("cart") +
+            '<h2>Корзина пока пуста.</h2><p>Найдите свет для вашего пространства.</p>'
+            '<a class="button-link" href="/catalog">Открыть каталог <span aria-hidden="true">↗</span></a></section>')
+
+
+write("cart", "Корзина", order_steps(1) +
+      '<div class="order-page-heading"><h1>Корзина</h1><p id="cart-count"></p></div>'
+      '<div class="order-flow-layout" id="order-flow"><section class="cart-content" aria-label="Товары в корзине">'
+      '<div id="cart-items"></div><p id="cart-message" role="status"></p>'
+      '<a class="cart-continue" href="/catalog">← Продолжить покупки</a></section>' + order_summary() + '</div>' + empty_bag(), draft=True)
 write("favorites", "Избранное", '<ul id="favorite-items" class="tiles"></ul><p id="favorite-status" role="status"></p><p>' +
       link("catalog", "Открыть каталог") + "</p>", draft=True)
 write("compare", "Сравнение светильников", '<p id="compare-status" role="status"></p>'
       '<div id="compare-table" class="comparison-scroll" role="region" aria-label="Таблица сравнения" tabindex="0"></div>'
       '<p>' + link("catalog", "Открыть каталог") + '</p>', draft=True)
-write("checkout", "Оформление заявки", """
-<p>Менеджер уточнит наличие, итоговую сумму и способ оплаты.</p>
-<div id="cart-items"></div><p id="cart-summary" aria-live="polite"></p>
+write("checkout", "Оформление заявки", order_steps(2) + """
+<div class="order-page-heading"><h1>Оформление заявки</h1><p>Без регистрации</p></div>
+<div class="order-flow-layout" id="order-flow">
+<section class="checkout-content">
 <form id="checkout" hidden>
-  <label>Имя <input name="name" autocomplete="name" required maxlength="120"></label>
-  <label>Телефон <input name="phone" type="tel" autocomplete="tel" required maxlength="40"></label>
-  <label>Email (необязательно) <input name="email" type="email" autocomplete="email" maxlength="254"></label>
-  <label>Адрес (необязательно) <input name="address" autocomplete="street-address" maxlength="300"></label>
-  <label>Промокод <input name="promo" autocomplete="off" maxlength="32"></label>
-  <p id="promo-total" aria-live="polite"></p>
-  <button class="primary-action" type="submit">Отправить заявку</button>
+  <div class="checkout-form-heading"><span class="eyebrow">01</span><h2>Как с вами связаться</h2></div>
+  <p class="checkout-form-note">Укажите имя и телефон. Остальное — по желанию.</p>
+  <div class="checkout-fields">
+    <label>Имя <input name="name" autocomplete="name" required maxlength="120" placeholder="Ваше имя"></label>
+    <label>Телефон <input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="40" placeholder="+374" aria-describedby="phone-help"></label>
+  </div>
+  <p id="phone-help" class="visually-hidden">Позвоним, чтобы подтвердить заявку.</p>
+  <details class="checkout-optional"><summary>Email и адрес (необязательно)<span aria-hidden="true">＋</span></summary>
+    <div class="checkout-fields">
+      <label>Email (необязательно) <input name="email" type="email" autocomplete="email" maxlength="254" placeholder="name@example.com"></label>
+      <label>Адрес (необязательно) <input name="address" autocomplete="street-address" maxlength="300" placeholder="Город, улица, дом"></label>
+    </div>
+  </details>
 </form>
-<p id="checkout-status" role="status"></p>
-<p><a id="order-status-link" hidden>Сохранить ссылку на статус заявки</a></p>
-""", draft=True)
-write("checkout/received", "Подтверждение заявки", f"""
-<p id="receipt-number" role="status">Здесь появится номер после отправки заявки.</p>
-<section id="receipt-details" hidden>
+<details class="checkout-review" open><summary class="checkout-form-heading"><span class="eyebrow">02</span><span>Товары в заявке</span><span class="review-toggle" aria-hidden="true">＋</span></summary>
+<div id="cart-items"></div><p id="cart-message" role="status"></p></details>
+<a class="cart-continue" href="/cart">← Вернуться в корзину</a>
+</section>
+""" + order_summary(checkout=True) + '</div>' + empty_bag() +
+      '<p id="checkout-status" class="checkout-status" role="status" tabindex="-1"></p>'
+      '<section class="checkout-success" id="checkout-success" hidden><h2>Заявка принята</h2>'
+      '<p id="checkout-success-number"></p><p>Менеджер свяжется с вами в ближайшее время.</p>'
+      f'<p>Часы связи с менеджером: {SERVICE_HOURS}.</p>'
+      '<p><a id="order-status-link" hidden>Проверить статус заявки</a></p>'
+      '<a href="/catalog">Вернуться в каталог</a></section>', draft=True)
+write("checkout/received", "Подтверждение заявки", order_steps(3) + f"""
+<section class="receipt-card">
+<span class="receipt-symbol" aria-hidden="true" hidden>✓</span>
+<h1 id="receipt-title">Подтверждение заявки</h1>
+<p id="receipt-label" class="receipt-order-label" hidden>Номер заявки</p>
+<p id="receipt-number" class="receipt-number" role="status">Здесь появится номер после отправки заявки.</p>
+<div id="receipt-details" hidden>
   <p>Менеджер свяжется с вами, чтобы подтвердить наличие, итоговую сумму и способ получения.</p>
-  <p>Часы связи с менеджером: {SERVICE_HOURS}.</p>
-  <p>Если хотите уточнить заказ, позвоните по номеру {store_phone} и назовите номер заявки.</p>
-  <p><a id="receipt-tracking" hidden>Проверить статус заявки</a></p>
+  <div class="receipt-contact"><p><span>На связи</span> · <span class="receipt-hours">{SERVICE_HOURS}</span></p>{store_phone}</div>
+  <p class="receipt-note">При звонке назовите номер заявки.</p>
+  <p><a id="receipt-tracking" class="button-link" hidden>Проверить статус заявки <span aria-hidden="true">↗</span></a></p>
+</div>
+<div class="receipt-links"><a href="/catalog">Вернуться в каталог</a><a href="/contacts">Контакты</a></div>
 </section>
 <script src="/receipt.js" defer></script>
-""" + '<p>' + link("catalog", "Вернуться в каталог") + ' · ' + link("support", "Поддержка") + '</p>', draft=True)
+""", draft=True)
 write("order-status", "Статус заявки", """
 <meta name="referrer" content="no-referrer">
 <p>Откройте приватную ссылку, выданную после оформления заявки.</p>
@@ -706,7 +762,8 @@ search_index = [
 (OUT / "cart.js").write_text(
     "const products = " + json.dumps({
         item["id"]: {"name": item["name"], "price": item["price"], "path": "/" + product_path(item).rstrip("/"),
-                     "sku": item["sku"], "attributes": item["attributes"]}
+                     "sku": item["sku"], "attributes": item["attributes"],
+                     "image": item["images"][min(1, len(item["images"]) - 1)]["url"] if item["images"] else ""}
         for item in data["products"]
     }, ensure_ascii=False) + ";\nconst promotions = " +
     (ROOT / "promotions.json").read_text(encoding="utf-8") + ";\nconst serviceHours = " +

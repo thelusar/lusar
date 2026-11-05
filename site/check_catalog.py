@@ -67,7 +67,7 @@ function layout(page) {
     page.querySelector("[data-dismiss-shopping]").click();
     require(!page.querySelector("#cart-status").textContent && page.activeElement === adds[1], "Shopping notice dismissal failed");
     page = await open("/cart");
-    require(page.querySelectorAll("#cart-items > p").length === 2, "Bag did not receive quick-add products");
+    require(page.querySelectorAll("#cart-items > article").length === 2, "Bag did not receive quick-add products");
     page = await open("/catalog/category/sconces");
     require(page.querySelector("script[src='/cart.js']"), "Shopping scripts missing on category page");
     const favorite = page.querySelector("[data-favorite]"); favorite.click();

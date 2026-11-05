@@ -6,7 +6,10 @@
     return;
   }
   if (typeof receipt?.number !== "string" || !/^LS-[A-F0-9]{12}$/.test(receipt.number)) return;
-  document.querySelector("#receipt-number").textContent = `Заявка №${receipt.number} получена.`;
+  document.querySelector("#receipt-title").textContent = "Заявка принята";
+  document.querySelector(".receipt-symbol").hidden = false;
+  document.querySelector("#receipt-label").hidden = false;
+  document.querySelector("#receipt-number").textContent = receipt.number;
   document.querySelector("#receipt-details").hidden = false;
   if (receipt.leadPending === true) {
     document.addEventListener("DOMContentLoaded", () => {
