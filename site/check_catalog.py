@@ -69,7 +69,7 @@ function layout(page) {
     page = await open("/cart");
     require(page.querySelectorAll("#cart-items > article").length === 2, "Bag did not receive quick-add products");
     page = await open("/catalog/category/sconces");
-    require(page.querySelector("script[src='/cart.js']"), "Shopping scripts missing on category page");
+    require(page.querySelector("script[src^='/cart.js?']"), "Shopping scripts missing on category page");
     const favorite = page.querySelector("[data-favorite]"); favorite.click();
     require(favorite.getAttribute("aria-pressed") === "true", "Category wishlist action failed");
     layout(page);

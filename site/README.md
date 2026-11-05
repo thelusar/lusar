@@ -15,6 +15,7 @@ For the local manager view, set `LUSAR_LOCAL_MANAGER_PASSWORD` before starting t
 python site/check_checkout.py
 python site/check_catalog.py
 python site/check_cart.py
+python site/check_catalog_sync.py
 ```
 
 The check uses Edge by default. Pass `--browser` with a Chrome executable path to run it in Chrome. It creates a temporary database and checks the storefront and manager flow at mobile width.
@@ -23,7 +24,21 @@ The catalog check exercises combined search and filters, filter URLs, quick add 
 
 The cart check covers quantity editing, fixed and percentage promo calculations, optional contacts, retry idempotency, duplicate prevention, receipt rendering and preserving newly added items during submission. Its order API is simulated; the checkout check verifies saving an order in an isolated local database and the manager workflow.
 
-The build reads the public catalog snapshot in `storefront.json`. Refresh with `python site/sync_catalog.py`, or validate a previously fetched public export with `python site/sync_catalog.py --input <path>`, then rebuild.
+For the plain local preview, the build reads `storefront.json`. Refresh it with `python site/sync_catalog.py`, or validate an exported public catalog with `python site/sync_catalog.py --input <path>`, then rebuild. These manual commands are not needed for runtime updates on Render.
+
+## Automatic public catalog on Render
+
+`staging.py` reads the panel's public `/api/storefront` feed at startup and every 30 seconds while the service is running. The free Render service sleeps when inactive; polling resumes when it wakes. No panel credentials or new environment variables are required.
+
+A changed, validated export is built in a separate temporary directory. Only a successful build becomes active. Catalog, category, product, brand, search and public product data update together; existing requests retain their generation. Generated data scripts are versioned to match the page that requested them. Empty published catalogs are valid, so taking the last product out of publication removes it from the website too. Invalid exports, source failures and build failures preserve the last working generation.
+
+Open catalog pages check the same-origin `/api/catalog` on entry, focus and every 30 seconds while visible. A new revision reloads catalog pages and preserves filters in the URL. Cart and checkout update their product data and totals in place, preserving contacts. Customer photo and support forms are excluded from automatic reloads. Lusar AI reads the active server catalog.
+
+Every new order checks the public feed again, compares the displayed prices and rejects unpublished items or changed prices. If the feed cannot be checked, new orders return a retryable error; an identical retry of an already saved request still returns its original number. Existing saved orders keep the names, prices and quantities accepted at submission.
+
+`/healthz` includes `catalog.revision`, `products`, `lastChecked`, `lastSuccess` and `synchronized`. A healthy web process with `synchronized: false` is serving its last working catalog and cannot confirm new orders until the feed recovers.
+
+`check_catalog_sync.py` uses an isolated feed and database to verify updates, removal of all published products, malformed exports, failed builds, old-price rejection, saved-order stability and browser refresh without losing contacts. It does not edit the panel or send real customer notifications.
 
 Production requires hosting for the order service, manager authentication, storage and redirects. GitHub Pages can serve the static output only. Telegram delivery, analytics, customer accounts and Lusar AI require production configuration or implementation. Keep credentials and databases out of Git.
 

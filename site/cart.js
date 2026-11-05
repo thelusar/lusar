@@ -202,6 +202,20 @@ window.addEventListener("storage", event => {
   if (submitting || !items || (event.key !== cartKey && event.key !== null)) return;
   cart = readCart(); renderCart();
 });
+if (items) window.lusarCartRefresh = data => {
+  if (submitting) return false;
+  const current = {};
+  for (const product of data.products) {
+    current[product.id] = {name:product.name, price:product.price, sku:product.sku, attributes:product.attributes,
+      path:"/catalog/product/" + encodeURIComponent(product.id),
+      image:product.images[Math.min(1, product.images.length - 1)]?.url || ""};
+  }
+  for (const id of Object.keys(products)) delete products[id];
+  Object.assign(products,current);
+  cart = readCart(); renderCart();
+  cartMessage("Каталог обновлён. Проверьте состав и сумму заявки.");
+  return true;
+};
 document.addEventListener("lusar-language-change", () => { if (items) updatePromoTotal(); });
 let request;
 checkout?.addEventListener("submit", async event => {

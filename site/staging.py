@@ -13,6 +13,7 @@ import lusar_ai
 import notify_orders
 import serve
 import order_storage
+from catalog_runtime import CatalogService, CatalogUnavailable
 
 
 class StagingHandler(serve.Handler):
@@ -33,7 +34,8 @@ class StagingHandler(serve.Handler):
 
     def do_GET(self):
         if self.path == "/healthz":
-            return self.reply(200, {"ok": True, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite"})
+            return self.reply(200, {"ok": True, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite",
+                                    "catalog": self.server.catalog_service.status()})
         if self.staging_authorized():
             if self.path == "/api/ai":
                 return self.reply(200, {"available": bool(os.environ.get("OPENAI_API_KEY", "").strip())})
@@ -110,19 +112,30 @@ def main():
         raise SystemExit("PostgreSQL connection or migration failed. Check Render database settings.") from None
     with TemporaryDirectory(prefix="lusar-staging-") as directory:
         serve.DATABASE = Path(directory) / "orders.sqlite"
-        with serve.ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), StagingHandler) as server:
-            server.ai_bot = ai_telegram.start_bot()
-            if server.ai_bot is not None:
-                ai_telegram.start_webhook(server.ai_bot)
-            if order_storage.DATABASE_URL and os.environ.get("LUSAR_TELEGRAM_BOT_TOKEN"):
-                try:
-                    sender = notify_orders.sender_from_environment(expected_group="LUSAR — заявки")
-                except ValueError as error:
-                    logging.warning("Уведомления LUSAR отключены. %s", error)
-                else:
-                    logging.info("Запущена отправка уведомлений LUSAR в Telegram.")
-                    Thread(target=notify_orders.run_worker, args=(sender,), daemon=True).start()
-            server.serve_forever()
+        catalog = CatalogService(Path(directory) / "catalog")
+        try:
+            catalog.refresh()
+        except CatalogUnavailable:
+            pass
+        catalog.start()
+        lusar_ai.CATALOG_READER = catalog.current_data
+        try:
+            with serve.ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), StagingHandler) as server:
+                server.catalog_service = catalog
+                server.ai_bot = ai_telegram.start_bot()
+                if server.ai_bot is not None:
+                    ai_telegram.start_webhook(server.ai_bot)
+                if order_storage.DATABASE_URL and os.environ.get("LUSAR_TELEGRAM_BOT_TOKEN"):
+                    try:
+                        sender = notify_orders.sender_from_environment(expected_group="LUSAR — заявки")
+                    except ValueError as error:
+                        logging.warning("Уведомления LUSAR отключены. %s", error)
+                    else:
+                        logging.info("Запущена отправка уведомлений LUSAR в Telegram.")
+                        Thread(target=notify_orders.run_worker, args=(sender,), daemon=True).start()
+                server.serve_forever()
+        finally:
+            catalog.close()
 
 
 if __name__ == "__main__":

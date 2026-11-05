@@ -8,10 +8,10 @@ from pathlib import Path
 from urllib.parse import quote, urlencode
 from xml.etree import ElementTree
 from loyalty import FIRST_ORDER_PERCENT, LOYALTY_TIERS
-from sync_catalog import validate
+from sync_catalog import validate, revision
 
 ROOT = Path(__file__).resolve().parent
-OUT = ROOT / "dist"
+OUT = Path(os.environ.get("LUSAR_BUILD_DIR", ROOT / "dist"))
 PUBLIC_ORIGIN = "https://lusar.am"
 SERVICE_HOURS = "09:30–19:00"
 ANALYTICS_IDS = {
@@ -28,8 +28,9 @@ for provider, pattern in (("google-analytics", r"G-[A-Z0-9]+"), ("yandex-metrica
     if ANALYTICS_IDS[provider] and not re.fullmatch(pattern, ANALYTICS_IDS[provider]):
         raise ValueError(f"Invalid analytics ID: {provider}")
 indexable = []
-data = json.loads((ROOT.parent / "storefront.json").read_text(encoding="utf-8-sig"))
+data = json.loads(Path(os.environ.get("LUSAR_CATALOG_PATH", ROOT.parent / "storefront.json")).read_text(encoding="utf-8-sig"))
 validate(data)
+CATALOG_REVISION = revision(data)
 categories = {item["id"]: item for item in data["categories"]}
 brands = {}
 brand_registry = json.loads((ROOT / "brands.json").read_text(encoding="utf-8"))
@@ -170,7 +171,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         page_class = "product-page"
     page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received"} or page_class == "product-page" else f"<h1>{html.escape(title)}</h1>"
     target.write_text(f"""<!doctype html>
-<html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<html lang="ru" data-catalog-revision="{CATALOG_REVISION}"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><link rel="stylesheet" href="/site.css"></head>
 <body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
 <main id="main" tabindex="-1" class="{page_class}">{page_heading}{body}</main>
@@ -184,7 +185,10 @@ def write(path, title, body, draft=False, *, description="", image="", structure
   <p id="cookie-status" role="status"></p>
 </section>
 {'<dialog id="first-order-promo" aria-labelledby="promo-heading"><h2 id="promo-heading">10% на первый заказ</h2><p>Зарегистрируйтесь и получите скидку на первую покупку.</p><p>' + link("offers/", "Посмотреть условия") + '</p><form method="dialog"><button>Закрыть</button></form></dialog>' if path.rstrip("/") == "catalog" or path.startswith("catalog/product/") else ""}
-<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script></body></html>""", encoding="utf-8")
+<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script><script src="/catalog-live.js" defer></script></body></html>""".replace('src="/cart.js"', f'src="/cart.js?catalog={CATALOG_REVISION}"')
+        .replace('src="/search.js"', f'src="/search.js?catalog={CATALOG_REVISION}"')
+        .replace('src="/ai-preview.js"', f'src="/ai-preview.js?catalog={CATALOG_REVISION}"')
+        .replace('src="/support.js"', f'src="/support.js?catalog={CATALOG_REVISION}"'), encoding="utf-8")
 
 FOOTER_GROUPS = (
     ("Выбор света", (("catalog", "Каталог"), ("rooms", "По комнатам"), ("brands", "Бренды"),
@@ -720,6 +724,7 @@ ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xm
 (OUT / "analytics.js").write_bytes((ROOT / "analytics.js").read_bytes())
 (OUT / "scenes.js").write_bytes((ROOT / "scenes.js").read_bytes())
 (OUT / "site-nav.js").write_bytes((ROOT / "site-nav.js").read_bytes())
+(OUT / "catalog-live.js").write_bytes((ROOT / "catalog-live.js").read_bytes())
 (OUT / "favicon.svg").write_bytes((ROOT / "favicon.svg").read_bytes())
 (OUT / "order-status.js").write_bytes((ROOT / "order-status.js").read_bytes())
 (OUT / "receipt.js").write_bytes((ROOT / "receipt.js").read_bytes())

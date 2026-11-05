@@ -16,6 +16,8 @@ from contextlib import closing
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 import order_storage
 from loyalty import FIRST_ORDER_PERCENT
+from sync_catalog import revision
+from catalog_runtime import CatalogUnavailable
 
 ROOT = Path(__file__).resolve().parent
 DATABASE = ROOT / "orders.local.sqlite"
@@ -101,7 +103,24 @@ def order_amount(lines, promo, *, account_percent=0, first_order=False):
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT / "dist"), **kwargs)
+        service = getattr(args[2], "catalog_service", None)
+        if service:
+            with service.acquire() as generation:
+                self.catalog_generation = generation
+                super().__init__(*args, directory=str(generation.directory), **kwargs)
+        else:
+            self.catalog_generation = None
+            super().__init__(*args, directory=str(ROOT / "dist"), **kwargs)
+
+    def catalog_data(self):
+        return self.catalog_generation.data if self.catalog_generation else json.loads(CATALOG.read_text(encoding="utf-8-sig"))
+
+    def end_headers(self):
+        path = urlsplit(getattr(self, "path", "")).path
+        if not any(header.lower().startswith(b"cache-control:") for header in getattr(self, "_headers_buffer", [])):
+            dynamic = not Path(path).suffix or path.endswith(".html") or Path(path).name in {"cart.js", "search.js", "ai-preview.js", "support.js"}
+            self.send_header("Cache-Control", "no-store" if dynamic else "private, no-cache")
+        super().end_headers()
 
     def list_directory(self, path):
         self.send_error(404)
@@ -137,16 +156,29 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def public_redirect(self):
+        service = getattr(self.server, "catalog_service", None)
+        version = parse_qs(urlsplit(self.path).query).get("catalog", [None])[0]
+        if service and version and urlsplit(self.path).path in {"/cart.js", "/search.js", "/ai-preview.js", "/support.js"}:
+            previous = self.directory
+            with service.acquire(version) as generation:
+                self.directory = str(generation.directory)
+                try:
+                    return self.static_redirect()
+                finally:
+                    self.directory = previous
+        return self.static_redirect()
+
+    def static_redirect(self):
         url = urlsplit(self.path)
         if url.path == "/catalog.html":
             product_id = parse_qs(url.query).get("product", [""])[0]
             if not product_id:
                 return self.redirect_permanently("/catalog")
-            catalog = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
+            catalog = self.catalog_data()
             if any(item["id"] == product_id for item in catalog["products"]):
                 return self.redirect_permanently("/catalog/product/" + quote(product_id, safe=""))
             return self.send_error(404, "Product unavailable")
-        root = (ROOT / "dist").resolve()
+        root = Path(self.directory).resolve()
         path = unquote(url.path)
         brand_id = path.removesuffix("/index.html").rstrip("/").removeprefix("/brands/")
         if path.startswith("/brands/") and brand_id in BRANDS:
@@ -156,6 +188,15 @@ class Handler(SimpleHTTPRequestHandler):
         target = (root / path.lstrip("/")).resolve()
         if not target.is_relative_to(root):
             return self.send_error(404)
+        if path.startswith("/catalog/product/") and not target.is_file() and not (target / "index.html").is_file():
+            body = (root / "catalog/unavailable/index.html").read_bytes()
+            self.send_response(404)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
+            return
         suffix = "?" + url.query if url.query else ""
         if path.endswith("/index.html") and target.is_file():
             clean = path.removesuffix("/index.html") or "/"
@@ -170,6 +211,9 @@ class Handler(SimpleHTTPRequestHandler):
         return self.public_redirect()
 
     def do_GET(self):
+        if urlsplit(self.path).path == "/api/catalog":
+            data = self.catalog_data()
+            return self.reply(200, {**data, "revision": revision(data)})
         if self.path != "/manager/orders/":
             return self.public_redirect()
         if not self.manager_authorized():
@@ -259,7 +303,13 @@ class Handler(SimpleHTTPRequestHandler):
             return self.reply(400, {"error": "Проверьте имя, телефон, email и состав корзины."})
 
         fingerprint = hashlib.sha256(json.dumps([contact, cart, promo, displayed_prices], sort_keys=True).encode()).hexdigest()
-        catalog = json.loads(CATALOG.read_text(encoding="utf-8-sig"))
+        catalog_error = None
+        try:
+            service = getattr(self.server, "catalog_service", None)
+            catalog = service.refresh().data if service else self.catalog_data()
+        except CatalogUnavailable as error:
+            catalog_error = str(error)
+            catalog = {"products": []}
         products = {item["id"]: item for item in catalog["products"]}
         try:
             with order_storage.connect(DATABASE, write=True) as db:
@@ -274,6 +324,8 @@ class Handler(SimpleHTTPRequestHandler):
                         return self.reply(409, {"error": "Заявка уже сохранена с другими данными. Номер: " + existing[0]})
                     token = json.loads(existing[2]).get("trackingToken")
                     return self.reply(200, {"number": existing[0], "trackingToken": token})
+                if catalog_error:
+                    return self.reply(503, {"error": catalog_error})
                 if any(key not in products for key in cart):
                     return self.reply(409, {"error": "Состав каталога изменился. Проверьте корзину."})
                 if any(key not in displayed_prices or displayed_prices[key] != products[key]["price"] for key in cart):

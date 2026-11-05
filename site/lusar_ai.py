@@ -15,6 +15,15 @@ from urllib.request import Request, urlopen
 from sync_catalog import SNAPSHOT
 
 
+CATALOG_READER = None
+
+
+def catalog_data():
+    if CATALOG_READER is not None:
+        return CATALOG_READER()
+    return json.loads(SNAPSHOT.read_text(encoding="utf-8-sig"))
+
+
 MAX_PHOTO = 4 * 1024 * 1024
 MAX_REQUEST = 4 * ((MAX_PHOTO + 2) // 3) + 8192
 MAX_WISHES = 1000
@@ -207,8 +216,9 @@ def analyze(photo, wishes, product_id=None):
     if not os.environ.get("OPENAI_API_KEY", "").strip():
         raise AIError(503, "Lusar AI временно недоступен. Попробуйте позже.")
     mime = photo_type(photo)
-    with SNAPSHOT.open(encoding="utf-8-sig") as source:
-        products = {product["id"]: product for product in json.load(source)["products"]}
+    products = {product["id"]: product for product in catalog_data()["products"]}
+    if not products:
+        raise AIError(503, "В каталоге пока нет опубликованных товаров для примерки.")
     if product_id is not None and (not isinstance(product_id, str) or product_id not in products):
         raise AIError(400, "Выберите опубликованный товар.")
     if not active_requests.acquire(blocking=False):
