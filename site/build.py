@@ -158,6 +158,9 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         attrs = "".join(f' data-{provider}="{value}"' for provider, value in ANALYTICS_IDS.items() if value)
         if attrs:
             analytics = ' data-analytics-enabled="true"' + attrs
+    cart_script = ('<script src="/cart.js" defer></script>'
+                   if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/")
+                   else "")
     target.write_text(f"""<!doctype html>
 <html lang="ru"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><link rel="stylesheet" href="/site.css"></head>
@@ -173,7 +176,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
   <p id="cookie-status" role="status"></p>
 </section>
 {'<dialog id="first-order-promo" aria-labelledby="promo-heading"><h2 id="promo-heading">10% на первый заказ</h2><p>Зарегистрируйтесь и получите скидку на первую покупку.</p><p>' + link("offers/", "Посмотреть условия") + '</p><form method="dialog"><button>Закрыть</button></form></dialog>' if path.rstrip("/") == "catalog" or path.startswith("catalog/product/") else ""}
-<script src="/analytics.js" defer></script><script src="/cart.js" defer></script><script src="/cookie-settings.js" defer></script></body></html>""", encoding="utf-8")
+<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script></body></html>""", encoding="utf-8")
 
 FOOTER_GROUPS = (
     ("Выбор света", (("catalog", "Каталог"), ("rooms", "По комнатам"), ("brands", "Бренды"),
@@ -319,13 +322,15 @@ write("", "Свет для жизни", """
       'width="1536" height="1024" loading="lazy" decoding="async">'
       '<div><div class="section-heading"><h2>Свет по комнатам</h2>' + link("rooms", "Все комнаты →") + '</div>'
       '<ul>' + "".join(f'<li>{link("rooms/" + key, name + " →")}</li>'
-                       for key, (name, *_) in ROOMS.items()) + '</ul></div></section>')
+                       for key, (name, *_) in ROOMS.items()) + '</ul></div></section>',
+      description="Светильники LUSAR для дома и проектов. Каталог освещения и примерка светильников в вашем интерьере с Lusar AI.")
 write("catalog", "Каталог освещения",
       '<div class="section-heading catalog-heading"><h1>Каталог освещения</h1><nav aria-label="Подбор света">' +
       '<a href="#catalog-products">К товарам</a>' + link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' +
       '<section aria-label="Категории">' + category_cards(categories, eager=True) + '</section>' +
       '<section class="catalog-products" id="catalog-products"><h2>Все светильники</h2>' +
-      product_grid(data["products"]) + '</section>')
+      product_grid(data["products"]) + '</section>',
+      description="Каталог LUSAR. Люстры, подвесные и настенные светильники, прожекторы и уличное освещение. Цены в армянских драмах.")
 for key, category in categories.items():
     children = [(category_path(child), item["name"]) for child, item in categories.items() if item.get("parentId") == key]
     products = [item for item in data["products"] if item["categoryId"] == key]

@@ -44,7 +44,7 @@ def photo_type(data):
 def openai_request(path, body, *, content_type="application/json", timeout=45):
     key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not key:
-        raise AIError(503, "Lusar AI пока не подключён на этом стенде.")
+        raise AIError(503, "Lusar AI временно недоступен. Попробуйте позже.")
     request = Request("https://api.openai.com/v1/" + path, body,
                       {"Authorization": f"Bearer {key}", "Content-Type": content_type})
     try:
@@ -205,7 +205,7 @@ def analyze(photo, wishes, product_id=None):
     if not isinstance(wishes, str) or len(wishes) > MAX_WISHES:
         raise AIError(400, "Пожелания должны содержать не более 1000 символов.")
     if not os.environ.get("OPENAI_API_KEY", "").strip():
-        raise AIError(503, "Lusar AI пока не подключён на этом стенде.")
+        raise AIError(503, "Lusar AI временно недоступен. Попробуйте позже.")
     mime = photo_type(photo)
     with SNAPSHOT.open(encoding="utf-8-sig") as source:
         products = {product["id"]: product for product in json.load(source)["products"]}
@@ -219,7 +219,7 @@ def analyze(photo, wishes, product_id=None):
             while recent_requests and now - recent_requests[0] >= 3600:
                 recent_requests.popleft()
             if len(recent_requests) >= 20:
-                raise AIError(429, "На стенде исчерпан часовой лимит Lusar AI.")
+                raise AIError(429, "Достигнут часовой лимит примерок. Попробуйте позже.")
             recent_requests.append(now)
         if product_id is not None:
             return render_room(photo, mime, wishes, [products[product_id]])

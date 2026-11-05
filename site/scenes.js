@@ -10,6 +10,7 @@
   const buttons = [...controls.querySelectorAll("[data-scene]")];
   let requested = 0;
   let current = "warm";
+  let transition;
   controls.hidden = false;
   for (const button of buttons) {
     button.addEventListener("click", () => {
@@ -23,6 +24,18 @@
       const next = new Image();
       next.addEventListener("load", () => {
         if (request !== requested) return;
+        transition?.cancel();
+        if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          const previous = image.cloneNode();
+          previous.removeAttribute("id");
+          previous.removeAttribute("fetchpriority");
+          previous.alt = "";
+          previous.setAttribute("aria-hidden", "true");
+          previous.className = "scene-previous";
+          image.after(previous);
+          transition = previous.animate([{opacity: 1}, {opacity: 0}], {duration: 240, easing: "ease-out"});
+          transition.finished.then(() => previous.remove(), () => previous.remove());
+        }
         image.src = next.src;
         image.alt = alt;
         caption.textContent = description;

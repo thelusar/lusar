@@ -101,7 +101,7 @@ function renderCart() {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.textContent = "Удалить";
-    remove.setAttribute("aria-label", `Удалить из корзины: ${product.name}`);
+    remove.setAttribute("aria-label", product ? `Удалить из корзины: ${product.name}` : "Удалить недоступный товар");
     remove.addEventListener("click", () => {
       const next = { ...cart };
       delete next[id];

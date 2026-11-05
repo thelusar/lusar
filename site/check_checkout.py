@@ -121,6 +121,33 @@ openPage("/catalog", page => {
   });
 });
 }
+function checkUnavailableCart() {
+  frame.contentWindow.localStorage.setItem("lusar-cart", JSON.stringify({"missing-published-product": 1}));
+  openPage("/cart", page => {
+    const remove = page.querySelector("#cart-items button");
+    require(remove, "Unavailable product cannot be removed from the cart");
+    require(page.querySelector("#checkout-link").hidden, "Unavailable product can be ordered");
+    remove.click();
+    require(!page.querySelector("#cart-items button"), "Unavailable product was not removed");
+    require(frame.contentWindow.localStorage.getItem("lusar-cart") === "{}", "Cart was not saved after removal");
+    startShopping();
+  });
+}
+async function checkMenuResize(page) {
+  const originalWidth = frame.width;
+  const settleResize = () => new Promise(resolve => setTimeout(resolve, 100));
+  try {
+    frame.width = "1100";
+    await settleResize();
+    page.querySelector(".nav-dropdown summary").focus();
+    frame.width = originalWidth;
+    await settleResize();
+    require(page.activeElement === page.querySelector("#menu-toggle"), "Focus remained inside the hidden mobile menu");
+    checkUnavailableCart();
+  } catch (error) {
+    output.textContent = "FAIL: " + error.message;
+  }
+}
 openPage("/", page => {
   mobileLayout(page);
   const picker = page.querySelector("#language");
@@ -164,7 +191,7 @@ openPage("/", page => {
     if (day.getAttribute("aria-pressed") === "true") {
       require(page.querySelector("#scene-image").src.endsWith("lusar-scene-day.webp"), "Wrong daylight frame");
       mobileLayout(page);
-      startShopping();
+      checkMenuResize(page);
     } else if (Date.now() < timeout) {
       setTimeout(waitForScene, 25);
     } else {

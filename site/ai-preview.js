@@ -33,7 +33,7 @@
   fetch("/api/ai", { cache: "no-store" }).then(response => response.ok ? response.json() : {}).then(data => {
     available = data.available === true;
     submit.disabled = !available;
-    if (!available) resultStatus.textContent = "Lusar AI пока не подключён на этом стенде.";
+    if (!available) resultStatus.textContent = "Lusar AI временно недоступен. Попробуйте позже.";
   }).catch(() => { resultStatus.textContent = "Не удалось проверить доступность Lusar AI."; });
   input.addEventListener("change", () => {
     resetResult();

@@ -4,6 +4,9 @@
   const menuToggle = header.querySelector("#menu-toggle");
   const narrow = matchMedia("(max-width: 58rem)");
   const dropdowns = [...nav.querySelectorAll(".nav-dropdown")];
+  for (const link of nav.querySelectorAll("a")) {
+    if (link.pathname === location.pathname) link.setAttribute("aria-current", "page");
+  }
 
   function setMenu(open) {
     header.dataset.navOpen = String(open);
@@ -18,7 +21,14 @@
   header.dataset.navOpen = "false";
   menuToggle.hidden = false;
   menuToggle.addEventListener("click", () => setMenu(header.dataset.navOpen !== "true"));
-  narrow.addEventListener("change", () => setMenu(false));
+  narrow.addEventListener("change", () => {
+    const restoreFocus = narrow.matches && nav.contains(document.activeElement);
+    setMenu(false);
+    if (restoreFocus) menuToggle.focus();
+  });
+  header.addEventListener("focusout", event => {
+    if (event.relatedTarget && !header.contains(event.relatedTarget)) setMenu(false);
+  });
   for (const dropdown of dropdowns) {
     const summary = dropdown.querySelector("summary");
     summary.addEventListener("click", () => {
