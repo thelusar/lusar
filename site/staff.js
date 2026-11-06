@@ -1,6 +1,4 @@
-(() => {
-  const team = document.querySelector("#staff-team-summary");
-  if (team && matchMedia("(max-width: 53rem)").matches) team.open = false;
+function initializeWorkspace() {
   const login = document.querySelector("[data-staff-login]");
   if (login && /^#LS-(?:[0-9]{6}|[A-F0-9]{12})$/.test(location.hash)) {
     const url = new URL(login.href);
@@ -9,22 +7,124 @@
       login.href = url.href;
     }
   }
-  const search = document.querySelector("#staff-order-search");
+
+  const main = document.querySelector("#staff-main");
+  const nav = document.querySelector(".staff-section-nav");
+  if (!main || !nav) return;
+
+  const sidebar = nav.closest(".staff-sidebar");
+  const profile = sidebar.querySelector(".staff-profile")?.outerHTML;
+  const slot = sidebar.querySelector(".staff-team-slot");
+  const links = [...nav.querySelectorAll("a")];
+  const sectionPaths = new Set(links.map(link => new URL(link.href).pathname));
+  const pageKey = url => url.pathname + url.search;
+  let currentPage = pageKey(location);
+  let pageListeners = new AbortController();
+  let request;
+  let teamOpen = !matchMedia("(max-width: 53rem)").matches;
+  const initialTeam = slot.querySelector("#staff-team-summary");
+  if (initialTeam) initialTeam.open = teamOpen;
+
+  function updateTeam(fresh) {
+    const team = slot.querySelector("#staff-team-summary");
+    if (team) teamOpen = team.open;
+    if (team && fresh) {
+      team.replaceChildren(...fresh.children);
+    } else {
+      slot.replaceChildren();
+      if (fresh) {
+        fresh.open = teamOpen;
+        slot.append(fresh);
+      }
+    }
+  }
+
+  async function navigate(url, fromHistory) {
+    request?.abort();
+    request = null;
+    if (pageKey(url) === currentPage && (fromHistory || url.href === location.href)) {
+      main.removeAttribute("aria-busy");
+      return;
+    }
+
+    const pending = new AbortController();
+    request = pending;
+    main.setAttribute("aria-busy", "true");
+    try {
+      const response = await fetch(url, {signal: pending.signal});
+      if (!response.ok || response.redirected) throw new Error("Navigation requires a page load");
+      const page = new DOMParser().parseFromString(await response.text(), "text/html");
+      if (pending.signal.aborted) return;
+      const incoming = page.querySelector("#staff-main");
+      const incomingNav = [...page.querySelectorAll(".staff-section-nav a")];
+      if (!incoming || profile !== page.querySelector(".staff-profile")?.outerHTML ||
+          links.length !== incomingNav.length ||
+          links.some((link, index) => link.getAttribute("href") !== incomingNav[index].getAttribute("href"))) {
+        throw new Error("The staff session changed");
+      }
+
+      if (!fromHistory) history.pushState(null, "", url);
+      currentPage = pageKey(url);
+      pageListeners.abort();
+      pageListeners = new AbortController();
+      main.removeAttribute("data-autosave");
+      main.replaceChildren(...incoming.childNodes);
+      updateTeam(page.querySelector("#staff-team-summary"));
+      links.forEach((link, index) => {
+        if (incomingNav[index].hasAttribute("aria-current")) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      document.title = page.title;
+      window.scrollTo(0, 0);
+      main.focus({preventScroll: true});
+      if (typeof main.animate === "function" && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        main.getAnimations().forEach(animation => animation.cancel());
+        main.animate([{opacity: .84}, {opacity: 1}], {duration: 140, easing: "ease-out"});
+      }
+      initializeOrders(main, slot.querySelector("#staff-team-summary"), pageListeners.signal);
+    } catch (error) {
+      if (pending.signal.aborted) return;
+      if (fromHistory) location.reload();
+      else location.assign(url);
+    } finally {
+      if (request === pending) {
+        main.removeAttribute("aria-busy");
+        request = null;
+      }
+    }
+  }
+
+  document.addEventListener("click", event => {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    const link = event.target.closest(".staff-workspace a[href]");
+    if (!link || link.target || link.hasAttribute("download")) return;
+    const url = new URL(link.href);
+    if (url.origin !== location.origin || !sectionPaths.has(url.pathname)) return;
+    if (pageKey(url) === pageKey(location) && url.hash && url.hash !== location.hash) return;
+    event.preventDefault();
+    void navigate(url, false);
+  });
+  window.addEventListener("popstate", () => void navigate(new URL(location.href), true));
+  initializeOrders(main, initialTeam, pageListeners.signal);
+}
+
+function initializeOrders(main, team, signal) {
+  const search = main.querySelector("#staff-order-search");
   if (!search) return;
 
-  const orders = [...document.querySelectorAll(".staff-order")];
-  const toolbar = document.querySelector(".staff-filters");
+  const orders = [...main.querySelectorAll(".staff-order")];
+  const toolbar = main.querySelector(".staff-filters");
   const filters = [...toolbar.querySelectorAll("[data-filter]")];
-  const result = document.querySelector("#staff-result-count");
-  const reset = document.querySelector("#staff-reset");
-  const empty = document.querySelector("#staff-no-match");
-  const feedback = document.querySelector("#staff-save-feedback");
-  const dialog = document.querySelector("#staff-cancel");
-  const drawer = document.querySelector("#staff-order-drawer");
+  const result = main.querySelector("#staff-result-count");
+  const reset = main.querySelector("#staff-reset");
+  const empty = main.querySelector("#staff-no-match");
+  const feedback = main.querySelector("#staff-save-feedback");
+  const dialog = main.querySelector("#staff-cancel");
+  const drawer = main.querySelector("#staff-order-drawer");
   const drawerContent = drawer.querySelector(".staff-drawer-content");
   const drawerClose = drawer.querySelector("button");
   const drawerTitle = drawer.querySelector("h2");
-  const overview = document.querySelector("#staff-overview");
+  const overview = main.querySelector("#staff-overview");
   const digits = text => text.replace(/\D/g, "");
   let status = filters.find(button => button.getAttribute("aria-pressed") === "true").dataset.filter;
   let drawerOrder = null;
@@ -118,7 +218,7 @@
     const order = document.getElementById(location.hash.slice(1));
     if (!order?.matches(".staff-order") || order === drawerOrder) return;
     if (drawerOrder) closeOrder();
-    const notice = document.querySelector(".staff-main > .staff-notice:not(#staff-save-feedback)");
+    const notice = main.querySelector(":scope > .staff-notice:not(#staff-save-feedback)");
     presentOrder(order, notice);
   }
 
@@ -171,6 +271,7 @@
         throw new Error(problem.error || "Не удалось сохранить статус. Обновите список и попробуйте снова.");
       }
       const page = new DOMParser().parseFromString(await response.text(), "text/html");
+      if (signal.aborted) return;
       const updated = page.getElementById(order.id);
       if (!response.redirected || !updated?.matches(".staff-order")) {
         throw new Error("Не удалось подтвердить сохранение. Обновите страницу.");
@@ -181,7 +282,7 @@
       orders[orders.indexOf(order)] = updated;
       order.replaceWith(updated);
       for (const selector of [".staff-metrics", ".staff-inbox"]) {
-        const current = document.querySelector(selector);
+        const current = main.querySelector(selector);
         const fresh = page.querySelector(selector);
         if (current && fresh) current.replaceWith(fresh);
       }
@@ -208,20 +309,20 @@
   }
 
   if (typeof dialog?.showModal === "function") {
-    document.body.dataset.autosave = "true";
-    document.addEventListener("change", event => {
+    main.dataset.autosave = "true";
+    main.addEventListener("change", event => {
       const picker = event.target;
       if (picker.matches(".staff-status-form select")) void saveStatus(picker.form);
-    });
-    document.addEventListener("submit", event => {
+    }, {signal});
+    main.addEventListener("submit", event => {
       if (!event.target.matches(".staff-status-form")) return;
       event.preventDefault();
       void saveStatus(event.target);
-    });
+    }, {signal});
   }
 
   if (typeof drawer.showModal === "function") {
-    document.addEventListener("click", event => {
+    main.addEventListener("click", event => {
       const summary = event.target.closest(".staff-order-row");
       const queueLink = event.target.closest(".staff-queue a");
       if (queueLink && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
@@ -229,7 +330,7 @@
       if (!order) return;
       event.preventDefault();
       presentOrder(order);
-    });
+    }, {signal});
     drawerClose.addEventListener("click", closeOrder);
     let startedOnBackdrop = false;
     function onBackdrop(event) {
@@ -266,6 +367,8 @@
   if (orders.length) search.closest(".staff-filter-tools").hidden = false;
   toolbar.hidden = false;
   filterOrders();
-  window.addEventListener("hashchange", openLinkedOrder);
+  window.addEventListener("hashchange", openLinkedOrder, {signal});
   openLinkedOrder();
-})();
+}
+
+initializeWorkspace();

@@ -15,7 +15,7 @@ ROLE_NAMES = {'admin': 'Администратор', 'manager': 'Менедже�
 ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': 'Возврат', 'refund_paid': 'Выплата по возврату'}
 ORDERS_PATH = '/manager/orders/'
 ACCESS_PATH = '/manager/access'
-UI_VERSION = 5
+UI_VERSION = 6
 
 
 def account_id(value):
@@ -65,7 +65,7 @@ def page(handler, status, title, content, *, actor=None, active=None, sidebar=''
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{html.escape(title)} · LUSAR</title><script src="/theme.js"></script>'
             f'<link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/staff.css?v={UI_VERSION}">'
-            f'<script src="/staff.js?v={UI_VERSION}" defer></script></head><body class="staff-page">{layout}</body></html>').encode()
+            f'<script type="module" src="/staff.js?v={UI_VERSION}"></script></head><body class="staff-page">{layout}</body></html>').encode()
     handler.send_response(status)
     handler.send_header('Content-Type', 'text/html; charset=utf-8')
     handler.send_header('Cache-Control', 'no-store')

@@ -243,8 +243,9 @@ def layout(title, content, *, actor=None, active=None, role_label='', sidebar=''
     return (f'<a class="staff-skip" href="#staff-main">К содержанию</a><div class="staff-workspace">'
             f'<aside class="staff-sidebar"><div class="staff-brand-row">{brand}{theme}</div>{profile}'
             f'<p class="staff-kicker">Рабочие разделы</p>'
-            f'<nav aria-label="Рабочие разделы"><a href="/manager/orders/"{overview_current}>{icon("overview")}Обзор</a>'
-            f'<a href="/manager/orders/?view=orders"{orders_current}>{icon("orders")}Заказы</a>{access}</nav>{sidebar}'
+            f'<nav class="staff-section-nav" aria-label="Рабочие разделы"><a href="/manager/orders/"{overview_current}>{icon("overview")}Обзор</a>'
+            f'<a href="/manager/orders/?view=orders"{orders_current}>{icon("orders")}Заказы</a>{access}</nav>'
+            f'<div class="staff-team-slot">{sidebar}</div>'
             f'<nav class="staff-sidebar-footer" aria-label="Личные ссылки">'
             f'<a href="/" aria-label="На сайт" title="На сайт">{icon("arrow")}<span>На сайт</span></a></nav></aside>'
-            f'<main id="staff-main" class="staff-main">{content}</main></div>')
+            f'<main id="staff-main" class="staff-main" tabindex="-1">{content}</main></div>')
