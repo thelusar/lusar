@@ -16,7 +16,7 @@ ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': '
 ORDERS_PATH = '/manager/orders/'
 ACCESS_PATH = '/manager/access'
 TRANSFER_PATH = '/manager/orders-transfer'
-UI_VERSION = 11
+UI_VERSION = 12
 
 
 def account_id(value):
