@@ -336,7 +336,8 @@ html:has(.staff-workspace) { scrollbar-gutter: stable; }
 .staff-transfer { display: grid; gap: 1rem; }
 .staff-transfer > h1, .staff-transfer > .staff-notice { margin: 0; }
 .staff-transfer h2 { margin: 0; }
-.staff-transfer section > p { margin: 0 1.15rem .9rem; color: var(--staff-muted); max-width: 78ch; }
+.staff-transfer section > p, .staff-transfer-help { margin: 0 1.15rem .9rem; color: var(--staff-muted); max-width: 78ch; }
+.staff-transfer-templates { display: flex; flex-wrap: wrap; gap: .5rem; }
 .staff-transfer-filters, .staff-transfer-actions, .staff-transfer-pagination,
 .staff-transfer form[enctype] { display: flex; align-items: end; flex-wrap: wrap; gap: .65rem; padding: 0 1.15rem 1rem; }
 .staff-transfer label { display: grid; gap: .3rem; min-width: 0; }

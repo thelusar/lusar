@@ -26,6 +26,7 @@ from joserfc.jwk import RSAKey, KeySet
 
 import customer_accounts as accounts
 import notify_orders
+import order_files
 import order_storage
 import serve
 
@@ -75,7 +76,11 @@ class Client:
         connection.request('POST' if data is not None else 'GET', path, body, headers)
         response = connection.getresponse()
         raw = response.read()
-        result = json.loads(raw) if raw and response.headers.get_content_type() == 'application/json' else raw.decode('utf-8')
+        content = response.headers.get_content_type()
+        if content in ('application/pdf', order_files.XLSX_TYPE):
+            result = raw
+        else:
+            result = json.loads(raw) if raw and content == 'application/json' else raw.decode('utf-8')
         for key, value in response.getheaders():
             if key.lower() == 'set-cookie':
                 for name, cookie in SimpleCookie(value).items():
@@ -372,10 +377,11 @@ class AccountTests(unittest.TestCase):
             second = f'LS-123457;2026-01-03T00:00:00+04:00;Other;077000000;;;{sku};1\r\n'
 
             def upload(rows):
-                multipart = ('--check\r\nContent-Disposition: form-data; name="token"\r\n\r\n' + token +
-                             '\r\n--check\r\nContent-Disposition: form-data; name="file"; filename="orders.csv"\r\n'
-                             'Content-Type: text/csv\r\n\r\n' + template + rows + '\r\n--check--\r\n')
-                return self.client.request(path + '/import', multipart.encode(), content_type='multipart/form-data; boundary=check')
+                file_data = (template + rows).encode() if isinstance(rows, str) else rows
+                multipart = (f'--check\r\nContent-Disposition: form-data; name="token"\r\n\r\n{token}\r\n'
+                             '--check\r\nContent-Disposition: form-data; name="file"; filename="orders"\r\n'
+                             'Content-Type: application/octet-stream\r\n\r\n').encode() + file_data + b'\r\n--check--\r\n'
+                return self.client.request(path + '/import', multipart, content_type='multipart/form-data; boundary=check')
 
             code, error, _ = upload(first + second.replace(sku, 'unknown-sku'))
             self.assertEqual(code, 400)
@@ -402,6 +408,39 @@ class AccountTests(unittest.TestCase):
             self.assertEqual([row['number'] for row in export(scope='all', sort='oldest')], ['LS-123456', 'LS-123456', 'LS-123457'])
             self.assertEqual(export(scope='all', status='completed'), [])
             self.assertEqual(self.client.request(path + '/export', {'token': 'invalid', 'scope': 'all'}, form=True)[0], 403)
+
+            from openpyxl import load_workbook
+
+            selected = {'token': token, 'scope': 'selected', 'number': ['LS-123456']}
+            code, body, headers = self.client.request(path + '/export', {**selected, 'format': 'xlsx'}, form=True)
+            self.assertEqual((code, headers.get_content_type()), (200, order_files.XLSX_TYPE))
+            workbook = load_workbook(io.BytesIO(body))
+            sheet = workbook.active
+            self.assertEqual([cell.value for cell in sheet['A'][1:]], ['LS-123456'] * 2)
+            self.assertEqual((sheet['C2'].data_type, sheet['C2'].value, sheet['D2'].value), ('s', '=Test', '+37400000000'))
+            self.assertEqual(sheet['H2'].data_type, 'n')
+            self.assertEqual(upload(body)[2]['Location'], f'{path}?added=0&skipped=1')
+
+            code, body, headers = self.client.request(path + '/template?format=xlsx')
+            self.assertEqual((code, headers.get_content_type()), (200, order_files.XLSX_TYPE))
+            workbook = load_workbook(io.BytesIO(body))
+            sheet = workbook.active
+            self.assertEqual(sheet.column_dimensions['D'].number_format, '@')
+            sheet.append(['LS-123458', '', 'Անի', '077000000', '', '', sku, 1])
+            modified = io.BytesIO()
+            workbook.save(modified)
+            self.assertEqual(upload(modified.getvalue())[2]['Location'], f'{path}?added=1&skipped=0')
+            self.assertEqual(self.saved('LS-123458')['contact']['phone'], '077000000')
+            sheet['C2'] = '=2+2'
+            modified = io.BytesIO()
+            workbook.save(modified)
+            code, error, _ = upload(modified.getvalue())
+            self.assertEqual(code, 400)
+            self.assertIn('замените формулы', error)
+
+            code, body, headers = self.client.request(path + '/export', {**selected, 'format': 'pdf'}, form=True)
+            self.assertEqual((code, headers.get_content_type()), (200, 'application/pdf'))
+            self.assertTrue(body.startswith(b'%PDF-'))
 
 
 if __name__ == '__main__':

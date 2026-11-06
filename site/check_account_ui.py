@@ -138,6 +138,8 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  await until(()=>activeSection('Импорт и экспорт')&&page.querySelector('[data-order-export]'));
  require(frame.contentDocument===page&&page.querySelector('#theme-toggle')===themeToggle,'Order transfer rebuilt the page shell');
  const selectedExport=page.querySelector('[data-order-export] [value="selected"]');
+ const format=page.querySelector('[data-order-export] select[name="format"]');
+ require([...format.options].map(option=>option.value).join('|')==='xlsx|pdf|csv','Export formats are missing');
  require(selectedExport.disabled,'Empty selection can be exported');
  page.querySelector('[data-select-page]').click();
  require(!selectedExport.disabled&&selectedExport.textContent.includes('(1)'),'Selecting all orders did not enable export');
