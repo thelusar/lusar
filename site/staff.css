@@ -14,7 +14,7 @@
   --staff-accent-wash: #d6bc861c;
   --staff-accent-hover: #eed8ad;
   --staff-new: var(--staff-accent);
-  --staff-progress: #9fbbff;
+  --staff-progress: #d4a18d;
   --staff-success: #c4b1ff;
   --staff-danger: #f1a9be;
   --staff-ambient: #bf9d6210;
@@ -45,7 +45,7 @@
   --staff-accent-wash: #ece1ce;
   --staff-accent-hover: #634316;
   --staff-new: var(--staff-accent);
-  --staff-progress: #3659a1;
+  --staff-progress: #794735;
   --staff-success: #5a4394;
   --staff-danger: #943853;
   --staff-ambient: #efe4cf94;
@@ -56,6 +56,7 @@
 }
 .staff-page a { color: var(--staff-accent); }
 .staff-page :focus-visible { outline: 2px solid var(--staff-accent); outline-offset: 3px; }
+.staff-page :is(select, input[type="number"]):focus-visible { outline-width: 1px; outline-offset: 1px; }
 .staff-page svg { flex: none; }
 .staff-page [hidden] { display: none; }
 html:has(.staff-workspace) { scrollbar-gutter: stable; }
@@ -452,6 +453,42 @@ html:has(.staff-workspace) { scrollbar-gutter: stable; }
 .staff-status-picker select:disabled { opacity: .65; cursor: wait; }
 .staff-status-picker svg { position: absolute; right: .5rem; top: 50%; translate: 0 -50%; color: var(--staff-tone, var(--staff-accent)); pointer-events: none; }
 .staff-status-picker option { background: var(--staff-card); color: var(--staff-ink); }
+@supports (appearance: base-select) and selector(::picker(select)) {
+  .staff-page select,
+  .staff-page .staff-status-picker select,
+  .staff-page select::picker(select) { appearance: base-select; }
+  .staff-page select { min-width: 0; gap: .55rem; }
+  .staff-page .staff-status-picker select { padding-inline-end: .55rem; }
+  .staff-status-picker > svg { display: none; }
+  .staff-page select::picker-icon { color: var(--staff-tone, var(--staff-muted)); }
+  .staff-page select:open::picker-icon { rotate: 180deg; }
+  .staff-page select::picker(select) {
+    margin-block: .25rem;
+    max-inline-size: min(26rem, calc(100vw - 2rem));
+    padding: .25rem;
+    border: 1px solid var(--staff-line);
+    border-radius: .65rem;
+    background: var(--staff-card);
+    color: var(--staff-ink);
+    box-shadow: 0 8px 24px #0004;
+  }
+  .staff-page select option {
+    padding: .48rem .6rem;
+    border-radius: .4rem;
+    background: transparent;
+    color: var(--staff-ink);
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .staff-page select option:checked { color: var(--staff-accent); font-weight: 600; }
+  .staff-page select option::checkmark { color: var(--staff-accent); }
+  .staff-page select option:disabled { color: var(--staff-muted); }
+  .staff-page select option:enabled:is(:hover, :focus) {
+    outline: none;
+    background: var(--staff-accent-wash);
+    color: var(--staff-accent);
+  }
+}
 .staff-main[data-autosave] .staff-status-form > button { display: none; }
 .staff-save-state { color: var(--staff-muted); }
 .staff-save-state[data-state="error"] { color: var(--staff-danger); }
