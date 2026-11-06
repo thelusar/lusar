@@ -15,7 +15,7 @@ ROLE_NAMES = {'admin': 'Администратор', 'manager': 'Менедже�
 ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': 'Возврат', 'refund_paid': 'Выплата по возврату'}
 ORDERS_PATH = '/manager/orders/'
 ACCESS_PATH = '/manager/access'
-UI_VERSION = 6
+UI_VERSION = 7
 
 
 def account_id(value):
