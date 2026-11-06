@@ -18,8 +18,14 @@
   const empty = document.querySelector("#staff-no-match");
   const feedback = document.querySelector("#staff-save-feedback");
   const dialog = document.querySelector("#staff-cancel");
+  const drawer = document.querySelector("#staff-order-drawer");
+  const drawerContent = drawer.querySelector(".staff-drawer-content");
+  const drawerClose = drawer.querySelector("button");
+  const drawerTitle = drawer.querySelector("h2");
+  const overview = document.querySelector("#staff-overview");
   const digits = text => text.replace(/\D/g, "");
   let status = "";
+  let drawerOrder = null;
 
   function filterOrders() {
     const query = search.value.trim().toLowerCase();
@@ -32,10 +38,11 @@
       const matches = order.id.toLowerCase().includes(query) ||
         customer.textContent.toLowerCase().includes(query) ||
         (phoneQuery && digits(customer.querySelector("small").textContent).includes(phoneQuery));
-      order.hidden = Boolean((status && order.dataset.status !== status) || !matches);
+      const outsidePreview = overview && !status && !query && visible >= 4;
+      order.hidden = Boolean(outsidePreview || (status && order.dataset.status !== status) || !matches);
       if (!order.hidden) visible += 1;
     }
-    result.textContent = status || query ? `Показано: ${visible} из ${orders.length}` : `Всего заявок: ${orders.length}`;
+    result.textContent = visible < orders.length ? `Показано: ${visible} из ${orders.length}` : `Всего заявок: ${orders.length}`;
     for (const button of filters) {
       button.setAttribute("aria-pressed", String(button.dataset.filter === status));
       button.querySelector("strong").textContent = button.dataset.filter ? counts.get(button.dataset.filter) ?? 0 : orders.length;
@@ -44,18 +51,39 @@
     if (empty) empty.hidden = visible > 0;
   }
 
+  function presentOrder(order, notice) {
+    const details = order.querySelector(".staff-order-details");
+    if (notice) details.prepend(notice);
+    order.open = true;
+    if (typeof drawer.showModal !== "function") {
+      order.scrollIntoView({block: "nearest"});
+      return;
+    }
+    drawerOrder = order;
+    drawerTitle.textContent = order.id;
+    drawerContent.replaceChildren(details);
+    drawer.scrollTop = 0;
+    if (!drawer.open) drawer.showModal();
+    else (details.querySelector("select[name=target]") ?? drawerClose).focus({preventScroll: true});
+  }
+
+  function closeOrder() {
+    const order = drawerOrder;
+    order.append(drawerContent.firstElementChild);
+    order.open = false;
+    drawerOrder = null;
+    drawer.close();
+    if (location.hash === "#" + order.id) history.replaceState(null, "", location.pathname + location.search);
+    const focus = order.hidden ? toolbar.querySelector('[aria-pressed="true"]') : order.querySelector("summary");
+    focus.focus({preventScroll: true});
+  }
+
   function openLinkedOrder() {
     const order = document.getElementById(location.hash.slice(1));
-    if (!order?.matches(".staff-order")) return;
-    if (order.hidden) {
-      search.value = "";
-      status = "";
-      filterOrders();
-    }
-    order.open = true;
+    if (!order?.matches(".staff-order") || order === drawerOrder) return;
+    if (drawerOrder) closeOrder();
     const notice = document.querySelector(".staff-main > .staff-notice:not(#staff-save-feedback)");
-    if (notice) order.querySelector(".staff-order-details").prepend(notice);
-    order.scrollIntoView({block: "nearest"});
+    presentOrder(order, notice);
   }
 
   function confirmCancellation() {
@@ -81,7 +109,7 @@
   async function saveStatus(form) {
     const picker = form.elements.target;
     if (!picker.value || picker.disabled) return;
-    const order = form.closest(".staff-order");
+    const order = form.closest(".staff-order") ?? drawerOrder;
     const message = form.querySelector("[data-save-state]");
     const fields = new URLSearchParams(new FormData(form));
     picker.disabled = true;
@@ -111,17 +139,21 @@
       if (!response.redirected || !updated?.matches(".staff-order")) {
         throw new Error("Не удалось подтвердить сохранение. Обновите страницу.");
       }
-      const restoreFocus = document.activeElement === document.body || order.contains(document.activeElement);
+      const inDrawer = order === drawerOrder;
+      const restoreFocus = inDrawer || document.activeElement === document.body || order.contains(document.activeElement);
       updated.open = order.open;
       orders[orders.indexOf(order)] = updated;
       order.replaceWith(updated);
+      const freshOverview = page.querySelector("#staff-overview");
+      if (overview && freshOverview) overview.replaceChildren(...freshOverview.children);
       filterOrders();
       const notice = page.querySelector(".staff-notice");
+      if (inDrawer) presentOrder(updated, notice);
       if (updated.hidden || !updated.open) {
         feedback.textContent = `${updated.id} · Статус сохранён`;
         feedback.hidden = false;
-        if (restoreFocus) toolbar.querySelector('[aria-pressed="true"]').focus();
-      } else {
+        if (restoreFocus && !inDrawer) toolbar.querySelector('[aria-pressed="true"]').focus();
+      } else if (!inDrawer) {
         if (notice) updated.querySelector(".staff-detail-header").append(notice);
         if (restoreFocus) (updated.querySelector("select[name=target]") ?? updated.querySelector("summary")).focus({preventScroll: true});
       }
@@ -147,6 +179,23 @@
     });
   }
 
+  if (typeof drawer.showModal === "function") {
+    document.addEventListener("click", event => {
+      const summary = event.target.closest(".staff-order-row");
+      const queueLink = event.target.closest(".staff-queue a");
+      if (queueLink && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
+      const order = summary?.parentElement ?? (queueLink && document.getElementById(queueLink.hash.slice(1)));
+      if (!order) return;
+      event.preventDefault();
+      presentOrder(order);
+    });
+    drawerClose.addEventListener("click", closeOrder);
+    drawer.addEventListener("cancel", event => {
+      event.preventDefault();
+      closeOrder();
+    });
+  }
+
   for (const button of filters) {
     button.addEventListener("click", () => {
       status = button.dataset.filter;
@@ -162,6 +211,7 @@
   });
   if (orders.length) search.closest(".staff-filter-tools").hidden = false;
   toolbar.hidden = false;
+  filterOrders();
   window.addEventListener("hashchange", openLinkedOrder);
   openLinkedOrder();
 })();

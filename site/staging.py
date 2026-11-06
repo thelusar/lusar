@@ -40,7 +40,8 @@ class StagingHandler(serve.Handler):
             return self.reply(200, {"ok": True, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite",
                                     "catalog": self.server.catalog_service.status(),
                                     "accounts": {"configured": self.customer_service().config.enabled},
-                                    "staff": {"owner_configured": staff.owner_id() is not None}})
+                                    "staff": {"owner_configured": staff.owner_id() is not None,
+                                              "ui_version": staff.UI_VERSION}})
         if self.staging_authorized():
             if self.path == "/api/ai":
                 return self.reply(200, {"available": bool(os.environ.get("OPENAI_API_KEY", "").strip())})

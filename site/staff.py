@@ -13,6 +13,7 @@ ROLE_NAMES = {'admin': 'Администратор', 'manager': 'Менедже�
 ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': 'Возврат', 'refund_paid': 'Выплата по возврату'}
 ORDERS_PATH = '/manager/orders/'
 ACCESS_PATH = '/manager/access'
+UI_VERSION = 3
 
 
 def account_id(value):
@@ -32,6 +33,7 @@ class Actor:
     email: str
     role: str | None
     form_key: bytes
+    name: str = ''
 
 
 def identity(handler, db=None):
@@ -45,13 +47,13 @@ def identity(handler, db=None):
     session = service.session(handler, db)
     if not session:
         return None
-    row = db.execute('SELECT customers.email, staff_roles.role FROM customers '
+    row = db.execute('SELECT customers.email, staff_roles.role, customers.name FROM customers '
                      'LEFT JOIN staff_roles ON staff_roles.customer_id = customers.id WHERE customers.id = ?',
                      (session['id'],)).fetchone()
     if not row:
         return None
     role = 'admin' if session['id'] == owner_id() else row[1]
-    return Actor(session['id'], row[0], role, bytes.fromhex(session['csrf']))
+    return Actor(session['id'], row[0], role, bytes.fromhex(session['csrf']), row[2] or '')
 
 
 def page(handler, status, title, content, *, actor=None, active=None):
@@ -59,8 +61,8 @@ def page(handler, status, title, content, *, actor=None, active=None):
     body = ('<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{html.escape(title)} · LUSAR</title><script src="/theme.js"></script>'
-            '<link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/staff.css?v=2">'
-            f'<script src="/staff.js?v=2" defer></script></head><body class="staff-page">{layout}</body></html>').encode()
+            f'<link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/staff.css?v={UI_VERSION}">'
+            f'<script src="/staff.js?v={UI_VERSION}" defer></script></head><body class="staff-page">{layout}</body></html>').encode()
     handler.send_response(status)
     handler.send_header('Content-Type', 'text/html; charset=utf-8')
     handler.send_header('Cache-Control', 'no-store')

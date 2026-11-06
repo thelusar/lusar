@@ -281,11 +281,18 @@ class Handler(SimpleHTTPRequestHandler):
         for number, *event in events:
             history.setdefault(number, []).append(event)
         counts = dict.fromkeys(STATUS_LABELS, 0)
+        overview = parse_qs(urlsplit(self.path).query).get('view') != ['orders']
+        queue = []
         cards = []
         for number, status, created, raw in rows:
             if status in counts:
                 counts[status] += 1
             order = json.loads(raw)
+            raw_name = order["contact"].get("name") or "Гость"
+            if overview and status == "new" and len(queue) < 3:
+                moment = ui.local_time(created)
+                if moment:
+                    queue.append((number, raw_name, moment))
             contact = {key: html.escape(value) for key, value in order["contact"].items() if value}
             lines = "".join(
                 f'<li><div>{html.escape(line["name"])}<small>Арт. {html.escape(line["sku"])}</small></div>'
@@ -319,7 +326,7 @@ class Handler(SimpleHTTPRequestHandler):
             cards.append(
                 f'<details class="staff-order" id="{number_attr}" data-status="{status_attr}"><summary class="staff-order-row">'
                 f'<span class="staff-order-id"><strong>{number_attr}</strong>{ui.timestamp(created)}</span>'
-                f'<span class="staff-order-customer"><strong>{contact_name}</strong><small>{phone}</small></span>'
+                f'<span class="staff-order-customer">{ui.avatar(raw_name)}<span><strong>{contact_name}</strong><small>{phone}</small></span></span>'
                 f'<span class="staff-order-status"><span class="staff-status-label" data-tone="{status_attr}">'
                 f'<span class="staff-dot"></span>{status_label}</span></span>'
                 f'<span class="staff-order-amount"><strong class="staff-total">{total}</strong><small>{units} шт.</small></span>'
@@ -345,18 +352,27 @@ class Handler(SimpleHTTPRequestHandler):
                          '<form method="dialog"><h2 id="staff-cancel-title">Отменить заявку?</h2>'
                          '<p>После отмены заявка закроется.</p><div><button value="back" autofocus>Назад</button>'
                          '<button value="confirm" class="staff-danger">Отменить заявку</button></div></form></dialog>')
-        content = (ui.heading('Заказы', 'Обрабатывайте заявки, отмечайте оплату и оформляйте возвраты.') + feedback
+        drawer = ('<dialog id="staff-order-drawer" class="staff-drawer" aria-labelledby="staff-drawer-title">'
+                  '<header><div><p>Карточка заказа</p><h2 id="staff-drawer-title"></h2></div>'
+                  f'<button class="staff-icon-button" type="button" aria-label="Закрыть заказ" autofocus>{ui.icon("close")}</button>'
+                  '</header><div class="staff-drawer-content"></div></dialog>')
+        overview_content = ui.orders_overview(counts, (row[2] for row in rows), queue) if overview else ''
+        list_title = 'Последние заказы' if overview else 'Список заказов'
+        full_list = '<a class="staff-all-orders" href="?view=orders">Все заказы →</a>' if overview else ''
+        heading = ui.heading('Обзор заказов', 'Заявки, которые требуют внимания, и динамика за неделю.') if overview else (
+            ui.heading('Заказы', 'Обрабатывайте заявки, отмечайте оплату и оформляйте возвраты.'))
+        content = (heading + feedback + overview_content
                    + '<p id="staff-save-feedback" class="staff-notice" role="status" hidden></p>'
                    '<section class="staff-surface staff-list" aria-labelledby="orders-title"><div class="staff-section-head">'
-                   '<div><h2 id="orders-title">Список заказов</h2>'
+                   f'<div><h2 id="orders-title">{list_title}</h2>'
                    f'<p id="staff-result-count" aria-live="polite">Всего заявок: {len(rows)}</p></div>'
                    '<div class="staff-filter-tools" hidden><label class="staff-search">'
                    f'{ui.icon("search")}<input type="search" id="staff-order-search" aria-label="Поиск заказов" '
                    'placeholder="Номер, имя или телефон"></label>'
-                   '<button type="button" id="staff-reset" hidden>Сбросить</button></div></div>'
+                   f'<button type="button" id="staff-reset" hidden>Сбросить</button>{full_list}</div></div>'
                    f'<div class="staff-filters" role="group" aria-label="Фильтр по статусу" hidden>{filters}</div>'
-                   f'{listing}</section>{cancel_dialog}')
-        return staff.page(self, 200, "Заказы LUSAR", content, actor=actor, active='orders')
+                   f'{listing}</section>{drawer}{cancel_dialog}')
+        return staff.page(self, 200, "Заказы LUSAR", content, actor=actor, active='overview' if overview else 'orders')
 
     def do_POST(self):
         if self.customer_service().post(self):
