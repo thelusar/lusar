@@ -322,11 +322,13 @@ class Handler(SimpleHTTPRequestHandler):
                         f'<input type="hidden" name="current" value="{status_attr}">'
                         f'<input type="hidden" name="token" value="{status_token(number, status, actor.form_key)}">'
                         '<label class="staff-status-control"><span>Статус заказа</span>'
-                        f'<span class="staff-status-picker"><select name="target" required>'
+                        f'<span class="staff-status-picker" data-tone="{status_attr}"><select name="target" required>'
                         f'<option value="" disabled selected>{status_label}</option>{options}</select>{ui.icon("chevron")}</span></label>'
                         '<button class="staff-primary">Сохранить статус</button>'
                         '<span class="staff-save-state" role="status" data-save-state hidden></span></form>') if options else (
-                            f'<div class="staff-status-static"><span>Статус заказа</span><strong>{status_label}</strong></div>')
+                            f'<div class="staff-status-static"><span>Статус заказа</span>'
+                            f'<strong class="staff-status-label" data-tone="{status_attr}"><span class="staff-dot"></span>'
+                            f'{status_label}</strong></div>')
             cards.append(
                 f'<details class="staff-order" id="{number_attr}" data-status="{status_attr}"><summary class="staff-order-row">'
                 f'<span class="staff-order-id"><strong>{number_attr}</strong>{ui.timestamp(created)}</span>'
@@ -335,15 +337,16 @@ class Handler(SimpleHTTPRequestHandler):
                 f'<span class="staff-dot"></span>{status_label}</span></span>'
                 f'<span class="staff-order-amount"><strong class="staff-total">{total}</strong><small>{units} шт.</small></span>'
                 f'<span class="staff-order-chevron">{ui.icon("chevron-right")}</span></summary>'
-                f'<div class="staff-order-details"><div class="staff-detail-header">{controls}</div>'
-                f'<div class="staff-order-recap"><div>{ui.icon("payment")}<span>Сумма заказа</span></div><strong>{total}</strong></div>'
+                f'<div class="staff-order-details"><div class="staff-detail-header">{controls}'
+                f'<div class="staff-order-recap"><span>Сумма заказа</span><strong>{total}</strong></div></div>'
                 '<div class="staff-detail-grid">'
-                f'<div><section><h3 class="staff-detail-title">{ui.icon("box")}Состав заказа</h3><ul class="staff-items">{lines}</ul></section>'
-                f'{staff.history_markup(history.get(number))}</div>'
-                f'<div><section><h3 class="staff-detail-title">{ui.icon("account")}Контакты клиента</h3>'
+                f'<section class="staff-detail-card"><h3 class="staff-detail-title">{ui.icon("account")}Контакты клиента</h3>'
                 f'<dl class="staff-contact">{contact_fields}</dl></section>'
-                f'<section><h3 class="staff-detail-title">{ui.icon("payment")}Оплата и возвраты</h3>'
-                f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}</section></div></div></div></details>')
+                f'<section class="staff-detail-card"><h3 class="staff-detail-title">{ui.icon("box")}Состав заказа</h3>'
+                f'<ul class="staff-items">{lines}</ul></section>'
+                f'<section class="staff-detail-card"><h3 class="staff-detail-title">{ui.icon("payment")}Оплата и возвраты</h3>'
+                f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}</section>'
+                f'{staff.history_markup(history.get(number))}</div></div></details>')
         filters = ''.join(
             f'<button type="button" data-filter="{key}" aria-pressed="{str(key == selected).lower()}"><span>{label}</span>'
             f'<strong>{count}</strong></button>'
@@ -377,12 +380,12 @@ class Handler(SimpleHTTPRequestHandler):
             performance = staff.intake_metrics(events, {row[0]: row[2] for row in rows}, transition)
             sidebar = ui.team_sidebar(team, performance)
         list_title = 'Последние заказы' if overview else 'Список заказов'
+        list_heading = 'h2' if overview else 'h1'
         full_list = '<a class="staff-all-orders" href="?view=orders">Все заказы →</a>' if overview else ''
-        heading = '' if overview else ui.heading('Заказы', 'Обрабатывайте заявки, отмечайте оплату и оформляйте возвраты.')
-        content = (heading + feedback + overview_content
+        content = (feedback + overview_content
                    + '<p id="staff-save-feedback" class="staff-notice" role="status" hidden></p>'
                    '<section class="staff-surface staff-list" aria-labelledby="orders-title"><div class="staff-section-head">'
-                   f'<div><h2 id="orders-title">{list_title}</h2>'
+                   f'<div><{list_heading} class="staff-list-title" id="orders-title">{list_title}</{list_heading}>'
                    f'<p id="staff-result-count" aria-live="polite">Всего заявок: {len(rows)}</p></div>'
                    '<div class="staff-filter-tools" hidden><label class="staff-search">'
                    f'{ui.icon("search")}<input type="search" id="staff-order-search" aria-label="Поиск заказов" '
@@ -615,14 +618,15 @@ class Handler(SimpleHTTPRequestHandler):
                 f'<input type="hidden" name="token" value="{adjustment_token(number, status, raw, key)}">')
         if not order.get("payment"):
             if status not in {"in_progress", "completed"} or order.get("total") is None:
-                return "<p>Оплата не отмечена.</p>"
+                return '<p class="staff-payment-summary">Оплата не отмечена.</p>'
             options = "".join(f'<option value="{key}">{name}</option>' for key, name in PAYMENT_METHODS.items())
             return form + f'<label>Способ оплаты <select name="value">{options}</select></label><button name="action" value="payment">Отметить оплату</button></form>'
         payment = order["payment"]
         returns = order.get("returns", [])
         refund_paid = sum(entry["refundDue"] for entry in returns if entry.get("refundPaid"))
         refund_due = sum(entry["refundDue"] for entry in returns if not entry.get("refundPaid"))
-        summary = f'<p>Оплачено <strong>{ui.amount(payment["amount"])}</strong> · {PAYMENT_METHODS[payment["method"]]}</p>'
+        summary = (f'<p class="staff-payment-summary">Оплачено <strong>{ui.amount(payment["amount"])}</strong>'
+                   f'<small>{PAYMENT_METHODS[payment["method"]]}</small></p>')
         if returns:
             remaining_total = order["remainingAmount"]["total"]
             summary += ('<dl class="staff-refund-summary">'
@@ -642,7 +646,8 @@ class Handler(SimpleHTTPRequestHandler):
             f'<option value="{html.escape(line["id"], quote=True)}">{html.escape(line["name"])} · осталось {line["quantity"]}</option>'
             for line in order.get("remainingItems", order["items"])
         )
-        return (summary + form + f'<label>Товар <select name="value">{options}</select></label>'
+        return (summary + form + f'<h4 class="staff-return-title">Возврат позиции</h4>'
+                f'<label class="staff-return-product">Товар <select name="value">{options}</select></label>'
                 '<label>Количество <input name="quantity" type="number" min="1" value="1" required></label>'
                 '<button name="action" value="return">Оформить возврат позиции</button></form>')
 

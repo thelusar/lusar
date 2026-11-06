@@ -15,7 +15,7 @@ ROLE_NAMES = {'admin': 'Администратор', 'manager': 'Менедже�
 ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': 'Возврат', 'refund_paid': 'Выплата по возврату'}
 ORDERS_PATH = '/manager/orders/'
 ACCESS_PATH = '/manager/access'
-UI_VERSION = 7
+UI_VERSION = 8
 
 
 def account_id(value):
@@ -122,8 +122,9 @@ def history_markup(events):
     for action, detail, email, changed in events:
         items.append(f'<li><div><strong>{html.escape(ACTION_NAMES[action])}</strong><span>{ui.timestamp(changed)}</span></div>'
                      f'<p>{html.escape(detail)}</p><small>{html.escape(email)}</small></li>')
-    return (f'<details class="staff-history"><summary><span class="staff-detail-title">{ui.icon("history")}Журнал заказа <small>{len(events)}</small></span>'
-            f'{ui.icon("chevron")}</summary><ol>{"".join(items)}</ol></details>')
+    return (f'<details class="staff-history staff-detail-card"><summary><span class="staff-detail-title">'
+            f'{ui.icon("history")}Журнал заказа</span><span class="staff-history-toggle">'
+            f'<small>{len(events)}</small>{ui.icon("chevron")}</span></summary><ol>{"".join(items)}</ol></details>')
 
 
 def access_token(actor):
@@ -195,7 +196,7 @@ def access_page(handler, actor):
                           f'<span class="staff-badge">{label}</span>{actions}</li>')
     feedback = ui.notice(handler, {'access': 'Доступ сотрудника сохранён.', 'removed': 'Доступ сотрудника отозван.'})
     people = f'<ul class="staff-people">{"".join(staff_list)}</ul>'
-    content = (ui.heading('Сотрудники', 'Выдавайте доступ к панели и меняйте роли сотрудников.') + feedback
+    content = ('<h1 class="staff-visually-hidden">Сотрудники</h1>' + feedback
                + '<div class="staff-access-grid"><section class="staff-surface staff-grant" aria-labelledby="grant-title">'
                f'<div class="staff-grant-title"><span class="staff-tile-icon">{ui.icon("team")}</span><h2 id="grant-title">Выдать доступ</h2></div>'
                f'<p>Сотрудник входит в LUSAR и открывает <a href="{ORDERS_PATH}">панель заказов</a>. Там он увидит свой код аккаунта.</p>'

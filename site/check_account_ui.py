@@ -56,6 +56,9 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  const order=page.getElementById(orderId);
  const drawer=page.querySelector('#staff-order-drawer');
  require(order.open&&drawer.open&&drawer.querySelector('h2').textContent===orderId,'Telegram order link did not open the drawer');
+ const detailTitles=[...drawer.querySelectorAll('section.staff-detail-card h3')].map(title=>title.textContent);
+ require(detailTitles.join('|')==='Контакты клиента|Состав заказа|Оплата и возвраты','Order drawer sections are missing or out of order');
+ require(drawer.querySelector('.staff-detail-header .staff-order-recap'),'Order total is missing from the drawer summary');
  await staffSizes(page);
  drawer.querySelector('button').click();
  require(!drawer.open&&!order.open,'Closing the drawer did not restore the order row');
@@ -110,6 +113,7 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  require(!page.getElementById(orderId).hidden,'Updated order missing from the next filter');
  page=await open('/manager/orders/?view=orders&status=new');
  require(!page.querySelector('#staff-overview')&&page.getElementById(orderId).hidden,'Full order list did not apply the dashboard filter');
+ require(!page.querySelector('.staff-heading')&&page.querySelector('h1#orders-title'),'Orders should start with the list');
  const sectionNav=page.querySelector('.staff-section-nav');
  const themeToggle=page.querySelector('#theme-toggle');
  const workspace=page.querySelector('#staff-main');
@@ -133,6 +137,7 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  navLink('Сотрудники').click();
  await until(()=>activeSection('Сотрудники')&&page.querySelector('.staff-grant'));
  require(frame.contentDocument===page&&page.querySelector('.staff-section-nav')===sectionNav,'Staff section rebuilt the sidebar');
+ require(!page.querySelector('.staff-heading'),'Staff should start with the work panels');
  require(page.querySelector('.staff-person').textContent.includes('Ваш аккаунт'),'Owner missing from staff list');
  form=page.querySelector('.staff-grant form');
  form.elements.account.value=EMPLOYEE;
