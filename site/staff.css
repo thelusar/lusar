@@ -333,6 +333,32 @@ html:has(.staff-workspace) { scrollbar-gutter: stable; }
 .staff-page .staff-primary:hover { background: var(--staff-accent-hover); border-color: transparent; }
 .staff-page .staff-danger { color: var(--staff-danger); }
 .staff-page .staff-button { display: inline-flex; align-items: center; padding: .6rem .85rem; text-decoration: none; }
+.staff-transfer { display: grid; gap: 1rem; }
+.staff-transfer > h1, .staff-transfer > .staff-notice { margin: 0; }
+.staff-transfer h2 { margin: 0; }
+.staff-transfer section > p { margin: 0 1.15rem .9rem; color: var(--staff-muted); max-width: 78ch; }
+.staff-transfer-filters, .staff-transfer-actions, .staff-transfer-pagination,
+.staff-transfer form[enctype] { display: flex; align-items: end; flex-wrap: wrap; gap: .65rem; padding: 0 1.15rem 1rem; }
+.staff-transfer label { display: grid; gap: .3rem; min-width: 0; }
+.staff-transfer :is(input[type="date"], select) { padding: .4rem .55rem; }
+.staff-transfer input[type="date"] { color-scheme: dark; }
+:root[data-theme="light"] .staff-transfer input[type="date"] { color-scheme: light; }
+.staff-transfer input[type="file"] { font: inherit; width: min(100%, 24rem); color: var(--staff-muted); }
+.staff-transfer input::file-selector-button {
+  font: inherit; padding: .5rem .65rem; margin-inline-end: .6rem; border-radius: .45rem;
+  border: 1px solid var(--staff-line); background: var(--staff-input); color: var(--staff-ink); cursor: pointer;
+}
+.staff-transfer-scroll { overflow-x: auto; border-top: 1px solid var(--staff-line); }
+.staff-transfer-table { width: 100%; min-width: 38rem; border-collapse: collapse; text-align: left; }
+.staff-transfer-table :is(th, td) { padding: .65rem .85rem; border-bottom: 1px solid var(--staff-line); }
+.staff-transfer-table thead { color: var(--staff-muted); }
+.staff-transfer-table :is(th, td):first-child { width: 2.75rem; text-align: center; }
+.staff-transfer-table tr:last-child > * { border-bottom: 0; }
+.staff-page .staff-transfer-table input[type="checkbox"] { width: 1.1rem; height: 1.1rem; min-height: 0; accent-color: var(--staff-accent); cursor: pointer; }
+.staff-transfer-table :is(time, td:last-child) { white-space: nowrap; }
+.staff-transfer-pagination { justify-content: end; align-items: center; padding-block-start: .8rem; }
+.staff-transfer .staff-transfer-error { color: var(--staff-danger); }
+.staff-page .staff-transfer button:disabled { cursor: default; opacity: .5; border-color: var(--staff-line); }
 .staff-filters {
   display: flex;
   flex-wrap: wrap;

@@ -18,7 +18,7 @@ from loyalty import eligible_spend_from_saved_order, LOYALTY_TIERS
 
 SESSION_SECONDS = 7 * 86400
 DESTINATIONS = {'/account', '/account/orders', '/account/addresses', '/account/settings', '/account/loyalty',
-                '/cart', '/checkout', '/manager/orders/', '/manager/access'}
+                '/cart', '/checkout', '/manager/orders/', '/manager/access', '/manager/orders-transfer'}
 
 
 class AccountError(Exception):

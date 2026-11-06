@@ -82,6 +82,7 @@ function initializeWorkspace() {
         main.animate([{opacity: .84}, {opacity: 1}], {duration: 140, easing: "ease-out"});
       }
       initializeOrders(main, slot.querySelector("#staff-team-summary"), pageListeners.signal);
+      initializeTransfer(main);
     } catch (error) {
       if (pending.signal.aborted) return;
       if (fromHistory) location.reload();
@@ -106,6 +107,30 @@ function initializeWorkspace() {
   });
   window.addEventListener("popstate", () => void navigate(new URL(location.href), true));
   initializeOrders(main, initialTeam, pageListeners.signal);
+  initializeTransfer(main);
+}
+
+function initializeTransfer(main) {
+  const form = main.querySelector("[data-order-export]");
+  if (!form) return;
+  const selectPage = form.querySelector("[data-select-page]");
+  const orders = [...form.querySelectorAll('input[name="number"]')];
+  const exportSelected = form.querySelector('[value="selected"]');
+  const updateSelection = () => {
+    const count = orders.filter(order => order.checked).length;
+    selectPage.checked = count === orders.length;
+    selectPage.indeterminate = count > 0 && count < orders.length;
+    exportSelected.disabled = count === 0;
+    exportSelected.textContent = count ? `Скачать выбранные (${count})` : "Скачать выбранные";
+  };
+  selectPage.hidden = false;
+  form.addEventListener("change", event => {
+    if (event.target === selectPage) {
+      for (const order of orders) order.checked = selectPage.checked;
+    }
+    updateSelection();
+  });
+  updateSelection();
 }
 
 function initializeOrders(main, team, signal) {

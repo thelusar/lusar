@@ -19,6 +19,7 @@ ICONS = {
     "overview": '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     "chevron-right": '<path d="m9 6 6 6-6 6"/>',
     "close": '<path d="m6 6 12 12M18 6 6 18"/>',
+    "transfer": '<path d="M8 20V4m-4 4 4-4 4 4m4-4v16m-4-4 4 4 4-4"/>',
 }
 YEREVAN = timezone(timedelta(hours=4))
 
@@ -234,6 +235,9 @@ def layout(title, content, *, actor=None, active=None, role_label='', sidebar=''
     orders_current = ' aria-current="page"' if active == 'orders' else ''
     overview_current = ' aria-current="page"' if active == 'overview' else ''
     access_current = ' aria-current="page"' if active == 'access' else ''
+    transfer_current = ' aria-current="page"' if active == 'transfer' else ''
+    transfer = (f'<a href="/manager/orders-transfer"{transfer_current}>{icon("transfer")}Импорт и экспорт</a>'
+                if actor.role == 'admin' else '')
     access = (f'<a href="/manager/access"{access_current}>{icon("team")}Сотрудники</a>'
               if actor.role == 'admin' else '')
     display_name = actor.name.strip() or actor.email
@@ -244,7 +248,7 @@ def layout(title, content, *, actor=None, active=None, role_label='', sidebar=''
             f'<aside class="staff-sidebar"><div class="staff-brand-row">{brand}{theme}</div>{profile}'
             f'<p class="staff-kicker">Рабочие разделы</p>'
             f'<nav class="staff-section-nav" aria-label="Рабочие разделы"><a href="/manager/orders/"{overview_current}>{icon("overview")}Обзор</a>'
-            f'<a href="/manager/orders/?view=orders"{orders_current}>{icon("orders")}Заказы</a>{access}</nav>'
+            f'<a href="/manager/orders/?view=orders"{orders_current}>{icon("orders")}Заказы</a>{transfer}{access}</nav>'
             f'<div class="staff-team-slot">{sidebar}</div>'
             f'<nav class="staff-sidebar-footer" aria-label="Личные ссылки">'
             f'<a href="/" aria-label="На сайт" title="На сайт">{icon("arrow")}<span>На сайт</span></a></nav></aside>'

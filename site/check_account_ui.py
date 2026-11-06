@@ -134,6 +134,14 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  page.getElementById(orderId).querySelector('summary').click();
  require(page.querySelector('#staff-order-drawer').open,'Order drawer did not initialize after navigation');
  page.querySelector('#staff-order-drawer button').click();
+ navLink('Импорт и экспорт').click();
+ await until(()=>activeSection('Импорт и экспорт')&&page.querySelector('[data-order-export]'));
+ require(frame.contentDocument===page&&page.querySelector('#theme-toggle')===themeToggle,'Order transfer rebuilt the page shell');
+ const selectedExport=page.querySelector('[data-order-export] [value="selected"]');
+ require(selectedExport.disabled,'Empty selection can be exported');
+ page.querySelector('[data-select-page]').click();
+ require(!selectedExport.disabled&&selectedExport.textContent.includes('(1)'),'Selecting all orders did not enable export');
+ await staffSizes(page);
  navLink('Сотрудники').click();
  await until(()=>activeSection('Сотрудники')&&page.querySelector('.staff-grant'));
  require(frame.contentDocument===page&&page.querySelector('.staff-section-nav')===sectionNav,'Staff section rebuilt the sidebar');

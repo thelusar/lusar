@@ -1,6 +1,8 @@
 """Verify customer isolation, signed OIDC, session/CSRF controls and discount rules using a local identity provider."""
 import copy
+import csv
 import http.client
+import io
 import json
 import os
 import re
@@ -61,15 +63,15 @@ class Client:
         self.server = server
         self.cookies = {}
 
-    def request(self, path, data=None, csrf=None, origin=None, *, form=False):
+    def request(self, path, data=None, csrf=None, origin=None, *, form=False, content_type=None):
         connection = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=15)
         headers = {'Cookie': '; '.join(key + '=' + value for key, value in self.cookies.items())}
         if data is not None:
-            headers['Content-Type'] = 'application/x-www-form-urlencoded' if form else 'application/json'
+            headers['Content-Type'] = content_type or ('application/x-www-form-urlencoded' if form else 'application/json')
             headers['Origin'] = origin or self.server.customer_accounts.config.origin
             if csrf is not None:
                 headers['X-Lusar-CSRF'] = csrf
-        body = (urlencode(data) if form else json.dumps(data)) if data is not None else None
+        body = data if content_type else (urlencode(data, doseq=True) if form else json.dumps(data)) if data is not None else None
         connection.request('POST' if data is not None else 'GET', path, body, headers)
         response = connection.getresponse()
         raw = response.read()
@@ -347,6 +349,59 @@ class AccountTests(unittest.TestCase):
             self.assertEqual(owner.request(access_path, {**grant, 'role': 'remove'}, form=True)[0], 303)
             self.assertEqual(manager.request(orders_path)[0], 403)
             self.assertEqual(manager.request(adjust_path, final_return, form=True)[0], 403)
+
+    def test_staff_order_transfer_is_filtered_admin_only_and_safe_to_retry(self):
+        path = serve.staff.TRANSFER_PATH
+        self.assertEqual(self.client.request(path)[0], 401)
+        owner_id = self.client.login('owner', path)['profile']['id']
+        manager = Client(self.server)
+        manager_id = manager.login('manager')['profile']['id']
+        with order_storage.connect(serve.DATABASE, write=True) as db:
+            db.execute("INSERT INTO staff_roles (customer_id, role) VALUES (?, 'manager')", (manager_id,))
+        with patch.dict(os.environ, {'LUSAR_STAFF_ADMIN_ID': owner_id}):
+            self.assertEqual(manager.request(path)[0], 403)
+            self.assertEqual(manager.request(path + '/export', {}, form=True)[0], 403)
+            self.assertEqual(manager.request(path + '/template')[0], 403)
+            template = self.client.request(path + '/template')[1].lstrip('\ufeff')
+            self.assertEqual(template.strip().split(';'), list(serve.order_transfer.COLUMNS))
+            token = re.search('name="token" value="([a-f0-9]+)"', self.client.request(path)[1]).group(1)
+            sku = PRODUCT['sku']
+            second_sku = next(product['sku'] for product in DATA['products'] if product['sku'] and product['sku'] != sku)
+            first = f'LS-123456;2026-01-02T23:59:59+04:00;=Test;+37400000000;;;{sku};2\r\n'
+            extra = f'LS-123456;2026-01-02T23:59:59+04:00;=Test;+37400000000;;;{second_sku};1\r\n'
+            second = f'LS-123457;2026-01-03T00:00:00+04:00;Other;077000000;;;{sku};1\r\n'
+
+            def upload(rows):
+                multipart = ('--check\r\nContent-Disposition: form-data; name="token"\r\n\r\n' + token +
+                             '\r\n--check\r\nContent-Disposition: form-data; name="file"; filename="orders.csv"\r\n'
+                             'Content-Type: text/csv\r\n\r\n' + template + rows + '\r\n--check--\r\n')
+                return self.client.request(path + '/import', multipart.encode(), content_type='multipart/form-data; boundary=check')
+
+            code, error, _ = upload(first + second.replace(sku, 'unknown-sku'))
+            self.assertEqual(code, 400)
+            self.assertIn('Строка 3', error)
+            self.assertNotIn('LS-123456', self.client.request(path)[1])
+            for added, skipped in ((2, 0), (0, 2)):
+                code, _, headers = upload(first + extra + second)
+                self.assertEqual(code, 303)
+                self.assertEqual(headers['Location'], f'{path}?added={added}&skipped={skipped}')
+            self.assertEqual(len(self.saved('LS-123456')['items']), 2)
+            self.assertEqual(self.saved('LS-123457')['total'], PRODUCT['price'])
+
+            def export(**fields):
+                code, body, headers = self.client.request(path + '/export', {'token': token, **fields}, form=True)
+                self.assertEqual(code, 200)
+                self.assertIn('attachment', headers['Content-Disposition'])
+                self.assertEqual(headers['Cache-Control'], 'no-store')
+                return list(csv.DictReader(io.StringIO(body.lstrip('\ufeff')), delimiter=';'))
+
+            first_day = export(scope='all', **{'from': '2026-01-02', 'to': '2026-01-02', 'status': 'new'})
+            self.assertEqual([row['number'] for row in first_day], ['LS-123456'] * 2)
+            self.assertEqual((first_day[0]['name'], first_day[0]['phone']), ("'=Test", "'+37400000000"))
+            self.assertEqual([row['number'] for row in export(scope='selected', number=['LS-123457'])], ['LS-123457'])
+            self.assertEqual([row['number'] for row in export(scope='all', sort='oldest')], ['LS-123456', 'LS-123456', 'LS-123457'])
+            self.assertEqual(export(scope='all', status='completed'), [])
+            self.assertEqual(self.client.request(path + '/export', {'token': 'invalid', 'scope': 'all'}, form=True)[0], 403)
 
 
 if __name__ == '__main__':

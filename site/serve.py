@@ -18,6 +18,7 @@ import order_storage
 import customer_accounts
 import staff
 import staff_ui as ui
+import order_transfer
 from threading import Lock
 from loyalty import FIRST_ORDER_PERCENT
 from sync_catalog import revision
@@ -243,7 +244,8 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_HEAD() if self.command == "HEAD" else super().do_GET()
 
     def do_HEAD(self):
-        if urlsplit(self.path).path.rstrip('/') in {staff.ORDERS_PATH.rstrip('/'), staff.ACCESS_PATH}:
+        if urlsplit(self.path).path.rstrip('/') in {staff.ORDERS_PATH.rstrip('/'), staff.ACCESS_PATH,
+                                                   staff.TRANSFER_PATH, staff.TRANSFER_PATH + '/template'}:
             return self.do_GET()
         return self.public_redirect()
 
@@ -254,6 +256,11 @@ class Handler(SimpleHTTPRequestHandler):
             data = self.catalog_data()
             return self.reply(200, {**data, "revision": revision(data)})
         path = urlsplit(self.path).path.rstrip('/')
+        if path in {staff.TRANSFER_PATH, staff.TRANSFER_PATH + '/template'}:
+            actor = self.manager_actor(staff.TRANSFER_PATH)
+            if actor:
+                return order_transfer.get(self, actor, path, STATUS_LABELS)
+            return
         if path == staff.ACCESS_PATH:
             actor = self.manager_actor(staff.ACCESS_PATH)
             if actor:
@@ -398,6 +405,11 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         if self.customer_service().post(self):
+            return
+        if self.path in {staff.TRANSFER_PATH + '/import', staff.TRANSFER_PATH + '/export'}:
+            actor = self.manager_actor(staff.TRANSFER_PATH)
+            if actor:
+                return order_transfer.post(self, actor, STATUS_LABELS, PAYMENT_METHODS, order_amount)
             return
         if self.path == "/api/order-status":
             return self.guest_order_status()
