@@ -27,6 +27,15 @@ function layout(page) { require(page.documentElement.scrollWidth <= page.documen
   require(!page.querySelector("#cart-empty").hidden && page.querySelector("#order-flow").hidden, "Empty checkout is orderable");
   page = await open("/checkout/received");
   require(page.querySelector(".receipt-symbol").hidden && page.querySelector("#receipt-details").hidden, "Receipt claimed an order without a receipt");
+  page = await open("/favorites");
+  require(!page.querySelector("#wishlist-empty").hidden,"Wishlist empty state missing");
+  localStorage.setItem("lusar-favorites",JSON.stringify([ITEM.id]));
+  page = await open("/favorites");
+  require(page.querySelector(".wishlist-item img") && page.querySelector(".wishlist-price") && page.querySelector("#wishlist-empty").hidden,"Wishlist product card missing");
+  page.querySelector(".wishlist-item [data-add]").click();
+  require(JSON.parse(localStorage.getItem("lusar-cart"))[ITEM.id]===1 && !page.querySelector("#cart-next").hidden,"Wishlist did not add the product to the bag");
+  page.querySelector(".wishlist-remove").click();
+  require(!page.querySelector("#wishlist-empty").hidden && page.activeElement.closest("#wishlist-empty"),"Removing the last favorite lost the empty state or focus");
   localStorage.setItem("lusar-cart",JSON.stringify({[ITEM.id]:1}));
   page = await open("/cart");
   require(page.querySelector(".cart-row img") && total(page)===ITEM.price, "Cart photo or starting total missing");

@@ -361,10 +361,17 @@
     ],
     "Сохранить ссылку на статус заявки": ["Պահպանել հայտի կարգավիճակի հղումը", "Save the request tracking link"],
     "Убрать из избранного": ["Հեռացնել նախընտրածներից", "Remove from wishlist"],
+    "В корзину": ["Ավելացնել զամբյուղ", "Add to bag"],
     "В избранном пока нет товаров.": ["Նախընտրածների ցանկը դեռ դատարկ է։", "Your wishlist is empty."],
+    "Сохраняйте светильники, к которым хотите вернуться.": ["Պահպանեք այն լուսատուները, որոնց ցանկանում եք վերադառնալ։", "Save the lights you want to revisit."],
     "Товар добавлен в избранное.": ["Ապրանքն ավելացվել է նախընտրածներում։", "Added to your wishlist."],
     "Товар удалён из избранного.": ["Ապրանքը հեռացվել է նախընտրածներից։", "Removed from your wishlist."],
     "Товар сейчас недоступен.": ["Ապրանքն այժմ հասանելի չէ։", "This product is currently unavailable."],
+    "Откройте приватную ссылку, выданную после оформления заявки.": ["Բացեք հայտը ուղարկելուց հետո ստացած անձնական հղումը։", "Open the private tracking link you received after placing your request."],
+    "Проверяем статус заявки…": ["Ստուգում ենք հայտի կարգավիճակը…", "Checking your request status…"],
+    "Заявка не найдена. Проверьте приватную ссылку.": ["Հայտը չի գտնվել։ Ստուգեք անձնական հղումը։", "Request not found. Check your private tracking link."],
+    "Статус временно недоступен. Попробуйте позже.": ["Կարգավիճակը ժամանակավորապես անհասանելի է։ Փորձեք ավելի ուշ։", "Status is temporarily unavailable. Try again later."],
+    "Не удалось проверить статус. Попробуйте обновить страницу.": ["Չհաջողվեց ստուգել կարգավիճակը։ Թարմացրեք էջը։", "Could not check the status. Try refreshing the page."],
     "Сейчас статистика разрешена.": ["Վիճակագրության հավաքումը թույլատրված է։", "Analytics are currently allowed."],
     "Сейчас выбраны только необходимые настройки.": ["Ընտրված են միայն անհրաժեշտ կարգավորումները։", "Only essential settings are enabled."],
     "Выбор действует на этой странице. Браузер не сохранил настройки.": [
@@ -411,10 +418,12 @@
       if (photo) translated = (language === "hy" ? "Լուսանկար " : "Photo ") + photo[1];
       const sku = trimmed.match(/^Артикул (.+)$/u);
       const receipt = trimmed.match(/^Заявка №(LS-(?:[0-9]{6}|[A-F0-9]{12})) получена\.$/u);
+      const tracking = trimmed.match(/^Заявка №(LS-(?:[0-9]{6}|[A-F0-9]{12})): (.+)\.$/u);
       const quantity = trimmed.match(/^Товар в корзине\. Количество: (\d+)\.$/u);
       const hours = trimmed.match(/^Часы связи с менеджером: (.+)\.$/u);
       if (sku) translated = (language === "hy" ? "Արտիկուլ " : "SKU ") + sku[1];
       if (receipt) translated = language === "hy" ? "Հայտը №" + receipt[1] + " ստացվել է։" : "Request #" + receipt[1] + " received.";
+      if (tracking) translated = (language === "hy" ? "Հայտ №" : "Request #") + tracking[1] + ": " + text(tracking[2]);
       if (quantity) translated = language === "hy" ? "Ավելացվել է զամբյուղում։ Քանակ՝ " + quantity[1] + "։" : "Added to bag. Quantity: " + quantity[1] + ".";
       if (hours) translated = (language === "hy" ? "Կապի ժամերը՝ " : "Contact hours: ") + hours[1] + ".";
     }

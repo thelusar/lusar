@@ -34,22 +34,22 @@ function save(next) {
   document.dispatchEvent(new Event('lusar-shopping-change'));
 }
 
-for (const add of document.querySelectorAll("[data-add]")) {
-  add.addEventListener("click", () => {
-    const id = add.dataset.add;
-    const status = document.querySelector("#cart-status");
-    try {
-      const quantity = (Number.isSafeInteger(cart[id]) && cart[id] > 0 ? cart[id] : 0) + 1;
-      if (quantity > 999) { status.textContent = "Максимальное количество — 999."; return; }
-      save({ ...cart, [id]: quantity });
-      window.lusarAnalytics?.added(id);
-      status.textContent = `Товар в корзине. Количество: ${quantity}.`;
-      document.querySelector("#cart-next").hidden = false;
-    } catch {
-      status.textContent = "Не удалось сохранить корзину в этом браузере.";
-    }
-  });
-}
+document.addEventListener("click", event => {
+  const add = event.target.closest("[data-add]");
+  if (!add) return;
+  const id = add.dataset.add;
+  const status = document.querySelector("#cart-status");
+  try {
+    const quantity = (Number.isSafeInteger(cart[id]) && cart[id] > 0 ? cart[id] : 0) + 1;
+    if (quantity > 999) { status.textContent = "Максимальное количество — 999."; return; }
+    save({ ...cart, [id]: quantity });
+    window.lusarAnalytics?.added(id);
+    status.textContent = `Товар в корзине. Количество: ${quantity}.`;
+    document.querySelector("#cart-next").hidden = false;
+  } catch {
+    status.textContent = "Не удалось сохранить корзину в этом браузере.";
+  }
+});
 
 const shoppingFeedback = document.querySelector(".catalog-shopping-feedback");
 if (shoppingFeedback) {

@@ -29,12 +29,14 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  let page=await open('/account');require(!page.querySelector('#account-guest').hidden,'Guest gate missing');await sizes(page);
  page=await open('/auth/start');await until(()=>!page.querySelector('#account-member').hidden);
  require(page.querySelector('#account-guest').hidden,'Guest gate visible after login');
+ require(page.querySelector('#account-avatar').textContent==='AL'&&page.querySelector('.account-nav [aria-current="page"] svg'),'Account identity or selected navigation is missing');
  require(frame.contentWindow.lusarAccount.value.state.cart[ITEM.id]===1,'Guest bag not merged');
  require(frame.contentWindow.lusarAccount.value.state.favorites.includes(ITEM.id),'Guest favorites not merged');
  await sizes(page);
  page=await open('/account/settings');let form=page.querySelector('#account-profile-form');
  form.elements.name.value='Browser customer';form.elements.phone.value='+374 77 000000';form.requestSubmit();
  await until(()=>frame.contentWindow.lusarAccount.value.profile.name==='Browser customer');
+ require(page.querySelector('#account-avatar').textContent==='BC'&&page.querySelector('#account-nav-name').textContent==='Browser customer','Account identity did not refresh after editing the name');
  page=await open('/account/addresses');form=page.querySelector('#account-address-form');form.elements.label.value='Home';form.elements.address.value='Yerevan, Test address';form.requestSubmit();
  await until(()=>page.querySelector('.account-address'));
  require(frame.contentWindow.lusarAccount.value.profile.address==='Yerevan, Test address','Default address not saved');await sizes(page);

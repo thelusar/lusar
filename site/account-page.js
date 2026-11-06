@@ -6,20 +6,41 @@
   const element=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;};
   const tell=(text,focus=false)=>{status.textContent=text;if(focus)status.focus();};
   function stat(label,value){const card=element('div');card.append(element('span','',label),element('strong','',value));return card;}
+  function showIdentity(profile){
+    const name=profile.name.trim();
+    const words=(name||profile.email.split('@')[0]).split(/\s+/u);
+    const initials=words.length>1?Array.from(words[0])[0]+Array.from(words.at(-1))[0]:Array.from(words[0]).slice(0,2).join('');
+    document.querySelector('#account-avatar').textContent=initials.toUpperCase();
+    document.querySelector('#account-nav-name').textContent=name||profile.email;
+    const email=document.querySelector('#account-nav-email');
+    email.textContent=profile.email;email.hidden=!name;
+    const greeting=content.querySelector('#account-greeting');
+    if(greeting){
+      greeting.toggleAttribute('data-locale-source',!!name);
+      greeting.textContent=name||'Добро пожаловать';
+      content.querySelector('#account-welcome-label').hidden=!name;
+    }
+  }
   async function orders(append=false,limit=20){
     const response=await fetch('/api/account/orders?offset='+(append?nextOffset:0),{cache:'no-store'});
     const data=await response.json();if(!response.ok)throw Error(data.error);
     const root=content.querySelector('#account-orders');if(!append)root.replaceChildren();
-    if(!data.orders.length&&!append)root.append(element('p','account-empty','У вас пока нет заказов.'));
+    if(!data.orders.length&&!append)root.append(document.querySelector('#account-empty-orders-template').content.cloneNode(true));
     const labels={new:'Новая заявка',in_progress:'В процессе',completed:'Выполнено',cancelled:'Отменено'};
     for(const order of data.orders.slice(0,limit)){
       const card=element('article','account-order');card.id=order.number;
       const head=element('div','account-order-heading');
-      head.append(element('h3','',order.number),element('span','order-status-badge',labels[order.status]));
-      card.append(head);
-      const date=element('time','',order.created.slice(0,10));date.dateTime=order.created;card.append(date);
+      const date=element('time','',order.created.slice(0,10).split('-').reverse().join('.'));date.dateTime=order.created;
+      const identity=element('div');identity.append(element('h3','',order.number),date);
+      const badge=element('span','order-status-badge',labels[order.status]);badge.dataset.status=order.status;
+      head.append(identity,badge);card.append(head);
       const list=element('ul');
-      for(const item of order.items){const row=element('li');const name=element('span','',item.name);name.dataset.localeSource='';row.append(name,' · ',element('span','',String(item.quantity)));list.append(row);}
+      for(const item of order.items){
+        const row=element('li'), details=element('div'), name=element('span','',item.name);
+        name.dataset.localeSource='';details.append(name);
+        if(item.sku)details.append(element('small','','Артикул '+item.sku));
+        row.append(details,element('span','account-order-quantity','×'+item.quantity));list.append(row);
+      }
       card.append(list);
       const amount=element('p','account-order-total');amount.append(element('span','',order.returned?'Итог после возврата':'Сумма заказа'),' · ',element('strong','',money(order.returned?order.remainingTotal:order.total)));card.append(amount);
       if(order.paid)card.append(element('p','account-form-note','Оплата отмечена менеджером.'));
@@ -78,13 +99,12 @@
     if(recovery)return;
     if(!data.authenticated){renderedUser=null;return;}
     const view=['overview','orders','addresses','settings','loyalty'].includes(content.dataset.accountView)?content.dataset.accountView:'overview';
-    if(renderedUser===data.profile.id&&renderedView===view){if(view==='loyalty')showLoyalty();return;}
+    if(renderedUser===data.profile.id&&renderedView===view){showIdentity(data.profile);if(view==='loyalty')showLoyalty();return;}
     renderedUser=data.profile.id;renderedView=view;
     content.replaceChildren(document.querySelector('#account-'+view+'-template').content.cloneNode(true));
+    showIdentity(data.profile);
     for(const link of document.querySelectorAll('.account-nav a'))if(link.pathname===location.pathname)link.setAttribute('aria-current','page');
     if(view==='overview'){
-      content.querySelector('#account-greeting').textContent=data.profile.name||'Добро пожаловать';
-      if(data.profile.name)content.querySelector('#account-greeting').dataset.localeSource='';
       content.querySelector('#account-stats').append(stat('Ваша скидка',data.loyalty.discountPercent+'%'),stat('Накоплено',money(data.loyalty.eligibleSpend)));
       await orders(false,3);
     }else if(view==='orders'){

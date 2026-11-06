@@ -2,6 +2,7 @@ const favoriteKey = "lusar-favorites";
 const favoriteButtons = [...document.querySelectorAll("[data-favorite]")];
 const favoriteList = document.querySelector("#favorite-items");
 const favoriteStatus = document.querySelector("#favorite-status");
+const wishlistEmpty = document.querySelector("#wishlist-empty");
 
 if (favoriteButtons.length || favoriteList) {
   function readFavorites() {
@@ -25,9 +26,7 @@ if (favoriteButtons.length || favoriteList) {
       return;
     }
     renderFavorites();
-    if (favoriteButtons.length || favoriteList.children.length) {
-      favoriteStatus.textContent = saved ? "Товар добавлен в избранное." : "Товар удалён из избранного.";
-    }
+    favoriteStatus.textContent = saved ? "Товар добавлен в избранное." : "Товар удалён из избранного.";
   }
 
   function renderFavorites() {
@@ -36,31 +35,55 @@ if (favoriteButtons.length || favoriteList) {
     if (!favoriteList) return;
     favoriteList.replaceChildren();
     for (const id of favorites) {
-      const item = document.createElement("li");
+      const item = element("li", "wishlist-item");
       const product = Object.hasOwn(products, id) ? products[id] : null;
+      const body = element("div", "wishlist-item-body");
+      const actions = element("div", "wishlist-item-actions");
       if (product) {
-        const link = document.createElement("a");
-        link.href = product.path;
-        link.textContent = product.name;
-        item.append(link);
+        const picture = element("a", "wishlist-photo");
+        picture.href = product.path;
+        picture.tabIndex = -1;
+        picture.setAttribute("aria-hidden", "true");
+        if (product.image) {
+          const image = element("img");
+          image.src = product.image;
+          image.alt = "";
+          image.loading = "lazy";
+          picture.append(image);
+        }
+        item.append(picture);
+        const title = element("a", "wishlist-title", product.name);
+        title.href = product.path;
+        title.dataset.localeSource = "";
+        body.append(title);
+        if (product.sku) body.append(element("p", "wishlist-sku", "Артикул " + product.sku));
+        body.append(element("p", "wishlist-price", product.price === null ? "Цена по запросу" : formatMoney(product.price)));
+        const add = element("button", "primary-action", "В корзину");
+        add.type = "button";
+        add.dataset.add = id;
+        actions.append(add);
       } else {
-        const unavailable = document.createElement("p");
-        unavailable.textContent = "Товар сейчас недоступен.";
-        item.append(unavailable);
+        body.append(element("p", "", "Товар сейчас недоступен."));
       }
-      const remove = document.createElement("button");
+      const remove = element("button", "text-button wishlist-remove", "Убрать из избранного");
       remove.type = "button";
-      remove.textContent = "Убрать из избранного";
-      if (product) remove.setAttribute("aria-label", `Убрать из избранного: ${product.name}`);
+      if (product) {
+        const title = body.querySelector("a");
+        title.id = "wishlist-product-" + id;
+        remove.setAttribute("aria-describedby", title.id);
+        actions.querySelector("[data-add]").setAttribute("aria-describedby", title.id);
+      }
       remove.addEventListener("click", () => {
         changeFavorite(id, false);
-        if (!item.isConnected) (favoriteList.querySelector("button") || favoriteList.nextElementSibling).focus();
+        if (!item.isConnected) (favoriteList.querySelector(".wishlist-remove") || wishlistEmpty.querySelector("a")).focus();
       });
-      item.append(remove);
+      actions.append(remove);
+      body.append(actions);
+      item.append(body);
       favoriteList.append(item);
     }
-    favoriteStatus.textContent = favoriteList.children.length ? "" : "В избранном пока нет товаров.";
-    favoriteStatus.tabIndex = -1;
+    wishlistEmpty.hidden = !!favoriteList.children.length;
+    favoriteStatus.textContent = "";
   }
 
   for (const button of favoriteButtons) button.addEventListener("click", () => {

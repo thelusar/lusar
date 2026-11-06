@@ -70,6 +70,11 @@ NAV_ICONS = {
     "menu": '<path d="M4 7h16M4 12h16M4 17h16"/>',
     "spark": '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/>',
     "upload": '<path d="M12 16V4m-4 4 4-4 4 4M4 15v5h16v-5"/>',
+    "overview": '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+    "orders": '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6m-6 4h6m-6 4h3"/>',
+    "pin": '<path d="M19 10c0 5-7 10-7 10s-7-5-7-10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/>',
+    "logout": '<path d="M11 4H5v16h6m2-12 4 4-4 4m-4-4h8"/>',
+    "check": '<path d="m5 12 4 4 10-10"/>',
 }
 
 
@@ -164,14 +169,15 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     cart_script = ('<script src="/cart.js" defer></script>'
                    if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/") or "data-add=" in body
                    else "")
-    page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page", "cart": "cart-page", "checkout": "checkout-page", "checkout/received": "receipt-page"}.get(path, "content-page")
+    page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page", "cart": "cart-page", "checkout": "checkout-page",
+                  "checkout/received": "receipt-page", "favorites": "wishlist-page", "order-status": "tracking-page"}.get(path, "content-page")
     if 'id="account-member"' in body:
         page_class = "account-page"
     if path.startswith("catalog/category/"):
         page_class = "catalog-page category-page"
     if path.startswith("catalog/product/"):
         page_class = "product-page"
-    page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received"} or page_class in {"product-page", "account-page"} else f"<h1>{html.escape(title)}</h1>"
+    page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received", "favorites", "order-status"} or page_class in {"product-page", "account-page"} else f"<h1>{html.escape(title)}</h1>"
     target.write_text(f"""<!doctype html>
 <html lang="ru" data-catalog-revision="{CATALOG_REVISION}"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><script src="/account-session.js" defer></script><link rel="stylesheet" href="/site.css"></head>
@@ -605,6 +611,7 @@ ACCOUNT_VIEWS = {"account": ("Личный кабинет", "overview"), "accoun
                  "account/register": ("Регистрация", "register"), "account/recovery": ("Восстановление доступа", "recovery")}
 for account_path, (account_title, account_view) in ACCOUNT_VIEWS.items():
     account_body = (ROOT / "account-page.html").read_text(encoding="utf-8").replace("{{title}}", html.escape(account_title)).replace("{{view}}", account_view)
+    account_body = re.sub(r"{{icon:([a-z]+)}}", lambda match: nav_icon(match[1]), account_body)
     write(account_path, account_title, account_body, draft=True)
 
 
@@ -621,7 +628,7 @@ def order_summary(checkout=False):
     action = ('<button id="checkout-submit" class="primary-action" type="submit" form="checkout">Отправить заявку <span aria-hidden="true">↗</span></button>'
               if checkout else '<p id="checkout-link" hidden><a class="button-link" href="/checkout">Оформить заявку <span aria-hidden="true">↗</span></a></p>')
     return ('<aside id="order-summary" class="order-summary" aria-labelledby="order-summary-heading">'
-            '<h2 id="order-summary-heading">Ваш заказ</h2><dl class="order-totals">'
+            '<h2 id="order-summary-heading">' + nav_icon("cart") + 'Ваш заказ</h2><dl class="order-totals">'
             '<div><dt>Товары</dt><dd id="order-subtotal">—</dd></div>'
             '<div id="order-account-discount-row" hidden><dt>Скидка кабинета</dt><dd id="order-account-discount">—</dd></div>'
             '<div id="order-first-discount-row" hidden><dt>Скидка на первый заказ</dt><dd id="order-first-discount">—</dd></div>'
@@ -636,9 +643,9 @@ def order_summary(checkout=False):
             '<p id="promo-total" role="status"></p></details>'
             '<div class="order-grand-total"><span>Предварительный итог</span><strong id="order-total">—</strong></div>'
             '<p id="cart-summary" role="status"></p>' + action +
-            '<p class="order-payment-note">Оплата после подтверждения.</p>'
+            '<div class="order-payment-info"><p class="order-payment-note">Оплата после подтверждения.</p>'
             '<p class="order-summary-note">Наличие, доставку и итоговую сумму уточнит менеджер.</p>'
-            '<a class="order-payment-link" href="/payment">Способы оплаты</a></aside>')
+            '<a class="order-payment-link" href="/payment">Способы оплаты</a></div></aside>')
 
 
 def empty_bag():
@@ -651,9 +658,15 @@ write("cart", "Корзина", order_steps(1) +
       '<div class="order-page-heading"><h1>Корзина</h1><p id="cart-count"></p></div>'
       '<div class="order-flow-layout" id="order-flow"><section class="cart-content" aria-label="Товары в корзине">'
       '<div id="cart-items"></div><p id="cart-message" role="status"></p>'
-      '<a class="cart-continue" href="/catalog">← Продолжить покупки</a></section>' + order_summary() + '</div>' + empty_bag(), draft=True)
-write("favorites", "Избранное", '<ul id="favorite-items" class="tiles"></ul><p id="favorite-status" role="status"></p><p>' +
-      link("catalog", "Открыть каталог") + "</p>", draft=True)
+      '<div class="order-flow-links"><a class="cart-continue" href="/catalog">← Продолжить покупки</a>'
+      '<a class="cart-continue" href="/favorites">Избранное →</a></div></section>' + order_summary() + '</div>' + empty_bag(), draft=True)
+write("favorites", "Избранное", '<div class="order-page-heading"><h1>Избранное</h1>'
+      '<a class="cart-continue" href="/cart">Перейти в корзину →</a></div>'
+      '<ul id="favorite-items" class="wishlist-grid" aria-label="Избранное"></ul><p id="favorite-status" role="status"></p>'
+      '<p id="cart-status" role="status"></p><p id="cart-next" hidden><a href="/cart">Перейти в корзину →</a></p>'
+      '<section id="wishlist-empty" class="cart-empty" hidden>' + nav_icon("favorites") +
+      '<h2>В избранном пока нет товаров.</h2><p>Сохраняйте светильники, к которым хотите вернуться.</p>'
+      '<a class="button-link" href="/catalog">Открыть каталог ↗</a></section>', draft=True)
 write("compare", "Сравнение светильников", '<p id="compare-status" role="status"></p>'
       '<div id="compare-table" class="comparison-scroll" role="region" aria-label="Таблица сравнения" tabindex="0"></div>'
       '<p>' + link("catalog", "Открыть каталог") + '</p>', draft=True)
@@ -690,7 +703,7 @@ write("checkout", "Оформление заявки", order_steps(2) + """
       '<a href="/catalog">Вернуться в каталог</a></section>', draft=True)
 write("checkout/received", "Подтверждение заявки", order_steps(3) + f"""
 <section class="receipt-card">
-<span class="receipt-symbol" aria-hidden="true" hidden>✓</span>
+<span class="receipt-symbol" aria-hidden="true" hidden>{nav_icon("check")}</span>
 <h1 id="receipt-title">Подтверждение заявки</h1>
 <p id="receipt-label" class="receipt-order-label" hidden>Номер заявки</p>
 <p id="receipt-number" class="receipt-number" role="status">Здесь появится номер после отправки заявки.</p>
@@ -704,10 +717,14 @@ write("checkout/received", "Подтверждение заявки", order_step
 </section>
 <script src="/receipt.js?v=2" defer></script>
 """, draft=True)
-write("order-status", "Статус заявки", """
+write("order-status", "Статус заявки", f"""
 <meta name="referrer" content="no-referrer">
-<p>Откройте приватную ссылку, выданную после оформления заявки.</p>
-<p id="guest-order-status" role="status"></p>
+<section class="receipt-card tracking-card">
+  <span class="receipt-symbol" aria-hidden="true">{nav_icon("orders")}</span>
+  <h1>Статус заявки</h1>
+  <p id="guest-order-status" role="status">Откройте приватную ссылку, выданную после оформления заявки.</p>
+  <div class="receipt-links"><a href="/account/orders">Мои заказы</a><a href="/contacts">Контакты</a></div>
+</section>
 <script src="/order-status.js" defer></script>
 """, draft=True)
 write("sitemap", "Карта сайта", listing([("", "Главная"), ("catalog/", "Каталог")] +
