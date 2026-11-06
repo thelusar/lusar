@@ -4,6 +4,8 @@ import html
 import os
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from statistics import median
 from urllib.parse import parse_qs, urlencode
 
 import order_storage
@@ -13,7 +15,7 @@ ROLE_NAMES = {'admin': 'Администратор', 'manager': 'Менедже�
 ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': 'Возврат', 'refund_paid': 'Выплата по возврату'}
 ORDERS_PATH = '/manager/orders/'
 ACCESS_PATH = '/manager/access'
-UI_VERSION = 3
+UI_VERSION = 4
 
 
 def account_id(value):
@@ -56,8 +58,9 @@ def identity(handler, db=None):
     return Actor(session['id'], row[0], role, bytes.fromhex(session['csrf']), row[2] or '')
 
 
-def page(handler, status, title, content, *, actor=None, active=None):
-    layout = ui.layout(title, content, actor=actor, active=active, role_label=ROLE_NAMES[actor.role] if actor and actor.role else '')
+def page(handler, status, title, content, *, actor=None, active=None, sidebar=''):
+    layout = ui.layout(title, content, actor=actor, active=active,
+                       role_label=ROLE_NAMES[actor.role] if actor and actor.role else '', sidebar=sidebar)
     body = ('<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{html.escape(title)} · LUSAR</title><script src="/theme.js"></script>'
@@ -141,19 +144,40 @@ def role_options(selected):
                    for key, name in ROLE_NAMES.items())
 
 
+def team_members(db):
+    owner = owner_id()
+    return db.execute('SELECT customers.id, customers.name, customers.email, staff_roles.role FROM customers '
+                      'LEFT JOIN staff_roles ON customers.id = staff_roles.customer_id '
+                      'WHERE customers.id = ? OR staff_roles.role IS NOT NULL '
+                      'ORDER BY CASE WHEN customers.id = ? THEN 0 ELSE 1 END, customers.email', (owner, owner)).fetchall()
+
+
+def intake_metrics(events, created_by_order, transition):
+    now = datetime.now(ui.YEREVAN)
+    cutoff = now.date() - timedelta(days=29)
+    seen = set()
+    durations = {}
+    for number, action, detail, _, changed, actor_id in reversed(events):
+        if action != 'status' or detail != transition or number in seen:
+            continue
+        seen.add(number)
+        start = ui.local_time(created_by_order.get(number))
+        finish = ui.local_time(changed)
+        if actor_id and start and finish and cutoff <= finish.date() and start <= finish <= now:
+            durations.setdefault(actor_id, []).append((finish - start).total_seconds())
+    return {actor_id: (len(values), int(median(values) // 60)) for actor_id, values in durations.items()}
+
+
 def access_page(handler, actor):
     if actor.role != 'admin':
         return page(handler, 403, 'Доступ сотрудников',
                     ui.heading('Доступ сотрудников', 'Назначать роли может администратор.'), actor=actor)
     owner = owner_id()
     with order_storage.connect(handler.customer_service().database) as db:
-        rows = db.execute('SELECT customers.email, staff_roles.role, customers.id FROM customers '
-                          'LEFT JOIN staff_roles ON customers.id = staff_roles.customer_id '
-                          'WHERE customers.id = ? OR staff_roles.role IS NOT NULL ORDER BY customers.email', (owner,)).fetchall()
-    rows.sort(key=lambda row: row[2] != owner)
+        rows = team_members(db)
     form_start = f'<form method="post" action="{ACCESS_PATH}"><input type="hidden" name="token" value="{access_token(actor)}">'
     staff_list = []
-    for email, role, user_id in rows:
+    for user_id, name, email, role in rows:
         label = 'Основной администратор' if user_id == owner else ROLE_NAMES[role]
         actions = ''
         if user_id not in {actor.id, owner}:
@@ -164,9 +188,10 @@ def access_page(handler, actor):
                        f'<details class="staff-revoke"><summary>Отозвать доступ</summary><p>Сотрудник сразу потеряет доступ к панели.</p>'
                        f'{edit_form}<button class="staff-danger" name="role" value="remove">Подтвердить отзыв</button>'
                        '</form></details></div></details>')
-        marker = '<small>Ваш аккаунт</small>' if user_id == actor.id else ''
-        staff_list.append(f'<li class="staff-person"><div class="staff-person-info"><span class="staff-avatar">{ui.icon("account")}</span>'
-                          f'<div><strong>{html.escape(email)}</strong>{marker}</div></div>'
+        detail = html.escape(email) + (' · Ваш аккаунт' if user_id == actor.id else '')
+        display_name = (name or '').strip() or email
+        staff_list.append(f'<li class="staff-person"><div class="staff-person-info">{ui.avatar(display_name, label=display_name)}'
+                          f'<div><strong>{html.escape(display_name)}</strong><small>{detail}</small></div></div>'
                           f'<span class="staff-badge">{label}</span>{actions}</li>')
     feedback = ui.notice(handler, {'access': 'Доступ сотрудника сохранён.', 'removed': 'Доступ сотрудника отозван.'})
     people = f'<ul class="staff-people">{"".join(staff_list)}</ul>'
@@ -182,7 +207,8 @@ def access_page(handler, actor):
                '<dl><dt>Менеджер</dt><dd>Просмотр заказов, смена статуса, отметки оплаты и возвратов.</dd>'
                '<dt>Администратор</dt><dd>Работа с заказами, выдача доступа, смена ролей и отзыв доступа.</dd></dl></section></div>'
                '<section class="staff-surface staff-team" aria-labelledby="team-title"><div class="staff-section-head">'
-               f'<h2 id="team-title">Команда</h2><span class="staff-badge">{len(staff_list)}</span></div>{people}</section>')
+               f'<div><h2 id="team-title">Команда LUSAR</h2><p>Сотрудники с доступом к кабинету</p></div>'
+               f'<span class="staff-badge">{len(staff_list)}</span></div>{people}</section>')
     return page(handler, 200, 'Сотрудники', content, actor=actor, active='access')
 
 

@@ -270,18 +270,22 @@ class Handler(SimpleHTTPRequestHandler):
         self.manager_orders(actor)
 
     def manager_orders(self, actor):
+        query = parse_qs(urlsplit(self.path).query)
+        overview = query.get('view') != ['orders']
         try:
             with order_storage.connect(DATABASE) as db:
                 rows = db.execute("SELECT number, status, created, payload FROM orders ORDER BY created DESC").fetchall()
-                events = db.execute("SELECT number, action, detail, actor_email, changed "
+                events = db.execute("SELECT number, action, detail, actor_email, changed, actor_id "
                                     "FROM order_staff_activity ORDER BY id DESC").fetchall()
+                team = staff.team_members(db) if actor.role == 'admin' else []
         except order_storage.DatabaseError:
             return self.reply(503, {"error": "Список заказов временно недоступен."})
         history = {}
-        for number, *event in events:
-            history.setdefault(number, []).append(event)
+        for number, action, detail, email, changed, _ in events:
+            history.setdefault(number, []).append((action, detail, email, changed))
         counts = dict.fromkeys(STATUS_LABELS, 0)
-        overview = parse_qs(urlsplit(self.path).query).get('view') != ['orders']
+        selected = query.get('status', [''])[0]
+        selected = selected if selected in counts else ''
         queue = []
         cards = []
         for number, status, created, raw in rows:
@@ -330,17 +334,21 @@ class Handler(SimpleHTTPRequestHandler):
                 f'<span class="staff-order-status"><span class="staff-status-label" data-tone="{status_attr}">'
                 f'<span class="staff-dot"></span>{status_label}</span></span>'
                 f'<span class="staff-order-amount"><strong class="staff-total">{total}</strong><small>{units} шт.</small></span>'
-                f'<span class="staff-order-chevron">{ui.icon("chevron")}</span></summary>'
-                f'<div class="staff-order-details"><div class="staff-detail-header">{controls}</div><div class="staff-detail-grid">'
+                f'<span class="staff-order-chevron">{ui.icon("chevron-right")}</span></summary>'
+                f'<div class="staff-order-details"><div class="staff-detail-header">{controls}</div>'
+                f'<div class="staff-order-recap"><div>{ui.icon("payment")}<span>Сумма заказа</span></div><strong>{total}</strong></div>'
+                '<div class="staff-detail-grid">'
                 f'<div><section><h3 class="staff-detail-title">{ui.icon("box")}Состав заказа</h3><ul class="staff-items">{lines}</ul></section>'
                 f'{staff.history_markup(history.get(number))}</div>'
                 f'<div><section><h3 class="staff-detail-title">{ui.icon("account")}Контакты клиента</h3>'
                 f'<dl class="staff-contact">{contact_fields}</dl></section>'
                 f'<section><h3 class="staff-detail-title">{ui.icon("payment")}Оплата и возвраты</h3>'
                 f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}</section></div></div></div></details>')
-        filters = f'<button type="button" data-filter="" aria-pressed="true">Все <strong>{len(rows)}</strong></button>'
-        filters += ''.join(f'<button type="button" data-filter="{key}" aria-pressed="false"><span>{STATUS_LABELS[key]}</span>'
-                           f'<strong>{count}</strong></button>' for key, count in counts.items())
+        filters = ''.join(
+            f'<button type="button" data-filter="{key}" aria-pressed="{str(key == selected).lower()}"><span>{label}</span>'
+            f'<strong>{count}</strong></button>'
+            for key, label, count in [('', 'Все', len(rows)), *((key, STATUS_LABELS[key], count) for key, count in counts.items())]
+        )
         feedback = ui.notice(self, {'status': 'Статус заказа обновлён.', 'payment': 'Оплата отмечена.',
                                     'return': 'Возврат сохранён.', 'refund_paid': 'Выплата отмечена.'})
         empty = ui.empty('Заказов пока нет', 'Новые заявки с сайта появятся здесь.', 'orders')
@@ -356,11 +364,21 @@ class Handler(SimpleHTTPRequestHandler):
                   '<header><div><p>Карточка заказа</p><h2 id="staff-drawer-title"></h2></div>'
                   f'<button class="staff-icon-button" type="button" aria-label="Закрыть заказ" autofocus>{ui.icon("close")}</button>'
                   '</header><div class="staff-drawer-content"></div></dialog>')
-        overview_content = ui.orders_overview(counts, (row[2] for row in rows), queue) if overview else ''
+        analytics = []
+        if os.environ.get('LUSAR_GA4_ID', '').strip():
+            analytics.append(('Google Analytics', 'https://analytics.google.com/analytics/web/'))
+        metrica_id = os.environ.get('LUSAR_YANDEX_METRICA_ID', '').strip()
+        if re.fullmatch(r'[0-9]+', metrica_id):
+            analytics.append(('Яндекс Метрика', f'https://metrika.yandex.ru/overview?id={metrica_id}'))
+        overview_content = ui.orders_overview(counts, (row[2] for row in rows), queue, analytics) if overview else ''
+        sidebar = ''
+        if team:
+            transition = f'{STATUS_LABELS["new"]} → {STATUS_LABELS["in_progress"]}'
+            performance = staff.intake_metrics(events, {row[0]: row[2] for row in rows}, transition)
+            sidebar = ui.team_sidebar(team, performance)
         list_title = 'Последние заказы' if overview else 'Список заказов'
         full_list = '<a class="staff-all-orders" href="?view=orders">Все заказы →</a>' if overview else ''
-        heading = ui.heading('Обзор заказов', 'Заявки, которые требуют внимания, и динамика за неделю.') if overview else (
-            ui.heading('Заказы', 'Обрабатывайте заявки, отмечайте оплату и оформляйте возвраты.'))
+        heading = '' if overview else ui.heading('Заказы', 'Обрабатывайте заявки, отмечайте оплату и оформляйте возвраты.')
         content = (heading + feedback + overview_content
                    + '<p id="staff-save-feedback" class="staff-notice" role="status" hidden></p>'
                    '<section class="staff-surface staff-list" aria-labelledby="orders-title"><div class="staff-section-head">'
@@ -372,7 +390,8 @@ class Handler(SimpleHTTPRequestHandler):
                    f'<button type="button" id="staff-reset" hidden>Сбросить</button>{full_list}</div></div>'
                    f'<div class="staff-filters" role="group" aria-label="Фильтр по статусу" hidden>{filters}</div>'
                    f'{listing}</section>{drawer}{cancel_dialog}')
-        return staff.page(self, 200, "Заказы LUSAR", content, actor=actor, active='overview' if overview else 'orders')
+        return staff.page(self, 200, "Заказы LUSAR", content, actor=actor,
+                          active='overview' if overview else 'orders', sidebar=sidebar)
 
     def do_POST(self):
         if self.customer_service().post(self):

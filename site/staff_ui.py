@@ -17,6 +17,7 @@ ICONS = {
     "search": '<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/>',
     "check": '<path d="m5 12 4 4L19 6"/>',
     "overview": '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    "chevron-right": '<path d="m9 6 6 6-6 6"/>',
     "close": '<path d="m6 6 12 12M18 6 6 18"/>',
     "brand": '<circle cx="12" cy="12" r="3"/><path d="M12 1v22M1 12h22M4 4l16 16M4 20 20 4"/>',
 }
@@ -49,51 +50,143 @@ def timestamp(value):
     return f'<time datetime="{moment.isoformat()}">{moment:%d.%m.%Y} · {moment:%H:%M}</time>'
 
 
-def avatar(name):
+def avatar(name, *, label=''):
     words = name.strip().split()
     initials = ''.join(word[0] for word in words[:2]) if len(words) > 1 else (words or ['L'])[0][:2]
-    return f'<span class="staff-avatar" aria-hidden="true">{escape(initials.upper())}</span>'
+    tone = sum(map(ord, name.casefold())) % 4
+    accessible = f'role="img" aria-label="{escape(label, quote=True)}" title="{escape(label, quote=True)}"' if label else 'aria-hidden="true"'
+    return f'<span class="staff-avatar" data-avatar="{tone}" {accessible}>{escape(initials.upper())}</span>'
 
 
-def orders_overview(counts, dates, queue):
+def duration(minutes):
+    if minutes is None:
+        return 'Нет замеров'
+    if minutes < 1:
+        return '< 1 мин'
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    if days:
+        return f'{days} д {hours} ч'
+    return f'{hours} ч {minutes} мин' if hours else f'{minutes} мин'
+
+
+def team_sidebar(team, performance):
+    if not team:
+        return ''
+    members = [(user_id, (name or '').strip() or email, role) for user_id, name, email, role in team]
+    managers = [member for member in members if member[2] == 'manager']
+    managers.sort(key=lambda member: -performance.get(member[0], (0, None))[0])
+    avatars = ''.join(avatar(name, label=name) for _, name, _ in members[:5])
+    overflow = f'<span class="staff-avatar staff-avatar-extra">+{len(members) - 5}</span>' if len(members) > 5 else ''
+    activity = []
+    for user_id, name, _ in managers:
+        count, minutes = performance.get(user_id, (0, None))
+        activity.append(f'<li><span>{escape(name)}<small>{escape(duration(minutes))}</small></span><strong>{count}</strong></li>')
+    manager_rows = f'<ul>{"".join(activity)}</ul>' if activity else '<p>Менеджеров с доступом пока нет.</p>'
+    return ('<details class="staff-rail-team" id="staff-team-summary" open>'
+            f'<summary class="staff-rail-team-title"><strong>Команда</strong><span>{len(members)}</span>{icon("chevron")}</summary>'
+            f'<div class="staff-avatar-stack">{avatars}{overflow}</div>'
+            '<h3>Менеджеры за 30 дней</h3><p title="Время — медиана от поступления заявки до принятия">'
+            'Принято заявок и типичное время ответа</p>'
+            f'{manager_rows}<a href="/manager/access">Управление доступом {icon("chevron-right")}</a></details>')
+
+
+def orders_chart(days, hourly, previous):
+    period = len(days)
+    total = sum(days.values())
+    scale = max(1, (max(days.values()) + 2) // 3)
+    height = 120
+    points = [(round(600 * index / (period - 1), 1), round(height * (1 - value / (scale * 3)), 1))
+              for index, value in enumerate(days.values())]
+    line = f'M 0 {points[0][1]}'
+    for (left, first), (right, second) in zip(points, points[1:]):
+        middle = round((left + right) / 2, 1)
+        line += f' C {middle} {first}, {middle} {second}, {right} {second}'
+    axes = ''.join(f'<span>{scale * value}</span>' for value in (3, 2, 1, 0))
+    labels = ''.join(f'<span>{day:%d.%m}</span>' for index, day in enumerate(days)
+                     if period == 7 or index in {0, 7, 14, 21, 29})
+    details = ''.join(f'<li><time datetime="{day.isoformat()}">{day:%d.%m}</time><strong>{count}</strong></li>'
+                      for day, count in days.items())
+    peak = max(hourly, key=hourly.get) if hourly else None
+    peak_label = f'{peak:02d}:00–{peak:02d}:59 · заявок {hourly[peak]}' if peak is not None else 'Пока нет данных'
+    delta = total - previous
+    comparison = f'{delta:+d} к предыдущим {period} дням' if delta else 'Как в предыдущем периоде'
+    return (f'<div class="staff-chart-period" data-chart-period="{period}"{" hidden" if period != 7 else ""}>'
+            f'<div class="staff-chart-total"><strong>{total}</strong><div><span>Заявок за {period} дней</span>'
+            f'<small>{comparison}</small></div></div><div class="staff-chart-layout">'
+            f'<div class="staff-chart-axis" aria-hidden="true">{axes}</div><div>'
+            '<div class="staff-chart-plot"><svg viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true">'
+            f'<defs><linearGradient id="staff-chart-fill-{period}" x2="0" y2="1" gradientUnits="objectBoundingBox">'
+            '<stop offset="0" stop-color="currentColor" stop-opacity=".34"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/>'
+            f'</linearGradient></defs><path d="{line} L 600 120 H 0 Z" fill="url(#staff-chart-fill-{period})"/>'
+            f'<path d="{line}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+            f'</svg></div><div class="staff-chart-labels" aria-hidden="true">{labels}</div></div></div>'
+            f'<div class="staff-chart-footer"><span>{icon("history")}<span>Самый активный час<br><strong>{peak_label}</strong></span></span>'
+            f'<details class="staff-chart-data"><summary>По дням {icon("chevron")}</summary><ol>{details}</ol></details></div></div>')
+
+
+def orders_overview(counts, dates, queue, analytics):
     today = datetime.now(YEREVAN).date()
-    week = {today - timedelta(days=offset): 0 for offset in range(6, -1, -1)}
-    for value in dates:
-        moment = local_time(value)
-        if moment and moment.date() in week:
-            week[moment.date()] += 1
+    moments = [moment for value in dates if (moment := local_time(value))]
+    charts = []
+    for period in (7, 30):
+        days = {today - timedelta(days=offset): 0 for offset in range(period - 1, -1, -1)}
+        hourly = {}
+        start = next(iter(days))
+        previous_start = start - timedelta(days=period)
+        previous = 0
+        for moment in moments:
+            day = moment.date()
+            if day in days:
+                days[day] += 1
+                hourly[moment.hour] = hourly.get(moment.hour, 0) + 1
+            elif previous_start <= day < start:
+                previous += 1
+        charts.append(orders_chart(days, hourly, previous))
     metrics = (
-        ('new', 'Новые заявки', 'orders', counts['new'], 'Ожидают обработки'),
-        ('in_progress', 'В работе', 'history', counts['in_progress'], 'Подтверждённые заявки'),
-        ('completed', 'Выполнено', 'check', counts['completed'], 'Завершённые заказы'),
-        ('', 'За 7 дней', 'overview', sum(week.values()), 'Новые заявки за неделю'),
+        ('new', 'Новые заявки', 'orders', 'Ожидают ответа'),
+        ('in_progress', 'В работе', 'history', 'Приняты менеджером'),
+        ('completed', 'Выполнено', 'check', 'Заказы завершены'),
+        ('cancelled', 'Отменено', 'close', 'Заявки закрыты'),
     )
     tiles = ''.join(
-        f'<article class="staff-metric" data-tone="{tone}"><div><h2>{label}</h2>'
-        f'<span class="staff-tile-icon">{icon(symbol)}</span></div><strong>{value}</strong><small>{caption}</small></article>'
-        for tone, label, symbol, value, caption in metrics
-    )
-    maximum = max(week.values()) or 1
-    columns = ''.join(
-        f'<div class="staff-chart-day"><div class="staff-chart-track">'
-        f'<meter min="0" max="{maximum}" value="{count}" aria-label="{day:%d.%m} · {count} заявок"></meter></div>'
-        f'<span aria-hidden="true">{day:%d.%m}</span></div>' for day, count in week.items()
+        f'<a class="staff-metric" data-tone="{tone}" href="?view=orders&amp;status={tone}"><div><h2>{label}</h2>'
+        f'<span class="staff-tile-icon">{icon(symbol)}</span></div><strong>{counts[tone]}</strong>'
+        f'<small>{caption}</small><span class="staff-metric-arrow">{icon("arrow")}</span></a>'
+        for tone, label, symbol, caption in metrics
     )
     pending = ''.join(
         f'<li><a href="#{escape(number, quote=True)}">{avatar(name)}'
-        f'<span><strong>{escape(name)}</strong><small>{escape(number)} · {moment:%H:%M}</small></span>{icon("arrow")}</a></li>'
-        for number, name, moment in queue
+        f'<span><strong>{escape(name)}</strong><small>{escape(number)} · {moment:%d.%m} {moment:%H:%M}</small></span>'
+        f'{icon("chevron-right")}</a></li>' for number, name, moment in queue
     )
     attention = f'<ul class="staff-queue">{pending}</ul>' if pending else (
         f'<div class="staff-queue-empty">{icon("check")}<span>Все новые заявки обработаны</span></div>')
-    return (f'<div id="staff-overview"><section class="staff-metrics" aria-label="Сводка заказов">{tiles}</section>'
+    reports = ''.join(f'<a href="{escape(url, quote=True)}" target="_blank" rel="noopener noreferrer">'
+                      f'{escape(name)} {icon("arrow")}</a>' for name, url in analytics)
+    visitor_note = 'Визиты и время на сайте доступны в отчётах.' if reports else 'Счётчики для этого окружения не настроены.'
+    return ('<div id="staff-overview"><div class="staff-hero"><div class="staff-hero-content">'
+            '<p class="staff-eyebrow"><span></span> Рабочий кабинет</p>'
+            '<h1>Обзор заказов</h1><p>Новые заявки, нагрузка и динамика магазина.</p>'
+            '<div class="staff-hero-actions">'
+            f'<a class="staff-button staff-primary" href="?view=orders&amp;status=new">К новым заявкам {icon("chevron-right")}</a>'
+            f'<a class="staff-find-link" href="#orders-title">{icon("search")} Найти заказ</a></div>'
+            '</div><div class="staff-hero-art" aria-hidden="true"><i></i><i></i><i></i><i></i>'
+            f'<div class="staff-hero-core">{icon("brand")}</div></div></div>'
+            f'<section class="staff-metrics" aria-label="Заказы по статусам">{tiles}</section>'
             '<div class="staff-overview-grid"><section class="staff-surface staff-chart" aria-labelledby="staff-chart-title">'
-            '<div class="staff-section-head"><div><h2 id="staff-chart-title">Динамика заявок</h2>'
-            '<p>Заказы по дням · время Еревана</p></div></div>'
-            f'<div class="staff-chart-columns">{columns}</div></section>'
-            '<section class="staff-surface" aria-labelledby="staff-queue-title"><div class="staff-section-head">'
+            '<div class="staff-section-head"><div><h2 id="staff-chart-title">Динамика заказов</h2>'
+            '<p>По дням · время Еревана</p></div><div class="staff-period-switch" role="group" aria-label="Период графика" hidden>'
+            '<button type="button" data-period="7" aria-pressed="true">7 дней</button>'
+            '<button type="button" data-period="30" aria-pressed="false">30 дней</button></div></div>'
+            f'{"".join(charts)}</section><div class="staff-dashboard-side">'
+            '<section class="staff-surface staff-inbox" aria-labelledby="staff-queue-title"><div class="staff-section-head">'
             '<div><h2 id="staff-queue-title">Требуют внимания</h2><p>Последние новые заявки</p></div>'
-            f'</div>{attention}</section></div></div>')
+            f'<span class="staff-tile-icon">{icon("orders")}</span></div>{attention}'
+            '<a class="staff-inbox-link" href="?view=orders&amp;status=new">Все новые заявки →</a></section>'
+            '<section class="staff-surface staff-analytics" aria-labelledby="staff-analytics-title">'
+            f'<div><h2 id="staff-analytics-title">Посещаемость</h2><p>{visitor_note}</p></div>'
+            f'<div class="staff-report-links">{reports}</div></section></div></div></div>')
 
 
 def heading(title, description):
@@ -112,7 +205,7 @@ def notice(handler, messages):
     return f'<p class="staff-notice" role="status">{icon("check")}{escape(messages[key])}</p>'
 
 
-def layout(title, content, *, actor=None, active=None, role_label=''):
+def layout(title, content, *, actor=None, active=None, role_label='', sidebar=''):
     brand = f'<a class="staff-brand" href="/manager/orders/">{icon("brand")}<span>LUSAR</span></a>'
     theme = (f'<button id="theme-toggle" class="staff-icon-button" type="button" aria-label="Светлая тема" '
              f'hidden>{icon("theme")}</button>')
@@ -125,16 +218,15 @@ def layout(title, content, *, actor=None, active=None, role_label=''):
     access_current = ' aria-current="page"' if active == 'access' else ''
     access = (f'<a href="/manager/access"{access_current}>{icon("team")}Сотрудники</a>'
               if actor.role == 'admin' else '')
-    profile = f'<a href="/account">{icon("account")}Мой аккаунт</a>' if actor.id else ''
     display_name = actor.name.strip() or actor.email
+    profile = (f'<a class="staff-profile" href="/account" title="{escape(actor.email, quote=True)}">'
+               f'{avatar(display_name)}<span><strong>{escape(display_name)}</strong><small>{escape(role_label)}</small></span>'
+               f'{icon("chevron-right")}</a>') if actor.id else ''
     return (f'<a class="staff-skip" href="#staff-main">К содержанию</a><div class="staff-workspace">'
-            f'<aside class="staff-sidebar">{brand}<p class="staff-kicker">Управление магазином</p>'
+            f'<aside class="staff-sidebar"><div class="staff-brand-row">{brand}{theme}</div>{profile}'
+            f'<p class="staff-kicker">Рабочие разделы</p>'
             f'<nav aria-label="Рабочие разделы"><a href="/manager/orders/"{overview_current}>{icon("overview")}Обзор</a>'
-            f'<a href="/manager/orders/?view=orders"{orders_current}>{icon("orders")}Заказы</a>{access}</nav>'
-            f'<nav class="staff-sidebar-footer" aria-label="Личные ссылки">{profile}'
-            f'<a href="/">{icon("arrow")}На сайт</a></nav></aside>'
-            f'<div class="staff-body"><header class="staff-topbar"><span>LUSAR <b aria-hidden="true">/</b> Рабочий кабинет</span>'
-            f'<div class="staff-session">{theme}<div class="staff-profile" title="{escape(actor.email, quote=True)}">'
-            f'{avatar(display_name)}<div><strong>{escape(display_name)}</strong>'
-            f'<small>{escape(role_label)}</small></div></div></div></header>'
-            f'<main id="staff-main" class="staff-main">{content}</main></div></div>')
+            f'<a href="/manager/orders/?view=orders"{orders_current}>{icon("orders")}Заказы</a>{access}</nav>{sidebar}'
+            f'<nav class="staff-sidebar-footer" aria-label="Личные ссылки">'
+            f'<a href="/" aria-label="На сайт" title="На сайт">{icon("arrow")}<span>На сайт</span></a></nav></aside>'
+            f'<main id="staff-main" class="staff-main">{content}</main></div>')

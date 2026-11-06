@@ -1,4 +1,6 @@
 (() => {
+  const team = document.querySelector("#staff-team-summary");
+  if (team && matchMedia("(max-width: 53rem)").matches) team.open = false;
   const login = document.querySelector("[data-staff-login]");
   if (login && /^#LS-(?:[0-9]{6}|[A-F0-9]{12})$/.test(location.hash)) {
     const url = new URL(login.href);
@@ -24,8 +26,29 @@
   const drawerTitle = drawer.querySelector("h2");
   const overview = document.querySelector("#staff-overview");
   const digits = text => text.replace(/\D/g, "");
-  let status = "";
+  let status = filters.find(button => button.getAttribute("aria-pressed") === "true").dataset.filter;
   let drawerOrder = null;
+
+  if (overview) {
+    const switcher = overview.querySelector(".staff-period-switch");
+    switcher.hidden = false;
+    switcher.addEventListener("click", event => {
+      const choice = event.target.closest("[data-period]");
+      if (!choice) return;
+      for (const button of switcher.querySelectorAll("button")) {
+        button.setAttribute("aria-pressed", String(button === choice));
+      }
+      for (const chart of overview.querySelectorAll("[data-chart-period]")) {
+        chart.hidden = chart.dataset.chartPeriod !== choice.dataset.period;
+      }
+    });
+    overview.querySelector(".staff-find-link").addEventListener("click", event => {
+      if (!search.closest(".staff-filter-tools").hidden) {
+        event.preventDefault();
+        search.focus();
+      }
+    });
+  }
 
   function filterOrders() {
     const query = search.value.trim().toLowerCase();
@@ -144,8 +167,13 @@
       updated.open = order.open;
       orders[orders.indexOf(order)] = updated;
       order.replaceWith(updated);
-      const freshOverview = page.querySelector("#staff-overview");
-      if (overview && freshOverview) overview.replaceChildren(...freshOverview.children);
+      for (const selector of [".staff-metrics", ".staff-inbox"]) {
+        const current = document.querySelector(selector);
+        const fresh = page.querySelector(selector);
+        if (current && fresh) current.replaceWith(fresh);
+      }
+      const freshTeam = page.querySelector("#staff-team-summary");
+      if (team && freshTeam) team.replaceChildren(...freshTeam.children);
       filterOrders();
       const notice = page.querySelector(".staff-notice");
       if (inDrawer) presentOrder(updated, notice);

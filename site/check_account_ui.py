@@ -60,7 +60,11 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  drawer.querySelector('button').click();
  require(!drawer.open&&!order.open,'Closing the drawer did not restore the order row');
  require(page.querySelector('.staff-profile .staff-avatar')&&page.querySelector('.staff-metric[data-tone="new"] > strong').textContent==='1','Overview or profile missing');
- require(page.querySelectorAll('.staff-chart meter').length===7,'Weekly chart missing');
+ require(!page.querySelector('.staff-topbar')&&page.querySelector('.staff-sidebar .staff-profile'),'Profile must be in the sidebar');
+ require(page.querySelector('#staff-team-summary .staff-avatar-stack .staff-avatar'),'Admin team avatars missing');
+ require(page.querySelector('[data-chart-period="7"]').querySelectorAll('.staff-chart-data li').length===7,'Weekly chart missing');
+ page.querySelector('[data-period="30"]').click();
+ require(!page.querySelector('[data-chart-period="30"]').hidden&&page.querySelector('[data-chart-period="7"]').hidden,'Chart period did not switch');
  page.querySelector('.staff-queue a').click();
  require(drawer.open&&drawer.querySelector('h2').textContent===orderId,'Queue link did not open the drawer');
  drawer.querySelector('button').click();
@@ -87,11 +91,12 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  require(page.getElementById(orderId).hidden&&page.querySelector('[data-filter="in_progress"] strong').textContent==='1','Autosave did not update the active filter or counts');
  require(drawer.open&&page.getElementById(orderId).open&&drawer.querySelector('.staff-history').textContent.includes('Новая заявка → В процессе'),'Autosave lost the open order or audit trail');
  require(page.querySelector('.staff-metric[data-tone="in_progress"] > strong').textContent==='1'&&!page.querySelector('.staff-queue'),'Overview did not refresh after autosave');
+ require(!page.querySelector('[data-chart-period="30"]').hidden,'Status save reset the chart period');
  drawer.querySelector('button').click();
  page.querySelector('[data-filter="in_progress"]').click();
  require(!page.getElementById(orderId).hidden,'Updated order missing from the next filter');
- page=await open('/manager/orders/?view=orders');
- require(!page.querySelector('#staff-overview')&&page.getElementById(orderId),'Full order list missing');
+ page=await open('/manager/orders/?view=orders&status=new');
+ require(!page.querySelector('#staff-overview')&&page.getElementById(orderId).hidden,'Full order list did not apply the dashboard filter');
  page=await open('/manager/access');
  require(page.querySelector('.staff-person').textContent.includes('Ваш аккаунт'),'Owner missing from staff list');
  form=page.querySelector('.staff-grant form');

@@ -315,6 +315,9 @@ class AccountTests(unittest.TestCase):
             self.assertEqual(owner.request(status_path, start, form=True)[0], 403)
             self.assertEqual(manager.request(status_path, start, form=True)[0], 303)
             self.assertEqual(manager.request(status_path, start, form=True)[0], 409)
+            admin_dashboard = owner.request(orders_path)[1]
+            self.assertRegex(admin_dashboard, r'<li><span>manager<small>[^<]+</small></span><strong>1</strong></li>')
+            self.assertNotIn('id="staff-team-summary"', manager.request(orders_path)[1])
             payment = {'number': number, 'action': 'payment', 'value': 'store',
                        'token': form_token(manager, orders_path, adjust_path)}
             self.assertEqual(manager.request(adjust_path, payment, form=True)[0], 303)
