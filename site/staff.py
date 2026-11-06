@@ -59,8 +59,8 @@ def page(handler, status, title, content, *, actor=None, active=None):
     body = ('<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{html.escape(title)} · LUSAR</title><script src="/theme.js"></script>'
-            '<link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/staff.css">'
-            f'<script src="/staff.js" defer></script></head><body class="staff-page">{layout}</body></html>').encode()
+            '<link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/staff.css?v=2">'
+            f'<script src="/staff.js?v=2" defer></script></head><body class="staff-page">{layout}</body></html>').encode()
     handler.send_response(status)
     handler.send_header('Content-Type', 'text/html; charset=utf-8')
     handler.send_header('Cache-Control', 'no-store')
@@ -79,9 +79,9 @@ def sign_in_page(handler, destination, actor):
     if actor:
         return page(handler, 403, 'Доступ к панели сотрудников',
                     '<p>Передайте администратору код аккаунта, чтобы получить доступ.</p>'
-                    f'<p><code>{html.escape(actor.id)}</code></p><a class="staff-button" href="{url}">Войти другим аккаунтом</a>')
+                    f'<p><code>{html.escape(actor.id)}</code></p><a class="staff-button" data-staff-login href="{url}">Войти другим аккаунтом</a>')
     return page(handler, 401, 'Панель сотрудников',
-                f'<p>Войдите в рабочий аккаунт, чтобы открыть заказы.</p><a class="staff-button staff-primary" href="{url}">Войти в LUSAR</a>')
+                f'<p>Войдите в рабочий аккаунт, чтобы открыть заказы.</p><a class="staff-button staff-primary" data-staff-login href="{url}">Войти в LUSAR</a>')
 
 
 def require_origin(handler, actor):
@@ -117,7 +117,7 @@ def history_markup(events):
     for action, detail, email, changed in events:
         items.append(f'<li><div><strong>{html.escape(ACTION_NAMES[action])}</strong><span>{ui.timestamp(changed)}</span></div>'
                      f'<p>{html.escape(detail)}</p><small>{html.escape(email)}</small></li>')
-    return (f'<details class="staff-history"><summary><span>Журнал заказа <small>{len(events)}</small></span>'
+    return (f'<details class="staff-history"><summary><span class="staff-detail-title">{ui.icon("history")}Журнал заказа <small>{len(events)}</small></span>'
             f'{ui.icon("chevron")}</summary><ol>{"".join(items)}</ol></details>')
 
 
@@ -170,7 +170,7 @@ def access_page(handler, actor):
     people = f'<ul class="staff-people">{"".join(staff_list)}</ul>'
     content = (ui.heading('Сотрудники', 'Выдавайте доступ к панели и меняйте роли сотрудников.') + feedback
                + '<div class="staff-access-grid"><section class="staff-surface staff-grant" aria-labelledby="grant-title">'
-               f'<span class="staff-tile-icon">{ui.icon("team")}</span><h2 id="grant-title">Выдать доступ</h2>'
+               f'<div class="staff-grant-title"><span class="staff-tile-icon">{ui.icon("team")}</span><h2 id="grant-title">Выдать доступ</h2></div>'
                f'<p>Сотрудник входит в LUSAR и открывает <a href="{ORDERS_PATH}">панель заказов</a>. Там он увидит свой код аккаунта.</p>'
                f'{form_start}<label>Код аккаунта<input name="account" required maxlength="36" autocomplete="off" spellcheck="false" '
                'placeholder="Вставьте код сотрудника"></label>'

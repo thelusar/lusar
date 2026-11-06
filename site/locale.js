@@ -410,7 +410,7 @@
       const photo = trimmed.match(/^Фото (\d+)$/u);
       if (photo) translated = (language === "hy" ? "Լուսանկար " : "Photo ") + photo[1];
       const sku = trimmed.match(/^Артикул (.+)$/u);
-      const receipt = trimmed.match(/^Заявка №(LS-[A-F0-9]{12}) получена\.$/u);
+      const receipt = trimmed.match(/^Заявка №(LS-(?:[0-9]{6}|[A-F0-9]{12})) получена\.$/u);
       const quantity = trimmed.match(/^Товар в корзине\. Количество: (\d+)\.$/u);
       const hours = trimmed.match(/^Часы связи с менеджером: (.+)\.$/u);
       if (sku) translated = (language === "hy" ? "Արտիկուլ " : "SKU ") + sku[1];

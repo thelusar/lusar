@@ -17,7 +17,7 @@ CHECK = r'''<!doctype html><meta charset="utf-8"><output>WAIT</output><iframe wi
 const output=document.querySelector('output'), frame=document.querySelector('iframe');
 const require=(value,message)=>{if(!value)throw Error(message);};
 const tick=()=>new Promise(resolve=>setTimeout(resolve,40));
-async function until(predicate){for(let i=0;i<150;i++){if(predicate())return;await tick();}throw Error('Timed out: '+predicate);}
+async function until(predicate,attempts=150){for(let i=0;i<attempts;i++){if(predicate())return;await tick();}throw Error('Timed out: '+predicate);}
 async function open(path){await new Promise(resolve=>{frame.onload=resolve;frame.src=path;});const page=frame.contentDocument;await frame.contentWindow.lusarAccount?.ready;await tick();return page;}
 function layout(page){require(page.documentElement.scrollWidth<=page.documentElement.clientWidth+1,'Overflow: '+page.location.pathname+' '+frame.style.width+' '+page.documentElement.lang);}
 async function sizes(page){for(const width of [320,390,1440]){frame.style.width=width+'px';await tick();for(const lang of ['ru','hy','en']){const picker=page.querySelector('#language');picker.value=lang;picker.dispatchEvent(new frame.contentWindow.Event('change'));await tick();layout(page);page.querySelector('#theme-toggle').click();layout(page);}}frame.style.width='390px';}
@@ -48,9 +48,9 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  await until(()=>frame.contentWindow.location.pathname==='/checkout/received');
  page=frame.contentDocument;await until(()=>page.querySelector('#receipt-number')?.textContent.includes('LS-'));
  const number=page.querySelector('#receipt-number').textContent;
- const orderId=number.match(/LS-[A-F0-9]{12}/)[0];
+ const orderId=number.match(/^LS-[0-9]{6}$/)[0];
  page=await open('/account/orders');await until(()=>page.querySelector('.account-order'));
- require(page.querySelector('.account-order').textContent.includes(number.match(/LS-[A-F0-9]{12}/)[0]),'Own order not shown');await sizes(page);
+ require(page.querySelector('.account-order').textContent.includes(orderId),'Own order not shown');await sizes(page);
  require(Object.keys(frame.contentWindow.lusarAccount.value.state.cart).length===0,'Purchased bag still saved on account');
  page=await open('/manager/orders/#'+orderId);
  const order=page.getElementById(orderId);
@@ -65,9 +65,18 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  await staffSizes(page);
  const statusForm=page.querySelector('form[action="/manager/orders/status"]');
  require(statusForm&&page.querySelector('a[href="/manager/access"]'),'Administrator order controls missing');
- statusForm.elements.target.value='in_progress';
- page=await submit(statusForm);
- require(page.getElementById(orderId)?.open&&page.querySelector('.staff-notice')&&page.querySelector('.staff-history'),'Staff status, order focus or audit missing');
+ const selectStatus=(picker,status)=>{picker.value=status;picker.dispatchEvent(new frame.contentWindow.Event('change',{bubbles:true}));};
+ const picker=statusForm.elements.target;
+ selectStatus(picker,'cancelled');
+ require(page.querySelector('#staff-cancel').open,'Cancellation confirmation missing');
+ page.querySelector('#staff-cancel button[value="back"]').click();
+ await until(()=>!picker.disabled);
+ require(picker.value===''&&order.dataset.status==='new','Dismissed cancellation changed the order');
+ selectStatus(picker,'in_progress');
+ await until(()=>page.querySelector('#staff-save-feedback').textContent.includes(orderId));
+ require(page.getElementById(orderId).hidden&&page.querySelector('[data-filter="in_progress"] strong').textContent==='1','Autosave did not update the active filter or counts');
+ page.querySelector('[data-filter="in_progress"]').click();
+ require(page.getElementById(orderId).open&&page.querySelector('.staff-history').textContent.includes('Новая заявка → В процессе'),'Autosave lost the open order or audit trail');
  page=await open('/manager/access');
  require(page.querySelector('.staff-person').textContent.includes('Ваш аккаунт'),'Owner missing from staff list');
  form=page.querySelector('.staff-grant form');
@@ -89,7 +98,19 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  localStorage.setItem('lusar-cart',JSON.stringify({[ITEM.id]:1}));frame.contentDocument.dispatchEvent(new frame.contentWindow.Event('lusar-shopping-change'));await frame.contentWindow.lusarAccount.flush();
  page=await open('/account');require(frame.contentWindow.lusarAccount.value.state.cart[ITEM.id]===1,'Quantity decrease lost');
  await frame.contentWindow.lusarAccount.request('/api/account/logout',{});page=await open('/account');require(!page.querySelector('#account-guest').hidden,'Logout failed');require(!localStorage.getItem('lusar-cart'),'Private cached bag survived logout');
- page=await open('/auth/start');require(JSON.parse(localStorage.getItem('lusar-cart'))[ITEM.id]===1,'Saved bag not restored on next login');
+ page=await open('/manager/orders/#'+orderId);
+ await new Promise(resolve=>{frame.onload=resolve;page.querySelector('[data-staff-login]').click();});
+ require(frame.contentDocument.getElementById(orderId)?.open,'Order link was lost through login');
+ page=frame.contentDocument;
+ selectStatus(page.querySelector('.staff-status-picker select'),'cancelled');
+ page.querySelector('#staff-cancel button[value="confirm"]').click();
+ await until(()=>{
+   const error=page.querySelector('[data-save-state][data-state="error"]');
+   if(error)throw Error('Cancellation failed: '+error.textContent);
+   return page.getElementById(orderId)?.dataset.status==='cancelled';
+ },250);
+ require(page.querySelector('.staff-history').textContent.includes('В процессе → Отменено'),'Confirmed cancellation was not recorded');
+ page=await open('/account');require(JSON.parse(localStorage.getItem('lusar-cart'))[ITEM.id]===1,'Saved bag not restored on next login');
  output.textContent='PASS';
 }catch(error){output.textContent='FAIL: '+error.message;}})();
 </script>'''

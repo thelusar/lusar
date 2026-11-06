@@ -187,7 +187,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
   <p id="cookie-status" role="status"></p>
 </section>
 {'<dialog id="first-order-promo" aria-labelledby="promo-heading"><h2 id="promo-heading">10% на первый заказ</h2><p>Зарегистрируйтесь и получите скидку на первую покупку.</p><p>' + link("offers/", "Посмотреть условия") + '</p><form method="dialog"><button>Закрыть</button></form></dialog>' if path.rstrip("/") == "catalog" or path.startswith("catalog/product/") else ""}
-<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script><script src="/catalog-live.js" defer></script></body></html>""".replace('src="/cart.js"', f'src="/cart.js?catalog={CATALOG_REVISION}"')
+<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script><script src="/catalog-live.js" defer></script></body></html>""".replace('src="/cart.js"', f'src="/cart.js?catalog={CATALOG_REVISION}&amp;orders=2"')
         .replace('src="/search.js"', f'src="/search.js?catalog={CATALOG_REVISION}"')
         .replace('src="/ai-preview.js"', f'src="/ai-preview.js?catalog={CATALOG_REVISION}"')
         .replace('src="/support.js"', f'src="/support.js?catalog={CATALOG_REVISION}"'), encoding="utf-8")
@@ -702,7 +702,7 @@ write("checkout/received", "Подтверждение заявки", order_step
 </div>
 <div class="receipt-links"><a href="/catalog">Вернуться в каталог</a><a href="/contacts">Контакты</a></div>
 </section>
-<script src="/receipt.js" defer></script>
+<script src="/receipt.js?v=2" defer></script>
 """, draft=True)
 write("order-status", "Статус заявки", """
 <meta name="referrer" content="no-referrer">

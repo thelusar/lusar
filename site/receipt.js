@@ -5,7 +5,7 @@
   } catch {
     return;
   }
-  if (typeof receipt?.number !== "string" || !/^LS-[A-F0-9]{12}$/.test(receipt.number)) return;
+  if (typeof receipt?.number !== "string" || !/^LS-(?:[0-9]{6}|[A-F0-9]{12})$/.test(receipt.number)) return;
   document.querySelector("#receipt-title").textContent = "Заявка принята";
   document.querySelector(".receipt-symbol").hidden = false;
   document.querySelector("#receipt-label").hidden = false;

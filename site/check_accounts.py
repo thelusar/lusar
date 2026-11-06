@@ -203,6 +203,22 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(self.submit(own, bob)[0], 409)
         self.assertEqual(self.client.request('/api/account/me')[1]['profile']['id'], alice['profile']['id'])
 
+    def test_order_numbers_support_short_ids_and_legacy_tracking(self):
+        first_order = self.order(numberFormat='short')
+        with patch('serve.secrets.randbelow', side_effect=[23, 23, 24]):
+            code, first, _ = self.submit(first_order)
+            self.assertEqual((code, first['number']), (201, 'LS-100023'))
+            self.assertEqual(self.submit(first_order)[:2], (200, first))
+            code, second, _ = self.submit(self.order(numberFormat='short'))
+            self.assertEqual((code, second['number']), (201, 'LS-100024'))
+        code, legacy, _ = self.submit(self.order())
+        self.assertEqual(code, 201)
+        self.assertRegex(legacy['number'], r'^LS-[A-F0-9]{12}$')
+        for record in (first, second, legacy):
+            credentials = {'number': record['number'], 'key': record['trackingToken']}
+            self.assertEqual(self.client.request('/api/order-status', credentials)[1]['number'], record['number'])
+            self.assertEqual(self.client.request('/api/order-status', {**credentials, 'key': 'a' * 43})[0], 404)
+
     def test_first_order_is_exclusive_and_reserved_until_cancelled(self):
         self.assertEqual(self.submit(self.order(mode='first'))[0], 401)
         me = self.client.login()

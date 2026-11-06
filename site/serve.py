@@ -301,48 +301,61 @@ class Handler(SimpleHTTPRequestHandler):
             contact_name = contact.get("name") or "Гость"
             phone = contact.get("phone", "")
             status_label = html.escape(STATUS_LABELS.get(status, status))
+            units = sum(line["quantity"] for line in order["items"])
             targets = TRANSITIONS.get(status, ())
             if order.get("payment"):
                 targets = tuple(target for target in targets if target != "cancelled")
             options = "".join(f'<option value="{target}">{STATUS_LABELS[target]}</option>' for target in targets)
-            controls = (f'<form class="staff-action" method="post" action="/manager/orders/status">'
+            controls = (f'<form class="staff-status-form" method="post" action="/manager/orders/status">'
                         f'<input type="hidden" name="number" value="{number_attr}">'
                         f'<input type="hidden" name="current" value="{status_attr}">'
                         f'<input type="hidden" name="token" value="{status_token(number, status, actor.form_key)}">'
-                        f'<label>Новый статус <select name="target" required><option value="" disabled selected>Выберите статус</option>{options}</select></label>'
-                        '<button class="staff-primary">Сохранить статус</button></form>') if options else ""
+                        '<label class="staff-status-control"><span>Статус заказа</span>'
+                        f'<span class="staff-status-picker"><select name="target" required>'
+                        f'<option value="" disabled selected>{status_label}</option>{options}</select>{ui.icon("chevron")}</span></label>'
+                        '<button class="staff-primary">Сохранить статус</button>'
+                        '<span class="staff-save-state" role="status" data-save-state hidden></span></form>') if options else (
+                            f'<div class="staff-status-static"><span>Статус заказа</span><strong>{status_label}</strong></div>')
             cards.append(
                 f'<details class="staff-order" id="{number_attr}" data-status="{status_attr}"><summary class="staff-order-row">'
-                f'<span class="staff-order-id"><strong>{html.escape(number)}</strong>{ui.timestamp(created)}</span>'
+                f'<span class="staff-order-id"><strong>{number_attr}</strong>{ui.timestamp(created)}</span>'
                 f'<span class="staff-order-customer"><strong>{contact_name}</strong><small>{phone}</small></span>'
-                f'<span class="staff-order-status"><span class="staff-badge" data-tone="{status_attr}">{status_label}</span></span>'
-                f'<strong class="staff-total">{total}</strong><span class="staff-order-chevron">{ui.icon("chevron")}</span></summary>'
-                '<div class="staff-order-details"><div class="staff-detail-grid">'
-                f'<section><h3>Состав заказа</h3><ul class="staff-items">{lines}</ul></section>'
-                f'<section><h3>Контакты клиента</h3><dl class="staff-contact">{contact_fields}</dl></section></div>'
-                '<div class="staff-detail-grid staff-operations">'
-                f'<section><h3>Статус заказа</h3>{controls or f"<p>{status_label}</p>"}</section>'
-                '<section><h3>Оплата и возвраты</h3>'
-                f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}</section></div>'
-                f'{staff.history_markup(history.get(number))}</div></details>')
-        stats = ''.join(f'<button type="button" data-filter="{key}" aria-pressed="false"><span class="staff-dot" data-tone="{key}"></span>'
-                        f'<span>{STATUS_LABELS[key]}</span><strong>{count}</strong></button>' for key, count in counts.items())
+                f'<span class="staff-order-status"><span class="staff-status-label" data-tone="{status_attr}">'
+                f'<span class="staff-dot"></span>{status_label}</span></span>'
+                f'<span class="staff-order-amount"><strong class="staff-total">{total}</strong><small>{units} шт.</small></span>'
+                f'<span class="staff-order-chevron">{ui.icon("chevron")}</span></summary>'
+                f'<div class="staff-order-details"><div class="staff-detail-header">{controls}</div><div class="staff-detail-grid">'
+                f'<div><section><h3 class="staff-detail-title">{ui.icon("box")}Состав заказа</h3><ul class="staff-items">{lines}</ul></section>'
+                f'{staff.history_markup(history.get(number))}</div>'
+                f'<div><section><h3 class="staff-detail-title">{ui.icon("account")}Контакты клиента</h3>'
+                f'<dl class="staff-contact">{contact_fields}</dl></section>'
+                f'<section><h3 class="staff-detail-title">{ui.icon("payment")}Оплата и возвраты</h3>'
+                f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}</section></div></div></div></details>')
+        filters = f'<button type="button" data-filter="" aria-pressed="true">Все <strong>{len(rows)}</strong></button>'
+        filters += ''.join(f'<button type="button" data-filter="{key}" aria-pressed="false"><span>{STATUS_LABELS[key]}</span>'
+                           f'<strong>{count}</strong></button>' for key, count in counts.items())
         feedback = ui.notice(self, {'status': 'Статус заказа обновлён.', 'payment': 'Оплата отмечена.',
                                     'return': 'Возврат сохранён.', 'refund_paid': 'Выплата отмечена.'})
         empty = ui.empty('Заказов пока нет', 'Новые заявки с сайта появятся здесь.', 'orders')
         no_match = ui.empty('Заказы не найдены', 'Попробуйте изменить запрос или сбросить фильтр.', 'search')
-        listing = ('<div class="staff-table-head" aria-hidden="true"><span>Заявка · время Еревана</span><span>Клиент</span>'
+        listing = ('<div class="staff-table-head" aria-hidden="true"><span>Номер · время Еревана</span><span>Клиент</span>'
                    f'<span>Статус</span><span>Сумма</span></div>{"".join(cards)}'
                    f'<div id="staff-no-match" hidden>{no_match}</div>') if cards else empty
-        content = (ui.heading('Заказы', 'Заявки с сайта, оплата и возвраты в одном месте.') + feedback
-                   + f'<div class="staff-stats" role="group" aria-label="Фильтр по статусу" hidden>{stats}</div>'
+        cancel_dialog = ('<dialog id="staff-cancel" class="staff-cancel-dialog" aria-labelledby="staff-cancel-title">'
+                         '<form method="dialog"><h2 id="staff-cancel-title">Отменить заявку?</h2>'
+                         '<p>После отмены заявка закроется.</p><div><button value="back" autofocus>Назад</button>'
+                         '<button value="confirm" class="staff-danger">Отменить заявку</button></div></form></dialog>')
+        content = (ui.heading('Заказы', 'Обрабатывайте заявки, отмечайте оплату и оформляйте возвраты.') + feedback
+                   + '<p id="staff-save-feedback" class="staff-notice" role="status" hidden></p>'
                    '<section class="staff-surface staff-list" aria-labelledby="orders-title"><div class="staff-section-head">'
                    '<div><h2 id="orders-title">Список заказов</h2>'
                    f'<p id="staff-result-count" aria-live="polite">Всего заявок: {len(rows)}</p></div>'
                    '<div class="staff-filter-tools" hidden><label class="staff-search">'
                    f'{ui.icon("search")}<input type="search" id="staff-order-search" aria-label="Поиск заказов" '
                    'placeholder="Номер, имя или телефон"></label>'
-                   f'<button type="button" id="staff-reset" hidden>Сбросить</button></div></div>{listing}</section>')
+                   '<button type="button" id="staff-reset" hidden>Сбросить</button></div></div>'
+                   f'<div class="staff-filters" role="group" aria-label="Фильтр по статусу" hidden>{filters}</div>'
+                   f'{listing}</section>{cancel_dialog}')
         return staff.page(self, 200, "Заказы LUSAR", content, actor=actor, active='orders')
 
     def do_POST(self):
@@ -455,7 +468,6 @@ class Handler(SimpleHTTPRequestHandler):
                 lines = [{"id": key, "sku": products[key]["sku"], "name": products[key]["name"],
                           "quantity": quantity, "unitPrice": products[key]["price"]}
                          for key, quantity in cart.items()]
-                number = "LS-" + secrets.token_hex(6).upper()
                 tracking_token = secrets.token_urlsafe(32)
                 account_percent = 0
                 first_order = False
@@ -473,10 +485,20 @@ class Handler(SimpleHTTPRequestHandler):
                     amount = order_amount(lines, promo, account_percent=account_percent, first_order=first_order)
                 except ValueError as error:
                     return self.reply(422, {"error": str(error)})
-                db.execute("INSERT INTO orders (request_id, fingerprint, number, payload, customer_id) VALUES (?, ?, ?, ?, ?)",
-                           (request_id, fingerprint, number, json.dumps(
-                               {"contact": contact, "items": lines, "promo": promo, "trackingToken": tracking_token,
-                                "accountPercent": account_percent, "firstOrderApplied": first_order, **amount}, ensure_ascii=False), identity))
+                payload = json.dumps({"contact": contact, "items": lines, "promo": promo, "trackingToken": tracking_token,
+                                      "accountPercent": account_percent, "firstOrderApplied": first_order, **amount},
+                                     ensure_ascii=False)
+                for _ in range(16):
+                    # Checkout tabs opened before this release still expect the old format.
+                    suffix = str(100000 + secrets.randbelow(900000)) if data.get("numberFormat") == "short" else secrets.token_hex(6).upper()
+                    number = f"LS-{suffix}"
+                    inserted = db.execute(
+                        "INSERT INTO orders (request_id, fingerprint, number, payload, customer_id) VALUES (?, ?, ?, ?, ?) "
+                        "ON CONFLICT (number) DO NOTHING", (request_id, fingerprint, number, payload, identity))
+                    if inserted.rowcount == 1:
+                        break
+                else:
+                    return self.reply(503, {"error": "Не удалось присвоить номер заявки. Повторите отправку."})
                 db.execute("""CREATE TABLE IF NOT EXISTS order_notifications (
                     number TEXT PRIMARY KEY, sent_at TEXT,
                     attempts INTEGER NOT NULL DEFAULT 0,
@@ -495,7 +517,7 @@ class Handler(SimpleHTTPRequestHandler):
                 raise ValueError
             data = json.loads(self.rfile.read(size))
             number, key = data["number"], data["key"]
-            if not re.fullmatch(r"LS-[A-F0-9]{12}", number) or not re.fullmatch(r"[A-Za-z0-9_-]{43}", key):
+            if not order_storage.ORDER_NUMBER.fullmatch(number) or not re.fullmatch(r"[A-Za-z0-9_-]{43}", key):
                 raise ValueError
         except (ValueError, TypeError, KeyError):
             return self.reply(400, {"error": "Проверьте приватную ссылку."})

@@ -6,6 +6,9 @@ from urllib.parse import parse_qs, urlsplit
 
 ICONS = {
     "orders": '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6m-6 4h6m-6 4h4"/>',
+    "box": '<path d="m3 8 9-5 9 5v9l-9 5-9-5V8zm0 0 9 5 9-5M12 13v9"/>',
+    "payment": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/>',
+    "history": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     "team": '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 5a3 3 0 0 1 0 6m2 3a4 4 0 0 1 3 4v2"/>',
     "account": '<circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
     "arrow": '<path d="M7 17 17 7M7 7h10v10"/>',

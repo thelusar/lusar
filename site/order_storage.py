@@ -1,10 +1,12 @@
 """Database connections for local previews and the PostgreSQL test deployment."""
 import os
+import re
 import sqlite3
 from contextlib import contextmanager, closing
 from pathlib import Path
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+ORDER_NUMBER = re.compile(r"LS-(?:[0-9]{6}|[A-F0-9]{12})")
 DatabaseError = (sqlite3.Error,)
 if DATABASE_URL:
     import psycopg

@@ -262,7 +262,7 @@ checkout?.addEventListener("submit", async event => {
     status.textContent = "Проверьте имя и номер телефона."; status.focus(); return;
   }
   const displayedPrices = Object.fromEntries(Object.keys(cart).filter(id => Object.hasOwn(products,id)).map(id => [id,products[id].price]));
-  const payload = {...fields, cart:{...cart}, displayedPrices};
+  const payload = {...fields, cart:{...cart}, displayedPrices, numberFormat:"short"};
   const signature = JSON.stringify(payload);
   if (request?.signature !== signature) request = {signature, id:crypto.randomUUID()};
   submitting = true; checkout.setAttribute("aria-busy", "true"); status.textContent = "Отправляем заявку…";
@@ -273,7 +273,7 @@ checkout?.addEventListener("submit", async event => {
     const response = await fetch("/api/orders", {method:"POST", headers:{"Content-Type":"application/json",...(window.lusarAccount?.value.authenticated?{'X-Lusar-CSRF':window.lusarAccount.value.csrfToken}:{})}, body:JSON.stringify({...payload,requestId:request.id})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Не удалось отправить заявку. Попробуйте ещё раз.");
-    if (!/^LS-[A-F0-9]{12}$/.test(result.number)) throw new Error("Не удалось отправить заявку. Попробуйте ещё раз.");
+    if (!/^LS-(?:[0-9]{6}|[A-F0-9]{12})$/.test(result.number)) throw new Error("Не удалось отправить заявку. Попробуйте ещё раз.");
     document.querySelector("#order-flow").hidden = true;
     document.querySelector("#checkout-success").hidden = false;
     document.querySelector("#checkout-success-number").textContent = `Заявка №${result.number} получена.`;

@@ -78,7 +78,7 @@ openPage("/catalog", page => {
           const confirmation = frame.contentDocument;
           mobileLayout(confirmation);
           const text = confirmation.querySelector("#receipt-number").textContent;
-          const number = text.match(/LS-[A-F0-9]{12}/)[0];
+          const number = text.match(/^LS-[0-9]{6}$/)[0];
           const link = confirmation.querySelector("#receipt-tracking");
           require(!link.hidden, "Tracking link missing");
           const params = Object.fromEntries(new URLSearchParams(link.hash.slice(1)));

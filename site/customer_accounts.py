@@ -226,7 +226,9 @@ class Service:
         self.ensure()
         state, nonce, verifier = (secrets.token_urlsafe(32) for _ in range(3))
         destination = params.get('return', ['/account'])[0]
-        if destination not in DESTINATIONS:
+        path, _, fragment = destination.partition('#')
+        order_link = path == '/manager/orders/' and order_storage.ORDER_NUMBER.fullmatch(fragment)
+        if destination not in DESTINATIONS and not order_link:
             destination = '/account'
         language = params.get('lang', ['ru'])[0]
         if language not in {'ru', 'hy', 'en'}:
