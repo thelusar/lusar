@@ -1,16 +1,19 @@
 .staff-page {
-  --staff-canvas: #101113;
-  --staff-card: #17191c;
-  --staff-raised: #202328;
-  --staff-line: #30343a;
-  --staff-control-line: #5b6471;
-  --staff-ink: #f2f4f7;
-  --staff-muted: #a8afb9;
-  --staff-accent: #d5deea;
-  --staff-on-accent: #15191f;
-  --staff-accent-wash: #242931;
-  --staff-accent-hover: #edf2f8;
-  --staff-new: #c8b9f7;
+  --staff-header: #0a0a0c;
+  --staff-sidebar: #0b0b0d;
+  --staff-canvas: #161619;
+  --staff-card: #202024;
+  --staff-raised: #29292f;
+  --staff-input: #121215;
+  --staff-line: #3b3b43;
+  --staff-control-line: #696974;
+  --staff-ink: #f4f4f7;
+  --staff-muted: #b1b1be;
+  --staff-accent: #cab4ff;
+  --staff-on-accent: #201434;
+  --staff-accent-wash: #2c223d;
+  --staff-accent-hover: #dbcaff;
+  --staff-new: #cfb4ff;
   --staff-progress: #9bbfff;
   --staff-success: #98d3b7;
   --staff-danger: #f0a7b6;
@@ -20,17 +23,20 @@
   overflow-wrap: anywhere;
 }
 [data-theme="light"] .staff-page {
+  --staff-header: #ffffff;
+  --staff-sidebar: #ffffff;
   --staff-canvas: #f4f6f9;
   --staff-card: #ffffff;
   --staff-raised: #edf0f4;
+  --staff-input: #f8f8fb;
   --staff-line: #d6dce5;
   --staff-control-line: #818b9a;
   --staff-ink: #171c24;
   --staff-muted: #515c6b;
-  --staff-accent: #303d51;
+  --staff-accent: #5b3c8b;
   --staff-on-accent: #ffffff;
-  --staff-accent-wash: #e9edf4;
-  --staff-accent-hover: #202a3a;
+  --staff-accent-wash: #eee7f8;
+  --staff-accent-hover: #472b73;
   --staff-new: #5d438e;
   --staff-progress: #2f5697;
   --staff-success: #206448;
@@ -53,7 +59,7 @@
   gap: 1rem;
   padding: 1.6rem 1rem;
   border-right: 1px solid var(--staff-line);
-  background: var(--staff-card);
+  background: var(--staff-sidebar);
 }
 .staff-brand {
   display: inline-flex;
@@ -66,7 +72,7 @@
   font-weight: 600;
 }
 .staff-brand span { color: var(--staff-ink); }
-.staff-brand svg { width: 23px; height: 23px; }
+.staff-brand svg { width: 23px; height: 23px; color: var(--staff-ink); }
 .staff-kicker { color: var(--staff-muted); margin: 1rem .55rem 0; }
 .staff-sidebar nav { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; }
 .staff-sidebar nav a {
@@ -83,7 +89,7 @@
 .staff-sidebar nav a[aria-current="page"] {
   color: var(--staff-ink);
   background: var(--staff-accent-wash);
-  border-color: var(--staff-line);
+  border-color: color-mix(in srgb, var(--staff-accent) 36%, var(--staff-sidebar));
   font-weight: 600;
 }
 .staff-sidebar nav a[aria-current="page"] svg { color: var(--staff-accent); }
@@ -96,12 +102,13 @@
   min-height: 4.5rem;
   padding: .65rem clamp(1rem, 3vw, 2.5rem);
   border-bottom: 1px solid var(--staff-line);
+  background: var(--staff-header);
   color: var(--staff-muted);
 }
 .staff-session { display: flex; align-items: center; gap: 1rem; text-align: right; min-width: 0; }
 .staff-session strong, .staff-session small { display: block; }
 .staff-session strong { font-weight: 500; color: var(--staff-ink); }
-.staff-session small { color: var(--staff-accent); }
+.staff-session small { color: var(--staff-muted); }
 .staff-page .staff-icon-button { display: grid; place-items: center; min-width: 2.75rem; padding: .55rem; }
 .staff-main { width: 100%; max-width: 92rem; padding: clamp(1.2rem, 3vw, 2.5rem); }
 .staff-heading { margin-bottom: 1.5rem; }
@@ -120,7 +127,7 @@
 .staff-page input:not([type="file"]), .staff-page select, .staff-page button, .staff-button {
   border: 1px solid var(--staff-line);
   border-radius: .5rem;
-  background: var(--staff-canvas);
+  background: var(--staff-input);
   color: var(--staff-ink);
   min-height: 2.75rem;
   max-width: 100%;
@@ -140,16 +147,20 @@
   gap: .3rem .6rem;
   padding: .9rem 1rem;
   text-align: left;
-  background: var(--staff-card);
+  background: linear-gradient(125deg, color-mix(in srgb, var(--staff-tone) 14%, var(--staff-card)), var(--staff-card) 78%);
+  border-color: color-mix(in srgb, var(--staff-tone) 25%, var(--staff-line));
   color: var(--staff-muted);
 }
-.staff-stats button[aria-pressed="true"] { border-color: var(--staff-accent); background: var(--staff-accent-wash); }
+.staff-stats button:hover, .staff-stats button[aria-pressed="true"] {
+  border-color: var(--staff-tone);
+  background: color-mix(in srgb, var(--staff-tone) 20%, var(--staff-card));
+}
 .staff-stats strong { grid-column: 2; font-size: 1.6rem; line-height: 1.2; color: var(--staff-ink); font-variant-numeric: tabular-nums; }
-.staff-dot { width: .55rem; height: .55rem; border-radius: 50%; background: currentColor; }
-[data-tone="new"] { color: var(--staff-new); }
-[data-tone="in_progress"] { color: var(--staff-progress); }
-[data-tone="completed"] { color: var(--staff-success); }
-[data-tone="cancelled"] { color: var(--staff-danger); }
+.staff-dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--staff-tone); }
+.staff-page [data-filter="new"], .staff-page [data-tone="new"] { --staff-tone: var(--staff-new); }
+.staff-page [data-filter="in_progress"], .staff-page [data-tone="in_progress"] { --staff-tone: var(--staff-progress); }
+.staff-page [data-filter="completed"], .staff-page [data-tone="completed"] { --staff-tone: var(--staff-success); }
+.staff-page [data-filter="cancelled"], .staff-page [data-tone="cancelled"] { --staff-tone: var(--staff-danger); }
 .staff-section-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .8rem; padding: 1.15rem; }
 .staff-filter-tools { display: flex; flex-wrap: wrap; gap: .5rem; min-width: 0; }
 .staff-search { position: relative; min-width: 0; }
@@ -166,12 +177,18 @@
 .staff-order { border-top: 1px solid var(--staff-line); scroll-margin-top: .8rem; }
 .staff-order summary, .staff-history summary, .staff-role-edit summary { cursor: pointer; list-style: none; }
 .staff-page summary::-webkit-details-marker { display: none; }
-.staff-order-row:hover, .staff-order[open] > summary { background: var(--staff-accent-wash); }
+.staff-order-row:hover { background: var(--staff-raised); }
+.staff-order[open] > summary { background: var(--staff-accent-wash); }
 .staff-order[open] .staff-order-chevron svg, .staff-history[open] > summary svg, .staff-role-edit[open] > summary svg { transform: rotate(180deg); }
 .staff-order-row time, .staff-order-row small { display: block; color: var(--staff-muted); }
 .staff-order-chevron { color: var(--staff-muted); line-height: 0; }
 .staff-total { font-variant-numeric: tabular-nums; }
 .staff-badge { display: inline-block; padding: .2rem .55rem; border: 1px solid var(--staff-line); border-radius: .4rem; background: var(--staff-canvas); }
+.staff-badge[data-tone] {
+  color: var(--staff-tone, var(--staff-ink));
+  background: color-mix(in srgb, var(--staff-tone, var(--staff-ink)) 12%, var(--staff-card));
+  border-color: color-mix(in srgb, var(--staff-tone, var(--staff-ink)) 24%, var(--staff-line));
+}
 .staff-order-details { padding: 1rem 1.15rem 1.2rem; display: grid; gap: 1rem; }
 .staff-detail-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: .8rem; }
 .staff-detail-grid section { padding: 1rem; background: var(--staff-canvas); border: 1px solid var(--staff-line); border-radius: .55rem; }
