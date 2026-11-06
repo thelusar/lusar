@@ -65,7 +65,7 @@ def utc_value(moment):
 
 
 def query_parts(criteria, selected=()):
-    terms, params = [], []
+    terms, params = ['deleted_at IS NULL'], []
     for key, comparison, offset in (('from', '>=', 0), ('to', '<', 1)):
         if criteria[key]:
             day = date.fromisoformat(criteria[key]) + timedelta(days=offset)
@@ -77,7 +77,7 @@ def query_parts(criteria, selected=()):
     if selected:
         terms.append('number IN (' + ', '.join('?' for _ in selected) + ')')
         params.extend(selected)
-    where = ' WHERE ' + ' AND '.join(terms) if terms else ''
+    where = ' WHERE ' + ' AND '.join(terms)
     direction = SORT[criteria['sort']][0]
     return where, f' ORDER BY created {direction}, number {direction}', params
 

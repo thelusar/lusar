@@ -355,6 +355,46 @@ class AccountTests(unittest.TestCase):
             self.assertEqual(manager.request(orders_path)[0], 403)
             self.assertEqual(manager.request(adjust_path, final_return, form=True)[0], 403)
 
+    def test_only_admin_can_delete_and_deleted_orders_cannot_be_reopened(self):
+        self.client.login('buyer')
+        checkout = self.order(mode='first')
+        _, order, _ = self.submit(checkout)
+        number = order['number']
+        owner = Client(self.server)
+        owner_id = owner.login('owner')['profile']['id']
+        manager = Client(self.server)
+        manager_id = manager.login('manager')['profile']['id']
+        with order_storage.connect(serve.DATABASE, write=True) as db:
+            db.execute("INSERT INTO staff_roles (customer_id, role) VALUES (?, 'manager')", (manager_id,))
+        staff = serve.staff
+        with patch.dict(os.environ, {'LUSAR_STAFF_ADMIN_ID': owner_id}):
+            self.assertNotIn('data-delete-order=', manager.request(staff.ORDERS_PATH)[1])
+            owner_page = owner.request(staff.ORDERS_PATH)[1]
+            token = re.search(f'data-delete-order="{number}" data-delete-token="([a-f0-9]+)"', owner_page).group(1)
+            form = {'number': number, 'token': token, 'confirm': 'yes'}
+            self.assertEqual(manager.request(staff.DELETE_ORDER_PATH, form, form=True)[0], 403)
+            self.assertEqual(owner.request(staff.DELETE_ORDER_PATH, form, form=True, origin='https://other.example')[0], 403)
+            self.assertEqual(owner.request(staff.DELETE_ORDER_PATH, {**form, 'confirm': 'no'}, form=True)[0], 400)
+            self.assertIn(number, owner.request(staff.ORDERS_PATH)[1])
+            self.assertEqual(owner.request(staff.DELETE_ORDER_PATH, form, form=True)[0], 303)
+            self.assertEqual(owner.request(staff.DELETE_ORDER_PATH, form, form=True)[0], 303)
+            self.assertNotIn(number, owner.request(staff.ORDERS_PATH)[1])
+            transfer = owner.request(staff.TRANSFER_PATH)[1]
+            self.assertNotIn(number, transfer)
+            export_token = re.search('name="token" value="([a-f0-9]+)"', transfer).group(1)
+            self.assertNotIn(number, owner.request(staff.TRANSFER_PATH + '/export', {'scope': 'all', 'token': export_token}, form=True)[1])
+            self.assertEqual(self.client.request('/api/account/orders')[1]['orders'], [])
+            self.assertEqual(self.client.request('/api/order-status', {'number': number, 'key': order['trackingToken']})[0], 404)
+            self.assertTrue(self.client.request('/api/account/me')[1]['loyalty']['firstOrderAvailable'])
+            self.assertEqual(self.submit(checkout)[0], 409)
+            notices = []
+            notify_orders.deliver_pending(notices.append)
+            self.assertEqual(notices, [])
+            with order_storage.connect(serve.DATABASE) as db:
+                deleted_at, deleted_by = db.execute('SELECT deleted_at, deleted_by FROM orders WHERE number = ?', (number,)).fetchone()
+            self.assertTrue(deleted_at)
+            self.assertEqual(deleted_by, owner_id)
+
     def test_staff_order_transfer_is_filtered_admin_only_and_safe_to_retry(self):
         path = serve.staff.TRANSFER_PATH
         self.assertEqual(self.client.request(path)[0], 401)

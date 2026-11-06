@@ -520,8 +520,10 @@ html:has(.staff-workspace) { scrollbar-gutter: stable; }
 .staff-save-state { color: var(--staff-muted); }
 .staff-save-state[data-state="error"] { color: var(--staff-danger); }
 .staff-page .staff-cancel-dialog { background: var(--staff-card); border-color: var(--staff-line); border-radius: .8rem; }
+.staff-page #staff-delete { max-width: min(27rem, calc(100% - 2rem)); }
 .staff-cancel-dialog p { color: var(--staff-muted); }
 .staff-cancel-dialog form > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
+.staff-order-delete { display: flex; justify-content: flex-end; }
 .staff-items, .staff-people, .staff-history ol { margin: .5rem 0 0; padding: 0; list-style: none; }
 .staff-items li { display: flex; align-items: baseline; justify-content: space-between; gap: .7rem; padding: .55rem 0; }
 .staff-items li:last-child { padding-bottom: .1rem; }

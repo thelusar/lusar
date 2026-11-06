@@ -178,11 +178,15 @@ class Service:
         if handler.headers.get('Origin') != self.config.origin or not secrets.compare_digest(handler.headers.get('X-Lusar-CSRF', ''), session['csrf']):
             raise AccountError(403, 'Обновите страницу и повторите действие.')
 
-    def orders(self, db, customer_id):
-        return db.execute('SELECT number, status, created, payload FROM orders WHERE customer_id = ? ORDER BY created DESC', (customer_id,)).fetchall()
+    def orders(self, db, customer_id, *, include_deleted_paid=False):
+        visible = 'deleted_at IS NULL'
+        if include_deleted_paid:
+            visible += " OR json_extract(payload, '$.payment') IS NOT NULL"
+        return db.execute('SELECT number, status, created, payload FROM orders '
+                          f'WHERE customer_id = ? AND ({visible}) ORDER BY created DESC', (customer_id,)).fetchall()
 
     def loyalty(self, db, customer_id):
-        rows = self.orders(db, customer_id)
+        rows = self.orders(db, customer_id, include_deleted_paid=True)
         spent = 0
         completed = reserved = False
         for _, status, _, raw in rows:

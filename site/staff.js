@@ -145,6 +145,7 @@ function initializeOrders(main, team, signal) {
   const empty = main.querySelector("#staff-no-match");
   const feedback = main.querySelector("#staff-save-feedback");
   const dialog = main.querySelector("#staff-cancel");
+  const deleteDialog = main.querySelector("#staff-delete");
   const drawer = main.querySelector("#staff-order-drawer");
   const drawerContent = drawer.querySelector(".staff-drawer-content");
   const drawerClose = drawer.querySelector("button");
@@ -214,6 +215,8 @@ function initializeOrders(main, team, signal) {
 
   function presentOrder(order, notice) {
     const details = order.querySelector(".staff-order-details");
+    const deleteButton = details.querySelector("[data-delete-order]");
+    if (deleteButton && typeof deleteDialog?.showModal === "function") deleteButton.hidden = false;
     if (notice) details.prepend(notice);
     order.open = true;
     if (typeof drawer.showModal !== "function") {
@@ -348,6 +351,15 @@ function initializeOrders(main, team, signal) {
 
   if (typeof drawer.showModal === "function") {
     main.addEventListener("click", event => {
+      const deleteButton = event.target.closest("[data-delete-order]");
+      if (deleteButton) {
+        const form = deleteDialog.querySelector("form");
+        form.elements.number.value = deleteButton.dataset.deleteOrder;
+        form.elements.token.value = deleteButton.dataset.deleteToken;
+        deleteDialog.querySelector("[data-delete-number]").textContent = deleteButton.dataset.deleteOrder;
+        deleteDialog.showModal();
+        return;
+      }
       const summary = event.target.closest(".staff-order-row");
       const queueLink = event.target.closest(".staff-queue a");
       if (queueLink && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
@@ -356,6 +368,7 @@ function initializeOrders(main, team, signal) {
       event.preventDefault();
       presentOrder(order);
     }, {signal});
+    deleteDialog?.querySelector("[data-keep-order]").addEventListener("click", () => deleteDialog.close());
     drawerClose.addEventListener("click", closeOrder);
     let startedOnBackdrop = false;
     function onBackdrop(event) {

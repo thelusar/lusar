@@ -14,9 +14,10 @@ import staff_ui as ui
 ROLE_NAMES = {'admin': 'Администратор', 'manager': 'Менеджер'}
 ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': 'Возврат', 'refund_paid': 'Выплата по возврату'}
 ORDERS_PATH = '/manager/orders/'
+DELETE_ORDER_PATH = ORDERS_PATH + 'delete'
 ACCESS_PATH = '/manager/access'
 TRANSFER_PATH = '/manager/orders-transfer'
-UI_VERSION = 12
+UI_VERSION = 13
 
 
 def account_id(value):
@@ -109,6 +110,41 @@ def write_allowed(handler, actor, db, *, admin=False):
         return True
     handler.reply(403, {'error': 'Доступ сотрудника изменился. Обновите страницу.'})
     return False
+
+
+def delete_token(actor, number):
+    return hmac.digest(actor.form_key, f'staff-delete-order-v1:{number}'.encode(), 'sha256').hex()
+
+
+def delete_order(handler, actor):
+    if actor.role != 'admin':
+        return handler.reply(403, {'error': 'Удалять заказы может только администратор.'})
+    if not require_origin(handler, actor):
+        return
+    if handler.headers.get_content_type() != 'application/x-www-form-urlencoded':
+        return handler.reply(415, {'error': 'Неверный формат формы.'})
+    try:
+        size = int(handler.headers.get('Content-Length', '0'))
+        if not 0 < size <= 1000:
+            raise ValueError
+        fields = parse_qs(handler.rfile.read(size).decode(), strict_parsing=True, max_num_fields=3)
+        number, token = fields['number'][0], fields['token'][0]
+        if not order_storage.ORDER_NUMBER.fullmatch(number) or fields.get('confirm') != ['yes']:
+            raise ValueError
+    except (ValueError, KeyError):
+        return handler.reply(400, {'error': 'Выберите заказ и подтвердите удаление.'})
+    if not hmac.compare_digest(token.encode(), delete_token(actor, number).encode()):
+        return handler.reply(403, {'error': 'Откройте карточку заказа заново и повторите действие.'})
+    try:
+        with order_storage.connect(handler.customer_service().database, write=True) as db:
+            db.execute('BEGIN IMMEDIATE')
+            if not write_allowed(handler, actor, db, admin=True):
+                return
+            db.execute('UPDATE orders SET deleted_at = CURRENT_TIMESTAMP, deleted_by = ? '
+                       'WHERE number = ? AND deleted_at IS NULL', (actor.id, number))
+    except order_storage.DatabaseError:
+        return form_error(handler, 503, 'Повторите попытку через несколько минут.', ORDERS_PATH, actor)
+    return handler.customer_service().redirect(handler, f'{ORDERS_PATH}?view=orders&saved=deleted')
 
 
 def record(db, number, actor, action, detail):

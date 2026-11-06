@@ -35,6 +35,7 @@ def deliver_pending(send, *, limit=20):
             return
         pending = db.execute("""SELECT number FROM order_notifications
             WHERE sent_at IS NULL AND (last_attempt IS NULL OR last_attempt <= ?)
+              AND EXISTS (SELECT 1 FROM orders WHERE orders.number = order_notifications.number AND deleted_at IS NULL)
             ORDER BY last_attempt IS NOT NULL, last_attempt, number LIMIT ?""", (cutoff, limit)).fetchall()
     for (number,) in pending:
         with order_storage.connect(serve.DATABASE, write=True) as db:
@@ -42,6 +43,7 @@ def deliver_pending(send, *, limit=20):
                 SET attempts = attempts + 1, last_attempt = CURRENT_TIMESTAMP
                 WHERE number = ? AND sent_at IS NULL
                   AND (last_attempt IS NULL OR last_attempt <= ?)
+                  AND EXISTS (SELECT 1 FROM orders WHERE orders.number = order_notifications.number AND deleted_at IS NULL)
                 RETURNING attempts""", (number, cutoff)).fetchone()
         if not claimed:
             continue

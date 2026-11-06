@@ -32,8 +32,13 @@ def initialize(local_path=None):
         if local_path is not None:
             with closing(sqlite3.connect(local_path)) as db, db:
                 db.executescript((Path(__file__).parent / 'sqlite/002_accounts.sql').read_text(encoding='utf-8'))
-                if 'customer_id' not in {row[1] for row in db.execute('PRAGMA table_info(orders)')}:
+                columns = {row[1] for row in db.execute('PRAGMA table_info(orders)')}
+                if 'customer_id' not in columns:
                     db.execute('ALTER TABLE orders ADD COLUMN customer_id TEXT REFERENCES customers(id)')
+                if 'deleted_at' not in columns:
+                    db.execute('ALTER TABLE orders ADD COLUMN deleted_at TEXT')
+                if 'deleted_by' not in columns:
+                    db.execute('ALTER TABLE orders ADD COLUMN deleted_by TEXT REFERENCES customers(id) ON DELETE SET NULL')
                 db.execute('CREATE INDEX IF NOT EXISTS orders_customer_created_idx ON orders(customer_id, created DESC)')
                 db.executescript((Path(__file__).parent / 'sqlite/003_staff.sql').read_text(encoding='utf-8'))
         return

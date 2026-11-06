@@ -180,6 +180,16 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
    return page.getElementById(orderId)?.dataset.status==='cancelled';
  },250);
  require(page.querySelector('.staff-history').textContent.includes('В процессе → Отменено'),'Confirmed cancellation was not recorded');
+ const deleteOrder=page.querySelector('#staff-order-drawer [data-delete-order]');
+ require(deleteOrder&&!deleteOrder.hidden,'Delete action missing from the administrator drawer');
+ deleteOrder.click();
+ const deleteDialog=page.querySelector('#staff-delete');
+ require(deleteDialog.open&&deleteDialog.querySelector('[data-delete-number]').textContent===orderId,'Delete confirmation missing the order number');
+ deleteDialog.querySelector('[data-keep-order]').click();
+ require(!deleteDialog.open&&page.getElementById(orderId),'Declining deletion removed the order');
+ deleteOrder.click();
+ page=await submit(deleteDialog.querySelector('form'),deleteDialog.querySelector('button[value="yes"]'));
+ require(!page.getElementById(orderId)&&page.querySelector('.staff-notice').textContent.includes('Заказ удалён'),'Confirmed deletion did not remove the order');
  page=await open('/account');require(JSON.parse(localStorage.getItem('lusar-cart'))[ITEM.id]===1,'Saved bag not restored on next login');
  output.textContent='PASS';
 }catch(error){output.textContent='FAIL: '+error.message;}})();

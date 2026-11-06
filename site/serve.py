@@ -281,7 +281,7 @@ class Handler(SimpleHTTPRequestHandler):
         overview = query.get('view') != ['orders']
         try:
             with order_storage.connect(DATABASE) as db:
-                rows = db.execute("SELECT number, status, created, payload FROM orders ORDER BY created DESC").fetchall()
+                rows = db.execute("SELECT number, status, created, payload FROM orders WHERE deleted_at IS NULL ORDER BY created DESC").fetchall()
                 events = db.execute("SELECT number, action, detail, actor_email, changed, actor_id "
                                     "FROM order_staff_activity ORDER BY id DESC").fetchall()
                 team = staff.team_members(db) if actor.role == 'admin' else []
@@ -336,6 +336,9 @@ class Handler(SimpleHTTPRequestHandler):
                             f'<div class="staff-status-static"><span>Статус заказа</span>'
                             f'<strong class="staff-status-label" data-tone="{status_attr}"><span class="staff-dot"></span>'
                             f'{status_label}</strong></div>')
+            deletion = (f'<footer class="staff-order-delete"><button type="button" class="staff-danger" hidden '
+                        f'data-delete-order="{number_attr}" data-delete-token="{staff.delete_token(actor, number)}">'
+                        'Удалить заказ</button></footer>') if actor.role == 'admin' else ''
             cards.append(
                 f'<details class="staff-order" id="{number_attr}" data-status="{status_attr}"><summary class="staff-order-row">'
                 f'<span class="staff-order-id"><strong>{number_attr}</strong>{ui.timestamp(created)}</span>'
@@ -353,14 +356,15 @@ class Handler(SimpleHTTPRequestHandler):
                 f'<ul class="staff-items">{lines}</ul></section>'
                 f'<section class="staff-detail-card"><h3 class="staff-detail-title">{ui.icon("payment")}Оплата и возвраты</h3>'
                 f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}</section>'
-                f'{staff.history_markup(history.get(number))}</div></div></details>')
+                f'{staff.history_markup(history.get(number))}</div>{deletion}</div></details>')
         filters = ''.join(
             f'<button type="button" data-filter="{key}" aria-pressed="{str(key == selected).lower()}"><span>{label}</span>'
             f'<strong>{count}</strong></button>'
             for key, label, count in [('', 'Все', len(rows)), *((key, STATUS_LABELS[key], count) for key, count in counts.items())]
         )
         feedback = ui.notice(self, {'status': 'Статус заказа обновлён.', 'payment': 'Оплата отмечена.',
-                                    'return': 'Возврат сохранён.', 'refund_paid': 'Выплата отмечена.'})
+                                    'return': 'Возврат сохранён.', 'refund_paid': 'Выплата отмечена.',
+                                    'deleted': 'Заказ удалён.'})
         empty = ui.empty('Заказов пока нет', 'Новые заявки с сайта появятся здесь.', 'orders')
         no_match = ui.empty('Заказы не найдены', 'Попробуйте изменить запрос или сбросить фильтр.', 'search')
         listing = ('<div class="staff-table-head" aria-hidden="true"><span>Номер · время Еревана</span><span>Клиент</span>'
@@ -370,6 +374,13 @@ class Handler(SimpleHTTPRequestHandler):
                          '<form method="dialog"><h2 id="staff-cancel-title">Отменить заявку?</h2>'
                          '<p>После отмены заявка закроется.</p><div><button value="back" autofocus>Назад</button>'
                          '<button value="confirm" class="staff-danger">Отменить заявку</button></div></form></dialog>')
+        delete_dialog = ('<dialog id="staff-delete" class="staff-cancel-dialog" aria-labelledby="staff-delete-title" '
+                         'aria-describedby="staff-delete-description">'
+                         f'<form method="post" action="{staff.DELETE_ORDER_PATH}"><h2 id="staff-delete-title">Вы действительно хотите удалить заказ?</h2>'
+                         '<p id="staff-delete-description">Заказ <strong data-delete-number></strong> исчезнет из списков и выгрузок. '
+                         'Сведения об операции сохранятся.</p><input type="hidden" name="number"><input type="hidden" name="token">'
+                         '<div><button type="button" data-keep-order autofocus>Нет</button>'
+                         '<button class="staff-danger" name="confirm" value="yes">Да, удалить</button></div></form></dialog>') if actor.role == 'admin' else ''
         drawer = ('<dialog id="staff-order-drawer" class="staff-drawer" aria-labelledby="staff-drawer-title">'
                   '<header><div><p>Карточка заказа</p><h2 id="staff-drawer-title"></h2></div>'
                   f'<button class="staff-icon-button" type="button" aria-label="Закрыть заказ" autofocus>{ui.icon("close")}</button>'
@@ -399,7 +410,7 @@ class Handler(SimpleHTTPRequestHandler):
                    'placeholder="Номер, имя или телефон"></label>'
                    f'<button type="button" id="staff-reset" hidden>Сбросить</button>{full_list}</div></div>'
                    f'<div class="staff-filters" role="group" aria-label="Фильтр по статусу" hidden>{filters}</div>'
-                   f'{listing}</section>{drawer}{cancel_dialog}')
+                   f'{listing}</section>{drawer}{cancel_dialog}{delete_dialog}')
         return staff.page(self, 200, "Заказы LUSAR", content, actor=actor,
                           active='overview' if overview else 'orders', sidebar=sidebar)
 
@@ -417,6 +428,11 @@ class Handler(SimpleHTTPRequestHandler):
             return self.adjust_order()
         if self.path == "/manager/orders/status":
             return self.change_order_status()
+        if self.path == staff.DELETE_ORDER_PATH:
+            actor = self.manager_actor()
+            if actor:
+                return staff.delete_order(self, actor)
+            return
         if self.path == staff.ACCESS_PATH:
             actor = self.manager_actor(staff.ACCESS_PATH)
             if actor:
@@ -503,10 +519,12 @@ class Handler(SimpleHTTPRequestHandler):
                     number TEXT NOT NULL UNIQUE, payload TEXT NOT NULL,
                     status TEXT NOT NULL DEFAULT 'new', created TEXT DEFAULT CURRENT_TIMESTAMP)""")
                 db.execute("BEGIN IMMEDIATE")
-                existing = db.execute("SELECT number, fingerprint, payload, customer_id FROM orders WHERE request_id = ?", (request_id,)).fetchone()
+                existing = db.execute("SELECT number, fingerprint, payload, customer_id, deleted_at FROM orders WHERE request_id = ?", (request_id,)).fetchone()
                 if existing:
                     if existing[1] != fingerprint or existing[3] != identity:
                         return self.reply(409, {"error": "Заявка уже сохранена с другими данными. Обновите страницу."})
+                    if existing[4]:
+                        return self.reply(409, {"error": "Эта заявка удалена. Обновите страницу, чтобы создать новую."})
                     token = json.loads(existing[2]).get("trackingToken")
                     return self.reply(200, {"number": existing[0], "trackingToken": token})
                 if catalog_error:
@@ -575,8 +593,9 @@ class Handler(SimpleHTTPRequestHandler):
         if not order_storage.available(DATABASE):
             return self.reply(404, missing)
         try:
+            self.customer_service().ensure()
             with order_storage.connect(DATABASE) as db:
-                row = db.execute("SELECT status, payload FROM orders WHERE number = ?", (number,)).fetchone()
+                row = db.execute("SELECT status, payload FROM orders WHERE number = ? AND deleted_at IS NULL", (number,)).fetchone()
         except order_storage.DatabaseError:
             return self.reply(503, {"error": "Статус временно недоступен. Попробуйте позже."})
         saved = json.loads(row[1]).get("trackingToken") if row else None
@@ -609,7 +628,7 @@ class Handler(SimpleHTTPRequestHandler):
                 db.execute("BEGIN IMMEDIATE")
                 if not staff.write_allowed(self, actor, db):
                     return
-                result = db.execute("UPDATE orders SET status = ? WHERE number = ? AND status = ? "
+                result = db.execute("UPDATE orders SET status = ? WHERE number = ? AND status = ? AND deleted_at IS NULL "
                                     "AND (? != 'cancelled' OR json_extract(payload, '$.payment') IS NULL)",
                                     (target, number, current, target))
                 if result.rowcount != 1:
@@ -685,7 +704,7 @@ class Handler(SimpleHTTPRequestHandler):
                 db.execute("BEGIN IMMEDIATE")
                 if not staff.write_allowed(self, actor, db):
                     return
-                row = db.execute("SELECT status, payload FROM orders WHERE number = ?", (number,)).fetchone()
+                row = db.execute("SELECT status, payload FROM orders WHERE number = ? AND deleted_at IS NULL", (number,)).fetchone()
                 if not row:
                     return self.reply(404, {"error": "Заказ не найден."})
                 status, raw = row
