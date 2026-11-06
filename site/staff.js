@@ -31,6 +31,16 @@
 
   if (overview) {
     const switcher = overview.querySelector(".staff-period-switch");
+    const days = overview.querySelector("#staff-days");
+    if (typeof days.showModal === "function") {
+      for (const button of overview.querySelectorAll(".staff-days-button")) {
+        button.hidden = false;
+        button.addEventListener("click", () => {
+          days.querySelector(".staff-days-scroll").scrollTop = 0;
+          days.showModal();
+        });
+      }
+    }
     switcher.hidden = false;
     switcher.addEventListener("click", event => {
       const choice = event.target.closest("[data-period]");
@@ -40,6 +50,9 @@
       }
       for (const chart of overview.querySelectorAll("[data-chart-period]")) {
         chart.hidden = chart.dataset.chartPeriod !== choice.dataset.period;
+      }
+      for (const table of days.querySelectorAll("[data-days-period]")) {
+        table.hidden = table.dataset.daysPeriod !== choice.dataset.period;
       }
     });
     overview.querySelector(".staff-find-link").addEventListener("click", event => {
@@ -218,6 +231,19 @@
       presentOrder(order);
     });
     drawerClose.addEventListener("click", closeOrder);
+    let startedOnBackdrop = false;
+    function onBackdrop(event) {
+      if (event.target !== drawer) return false;
+      const {left, top, right, bottom} = drawer.getBoundingClientRect();
+      return event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom;
+    }
+    drawer.addEventListener("pointerdown", event => {
+      startedOnBackdrop = onBackdrop(event);
+    });
+    drawer.addEventListener("click", event => {
+      if (startedOnBackdrop && onBackdrop(event)) closeOrder();
+      startedOnBackdrop = false;
+    });
     drawer.addEventListener("cancel", event => {
       event.preventDefault();
       closeOrder();
