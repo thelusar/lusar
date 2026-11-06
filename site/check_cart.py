@@ -25,8 +25,9 @@ function layout(page) { require(page.documentElement.scrollWidth <= page.documen
   localStorage.clear(); sessionStorage.clear(); localStorage.setItem("lusar-cookie-choice-v1","essential");
   let page = await open("/checkout");
   require(!page.querySelector("#cart-empty").hidden && page.querySelector("#order-flow").hidden, "Empty checkout is orderable");
+  require(page.querySelector(".order-steps").hidden && page.querySelector("#cart-empty a[href='/catalog']") && page.querySelector("#cart-empty a[href='/favorites']"), "Empty bag obscures the way back to shopping");
   page = await open("/checkout/received");
-  require(page.querySelector(".receipt-symbol").hidden && page.querySelector("#receipt-details").hidden, "Receipt claimed an order without a receipt");
+  require(page.querySelector(".receipt-symbol").hidden && page.querySelector("#receipt-details").hidden && page.querySelector("#receipt-steps").hidden, "Receipt claimed an order without a receipt");
   page = await open("/favorites");
   require(!page.querySelector("#wishlist-empty").hidden,"Wishlist empty state missing");
   localStorage.setItem("lusar-favorites",JSON.stringify([ITEM.id]));
@@ -37,10 +38,31 @@ function layout(page) { require(page.documentElement.scrollWidth <= page.documen
   page.querySelector(".wishlist-remove").click();
   require(!page.querySelector("#wishlist-empty").hidden && page.activeElement.closest("#wishlist-empty"),"Removing the last favorite lost the empty state or focus");
   localStorage.setItem("lusar-cart",JSON.stringify({[ITEM.id]:1}));
-  page = await open("/cart");
+  const browsingPath = "/catalog?maximum=15000&sort=low";
+  page = await open(browsingPath);
+  const cartLoaded = new Promise(resolve => { frame.onload = () => resolve(frame.contentDocument); });
+  page.querySelector('header a[href="/cart"]').click();
+  page = await cartLoaded;
+  require(page.querySelector("[data-continue-shopping]").getAttribute("href")===browsingPath, "Cart lost the filtered catalog");
+  require(frame.contentWindow.getComputedStyle(page.querySelector(".order-summary-actions")).position==="fixed", "Mobile checkout button is out of reach");
+  for (const width of [320,390,768,1440]) {
+   frame.style.width=width+"px"; await tick();
+   for (const lang of ["hy","en","ru"]) {
+    const picker = page.querySelector("#language");
+    picker.value=lang;picker.dispatchEvent(new frame.contentWindow.Event("change"));
+    await tick();
+    layout(page);page.querySelector("#theme-toggle").click();layout(page);
+    if (width <= 928) {
+     const action = page.querySelector("#checkout-link a").getBoundingClientRect();
+     require(action.top>=0 && action.bottom<=frame.contentWindow.innerHeight,"Checkout action escaped the viewport: "+width+" "+lang);
+    }
+   }
+  }
+  frame.style.width="390px";
   require(page.querySelector(".cart-row img") && total(page)===ITEM.price, "Cart photo or starting total missing");
   page.querySelector('[data-quantity-step="plus"]').click();
   require(total(page)===ITEM.price*2 && page.activeElement.dataset.quantityStep==="plus", "Quantity increment or focus failed");
+  require(page.querySelector("#cart-count").textContent==="Товаров: 2", "Cart count ignored item quantities");
   page.querySelector('[data-quantity-step="minus"]').click();
   require(total(page)===ITEM.price && page.querySelector('[data-quantity-step="minus"]').disabled, "Quantity decrement or lower boundary failed");
   let quantity = page.querySelector(".quantity-stepper input"); quantity.value="0"; quantity.dispatchEvent(new frame.contentWindow.Event("change"));
@@ -50,7 +72,10 @@ function layout(page) { require(page.documentElement.scrollWidth <= page.documen
   const changed = {[ITEM.id]:4}; localStorage.setItem("lusar-cart",JSON.stringify(changed));
   frame.contentWindow.dispatchEvent(new frame.contentWindow.StorageEvent("storage",{key:"lusar-cart"}));
   require(total(page)===ITEM.price*4-Math.min(5000,Math.floor(ITEM.price*4/5)), "Another tab did not update the total");
-  page = await open("/checkout");
+  const checkoutLoaded = new Promise(resolve => { frame.onload = () => resolve(frame.contentDocument); });
+  page.querySelector("#checkout-link a").click();
+  page = await checkoutLoaded;
+  require(page.location.pathname==="/checkout" && page.querySelector('.order-steps a[href="/cart"]'), "Cart and checkout are disconnected");
   require(page.querySelector("#order-promo").value==="LUSAR5000", "Promo lost between bag and checkout");
   const form = page.querySelector("#checkout");
   require(!form.elements.email.required && !form.elements.address.required, "Optional contacts are mandatory");
@@ -92,6 +117,7 @@ function layout(page) { require(page.documentElement.scrollWidth <= page.documen
   finish();await until(()=>frame.contentWindow.location.pathname==="/checkout/received");
   page=frame.contentDocument;await until(()=>!page.querySelector("#receipt-details").hidden);
   require(page.querySelector("#receipt-number").textContent.includes("LS-ABCDEF123456") && !page.querySelector("#receipt-tracking").hidden,"Receipt or tracking missing");
+  require(!page.querySelector("#receipt-steps").hidden && !page.querySelector("#receipt-steps a"), "Receipt offers a return to the submitted form");
   const remaining=JSON.parse(localStorage.getItem("lusar-cart"));
   require(remaining[ITEM.id]===1 && remaining[SECOND]===1,"Success erased items added while request was pending");
   for (const width of [320,390,1440]) {frame.style.width=width+"px";await tick();layout(page);}
@@ -110,6 +136,10 @@ function layout(page) { require(page.documentElement.scrollWidth <= page.documen
 class Handler(serve.Handler):
     def log_message(self, *_):
         pass
+
+    def end_headers(self):
+        self.send_header("Referrer-Policy", "no-referrer")
+        super().end_headers()
 
     def do_GET(self):
         if urlsplit(self.path).path != "/cart-check":

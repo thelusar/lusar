@@ -1,10 +1,9 @@
-<section class="account-intro"><p class="eyebrow">LUSAR</p><h1>{{title}}</h1></section>
-<p id="account-loading" role="status">Загружаем кабинет…</p>
+<p id="account-loading" class="account-loading" role="status">Загружаем кабинет…</p>
 <section id="account-guest" class="account-guest" hidden>
   <div class="account-guest-intro"><span class="account-emblem">{{icon:spark}}</span><h2>Ваш свет. Ваши привилегии.</h2>
     <ul><li>{{icon:orders}}<span>История ваших заявок</span></li><li>{{icon:favorites}}<span>Сохранённая корзина и избранное</span></li><li>{{icon:spark}}<span>Скидки за выполненные заказы</span></li></ul></div>
   <div class="account-login-card">
-    <h2>Войти в LUSAR</h2><p>Заказы, адреса и скидки — в одном месте.</p>
+    <h1>Войти в LUSAR</h1><p>Заказы, адреса и скидки — в одном месте.</p>
     <p id="account-auth-note" role="status"></p>
     <a class="button-link account-google" data-auth-link href="/auth/start?connection=google"><span aria-hidden="true">G</span>Продолжить с Google</a>
     <a class="button-link" data-auth-link href="/auth/start">Войти по email <span aria-hidden="true">↗</span></a>
@@ -19,23 +18,33 @@
       <div><strong id="account-nav-name" data-locale-source></strong><p id="account-nav-email" data-locale-source></p></div>
     </div>
     <nav aria-label="Разделы личного кабинета">
-      <a href="/account">{{icon:overview}}<span>Обзор</span></a><a href="/account/orders">{{icon:orders}}<span>Мои заказы</span></a>
-      <a href="/account/addresses">{{icon:pin}}<span>Адреса</span></a><a href="/account/loyalty">{{icon:spark}}<span>Мои скидки</span></a>
-      <a href="/account/settings">{{icon:account}}<span>Профиль</span></a><a href="/cart">{{icon:cart}}<span>Корзина</span></a>
-      <a href="/favorites">{{icon:favorites}}<span>Избранное</span></a>
+      <a href="/account" data-account-tab="overview">{{icon:overview}}<span>Обзор</span></a>
+      <a href="/account/orders" data-account-tab="orders">{{icon:orders}}<span>Мои заказы</span></a>
+      <a href="/account/loyalty" data-account-tab="loyalty">{{icon:spark}}<span>Мои скидки</span></a>
+      <a href="/account/settings" data-account-tab="settings">{{icon:account}}<span>Профиль</span></a>
     </nav>
-    <button type="button" data-account-logout class="text-button">{{icon:logout}}<span>Выйти</span></button>
+    <div class="account-utilities">
+      <a href="/cart">{{icon:cart}}<span>Корзина</span></a>
+      <a href="/favorites">{{icon:favorites}}<span>Избранное</span></a>
+      <button type="button" data-account-logout class="text-button">{{icon:logout}}<span>Выйти</span></button>
+    </div>
   </aside>
-  <section id="account-content" data-account-view="{{view}}"></section>
+  <section class="account-panel" aria-labelledby="account-view-title">
+    <h1 id="account-view-title" tabindex="-1">{{title}}</h1>
+    <div id="account-content" data-account-view="{{view}}"></div>
+  </section>
 </div>
 <p id="account-status" class="account-status" role="status" tabindex="-1"></p>
 <template id="account-overview-template">
-  <div class="account-welcome">
-    <div class="account-welcome-copy"><span class="eyebrow" id="account-welcome-label">Добро пожаловать</span><h2 id="account-greeting"></h2>
-      <a href="/account/loyalty">Мои скидки →</a></div>
-    <div id="account-stats" class="account-stats"></div>
+  <div class="account-overview-grid">
+    <section class="account-history"><div class="section-heading"><h2>Последние заказы</h2><a href="/account/orders" data-account-tab="orders">Все заказы →</a></div><div id="account-orders"></div></section>
+    <section class="account-benefits">
+      <span class="account-emblem">{{icon:spark}}</span>
+      <h2>Мои скидки</h2>
+      <div id="account-stats" class="account-stats"></div>
+      <a href="/account/loyalty" data-account-tab="loyalty">Условия скидок →</a>
+    </section>
   </div>
-  <section class="account-history"><div class="section-heading"><h2>Последние заказы</h2><a href="/account/orders">Все заказы →</a></div><div id="account-orders"></div></section>
 </template>
 <template id="account-empty-orders-template">
   <div class="account-empty account-empty-orders"><span class="account-emblem">{{icon:orders}}</span>
@@ -44,25 +53,27 @@
 <template id="account-orders-template">
   <div id="account-orders"></div><button id="account-more-orders" type="button" hidden>Показать ещё</button>
 </template>
-<template id="account-addresses-template">
-  <div id="account-addresses" class="account-addresses"></div>
-  <form id="account-address-form" class="account-form">
-    <h2 id="address-form-heading">Добавить адрес</h2><input type="hidden" name="id">
-    <label>Название адреса <input name="label" maxlength="50" placeholder="Например, дом"></label>
-    <label>Адрес <textarea name="address" required maxlength="300" rows="2" autocomplete="street-address"></textarea></label>
-    <div class="account-form-actions"><button class="primary-action" type="submit">Сохранить адрес</button><button type="reset" id="account-address-cancel" hidden>Отменить</button></div>
-  </form>
-</template>
 <template id="account-settings-template">
+  <div class="account-settings-grid">
   <form id="account-profile-form" class="account-form">
-    <h2>Контактные данные</h2>
+    <h2>{{icon:account}} Контактные данные</h2>
     <label>Имя <input name="name" required maxlength="120" autocomplete="name"></label>
     <label>Телефон <input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
     <label>Email <input name="email" type="email" readonly autocomplete="email"></label>
     <button class="primary-action" type="submit">Сохранить изменения</button>
-    <p class="account-form-note">Email подтверждается при входе. Для смены пароля откройте восстановление доступа.</p>
     <a class="account-recovery-link" href="/account/recovery">Восстановить доступ →</a>
   </form>
+  <section id="saved-addresses" class="account-address-panel" aria-labelledby="saved-addresses-title">
+  <h2 id="saved-addresses-title">{{icon:pin}} Адреса</h2>
+  <div id="account-addresses" class="account-addresses"></div>
+  <details id="account-address-editor">
+  <summary><span id="address-form-heading">Добавить адрес</span><span aria-hidden="true">+</span></summary>
+  <form id="account-address-form" class="account-form">
+    <input type="hidden" name="id">
+    <label>Название адреса <input name="label" maxlength="50" placeholder="Например, дом"></label>
+    <label>Адрес <textarea name="address" required maxlength="300" rows="2" autocomplete="street-address"></textarea></label>
+    <div class="account-form-actions"><button class="primary-action" type="submit">Сохранить адрес</button><button type="reset" id="account-address-cancel" hidden>Отменить</button></div>
+  </form></details></section></div>
 </template>
 <template id="account-loyalty-template">
   <div id="loyalty-summary" class="account-stats"></div>

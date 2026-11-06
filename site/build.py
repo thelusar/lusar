@@ -193,7 +193,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
   <p id="cookie-status" role="status"></p>
 </section>
 {'<dialog id="first-order-promo" aria-labelledby="promo-heading"><h2 id="promo-heading">10% на первый заказ</h2><p>Зарегистрируйтесь и получите скидку на первую покупку.</p><p>' + link("offers/", "Посмотреть условия") + '</p><form method="dialog"><button>Закрыть</button></form></dialog>' if path.rstrip("/") == "catalog" or path.startswith("catalog/product/") else ""}
-<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script><script src="/catalog-live.js" defer></script></body></html>""".replace('src="/cart.js"', f'src="/cart.js?catalog={CATALOG_REVISION}&amp;orders=2"')
+<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script><script src="/catalog-live.js" defer></script></body></html>""".replace('src="/cart.js"', f'src="/cart.js?catalog={CATALOG_REVISION}&amp;orders=3"')
         .replace('src="/search.js"', f'src="/search.js?catalog={CATALOG_REVISION}"')
         .replace('src="/ai-preview.js"', f'src="/ai-preview.js?catalog={CATALOG_REVISION}"')
         .replace('src="/support.js"', f'src="/support.js?catalog={CATALOG_REVISION}"'), encoding="utf-8")
@@ -606,7 +606,7 @@ write("account/loyalty", "Скидки и промокоды",
       '<table><caption>Уровни программы лояльности</caption><thead><tr><th scope="col">Накоплено</th>'
       f'<th scope="col">Скидка</th></tr></thead><tbody>{loyalty_rows}</tbody></table>', draft=True)
 ACCOUNT_VIEWS = {"account": ("Личный кабинет", "overview"), "account/orders": ("Мои заказы", "orders"),
-                 "account/addresses": ("Адреса", "addresses"), "account/loyalty": ("Мои скидки", "loyalty"),
+                 "account/addresses": ("Профиль", "settings"), "account/loyalty": ("Мои скидки", "loyalty"),
                  "account/settings": ("Профиль", "settings"), "account/sign-in": ("Вход в LUSAR", "sign-in"),
                  "account/register": ("Регистрация", "register"), "account/recovery": ("Восстановление доступа", "recovery")}
 for account_path, (account_title, account_view) in ACCOUNT_VIEWS.items():
@@ -616,17 +616,19 @@ for account_path, (account_title, account_view) in ACCOUNT_VIEWS.items():
 
 
 def order_steps(current):
-    return ('<nav class="order-steps" aria-label="Этапы заявки"><ol>' + ''.join(
-        f'<li' + (' aria-current="step"' if index == current else '') + '>' +
-        (link(path, name) if index < current else f'<span>{name}</span>') + '</li>'
-        for index, (path, name) in enumerate((("cart", "Корзина"), ("checkout", "Контакты"), ("checkout/received", "Подтверждение")), 1)
-    ) + '</ol></nav>')
+    steps = []
+    for index, (icon, name) in enumerate((("cart", "Корзина"), ("account", "Контакты"), ("check", "Подтверждение")), 1):
+        state = ' aria-current="step"' if index == current else ' data-complete' if index < current else ''
+        content = '<span class="order-step-icon">' + nav_icon(icon) + f'</span><span>{name}</span>'
+        content = f'<a href="/cart">{content}</a>' if current == 2 and index == 1 else f'<span>{content}</span>'
+        steps.append(f'<li{state}>{content}</li>')
+    return '<nav class="order-steps" aria-label="Этапы заявки"><ol>' + "".join(steps) + '</ol></nav>'
 
 
 def order_summary(checkout=False):
     promo_form = ' form="checkout"' if checkout else ''
     action = ('<button id="checkout-submit" class="primary-action" type="submit" form="checkout">Отправить заявку <span aria-hidden="true">↗</span></button>'
-              if checkout else '<p id="checkout-link" hidden><a class="button-link" href="/checkout">Оформить заявку <span aria-hidden="true">↗</span></a></p>')
+              if checkout else '<p id="checkout-link" hidden><a class="button-link" href="/checkout">К оформлению <span aria-hidden="true">→</span></a></p>')
     return ('<aside id="order-summary" class="order-summary" aria-labelledby="order-summary-heading">'
             '<h2 id="order-summary-heading">' + nav_icon("cart") + 'Ваш заказ</h2><dl class="order-totals">'
             '<div><dt>Товары</dt><dd id="order-subtotal">—</dd></div>'
@@ -641,37 +643,41 @@ def order_summary(checkout=False):
             '<label class="visually-hidden" for="order-promo">Промокод</label>'
             f'<input id="order-promo" name="promo"{promo_form} autocomplete="off" maxlength="32" placeholder="Введите промокод" aria-describedby="promo-total">'
             '<p id="promo-total" role="status"></p></details>'
-            '<div class="order-grand-total"><span>Предварительный итог</span><strong id="order-total">—</strong></div>'
-            '<p id="cart-summary" role="status"></p>' + action +
+            '<p id="cart-summary" role="status"></p><div class="order-summary-actions">'
+            '<div class="order-grand-total"><span>Предварительный итог</span><strong id="order-total">—</strong></div>' + action + '</div>' +
             '<div class="order-payment-info"><p class="order-payment-note">Оплата после подтверждения.</p>'
             '<p class="order-summary-note">Наличие, доставку и итоговую сумму уточнит менеджер.</p>'
             '<a class="order-payment-link" href="/payment">Способы оплаты</a></div></aside>')
 
 
 def empty_bag():
-    return ('<section id="cart-empty" class="cart-empty" hidden>' + nav_icon("cart") +
-            '<h2>Корзина пока пуста.</h2><p>Найдите свет для вашего пространства.</p>'
-            '<a class="button-link" href="/catalog">Открыть каталог <span aria-hidden="true">↗</span></a></section>')
+    return ('<section id="cart-empty" class="cart-empty" hidden><div class="empty-state-copy">'
+            '<h2>Корзина пока пуста</h2><p>Вернитесь к выбору света или откройте сохранённые модели.</p>'
+            '<div class="empty-state-actions"><a class="button-link" href="/catalog" data-continue-shopping>Продолжить покупки <span aria-hidden="true">→</span></a>'
+            '<a class="cart-continue" href="/favorites">Избранное →</a></div></div>'
+            '<div class="empty-state-orbit" aria-hidden="true"><span>' + nav_icon("cart") + '</span></div></section>')
 
 
-write("cart", "Корзина", order_steps(1) +
-      '<div class="order-page-heading"><h1>Корзина</h1><p id="cart-count"></p></div>'
+write("cart", "Корзина", '<div class="order-page-heading"><h1>Корзина</h1><p id="cart-count"></p>'
+      '<div class="order-flow-links cart-return-links">'
+      '<a class="cart-continue" href="/catalog" data-continue-shopping>← Продолжить покупки</a>'
+      '<a class="cart-continue" href="/favorites">Избранное →</a></div></div>' + order_steps(1) +
       '<div class="order-flow-layout" id="order-flow"><section class="cart-content" aria-label="Товары в корзине">'
-      '<div id="cart-items"></div><p id="cart-message" role="status"></p>'
-      '<div class="order-flow-links"><a class="cart-continue" href="/catalog">← Продолжить покупки</a>'
-      '<a class="cart-continue" href="/favorites">Избранное →</a></div></section>' + order_summary() + '</div>' + empty_bag(), draft=True)
+      '<div id="cart-items"></div><p id="cart-message" role="status"></p></section>' + order_summary() + '</div>' + empty_bag(), draft=True)
 write("favorites", "Избранное", '<div class="order-page-heading"><h1>Избранное</h1>'
       '<a class="cart-continue" href="/cart">Перейти в корзину →</a></div>'
       '<ul id="favorite-items" class="wishlist-grid" aria-label="Избранное"></ul><p id="favorite-status" role="status"></p>'
       '<p id="cart-status" role="status"></p><p id="cart-next" hidden><a href="/cart">Перейти в корзину →</a></p>'
-      '<section id="wishlist-empty" class="cart-empty" hidden>' + nav_icon("favorites") +
+      '<section id="wishlist-empty" class="cart-empty" hidden><div class="empty-state-copy">'
       '<h2>В избранном пока нет товаров.</h2><p>Сохраняйте светильники, к которым хотите вернуться.</p>'
-      '<a class="button-link" href="/catalog">Открыть каталог ↗</a></section>', draft=True)
+      '<div class="empty-state-actions"><a class="button-link" href="/catalog">Открыть каталог ↗</a></div></div>'
+      '<div class="empty-state-orbit" aria-hidden="true"><span>' + nav_icon("favorites") + '</span></div></section>', draft=True)
 write("compare", "Сравнение светильников", '<p id="compare-status" role="status"></p>'
       '<div id="compare-table" class="comparison-scroll" role="region" aria-label="Таблица сравнения" tabindex="0"></div>'
       '<p>' + link("catalog", "Открыть каталог") + '</p>', draft=True)
-write("checkout", "Оформление заявки", order_steps(2) + """
+write("checkout", "Оформление заявки", """
 <div class="order-page-heading"><h1>Оформление заявки</h1><p id="checkout-account-mode">Без регистрации</p></div>
+""" + order_steps(2) + """
 <div class="order-flow-layout" id="order-flow">
 <section class="checkout-content">
 <form id="checkout" hidden>
@@ -692,7 +698,6 @@ write("checkout", "Оформление заявки", order_steps(2) + """
 </form>
 <details class="checkout-review" open><summary class="checkout-form-heading"><span class="eyebrow">02</span><span>Товары в заявке</span><span class="review-toggle" aria-hidden="true">＋</span></summary>
 <div id="cart-items"></div><p id="cart-message" role="status"></p></details>
-<a class="cart-continue" href="/cart">← Вернуться в корзину</a>
 </section>
 """ + order_summary(checkout=True) + '</div>' + empty_bag() +
       '<p id="checkout-status" class="checkout-status" role="status" tabindex="-1"></p>'
@@ -701,7 +706,7 @@ write("checkout", "Оформление заявки", order_steps(2) + """
       f'<p>Часы связи с менеджером: {SERVICE_HOURS}.</p>'
       '<p><a id="order-status-link" hidden>Проверить статус заявки</a></p>'
       '<a href="/catalog">Вернуться в каталог</a></section>', draft=True)
-write("checkout/received", "Подтверждение заявки", order_steps(3) + f"""
+write("checkout/received", "Подтверждение заявки", '<div id="receipt-steps" hidden>' + order_steps(3) + '</div>' + f"""
 <section class="receipt-card">
 <span class="receipt-symbol" aria-hidden="true" hidden>{nav_icon("check")}</span>
 <h1 id="receipt-title">Подтверждение заявки</h1>
@@ -715,7 +720,7 @@ write("checkout/received", "Подтверждение заявки", order_step
 </div>
 <div class="receipt-links"><a href="/catalog">Вернуться в каталог</a><a href="/contacts">Контакты</a></div>
 </section>
-<script src="/receipt.js?v=2" defer></script>
+<script src="/receipt.js?v=3" defer></script>
 """, draft=True)
 write("order-status", "Статус заявки", f"""
 <meta name="referrer" content="no-referrer">

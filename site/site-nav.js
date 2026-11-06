@@ -46,6 +46,10 @@
     });
   }
   document.addEventListener("click", event => {
+    const cartLink = event.target.closest('a[href="/cart"]');
+    if (cartLink && /^\/(?:catalog(?:\/.*)?|search|favorites|compare)\/?$/.test(location.pathname)) {
+      try { sessionStorage.setItem("lusar-shopping-return", location.pathname + location.search + location.hash); } catch {}
+    }
     if (header.dataset.navOpen === "true" && !header.contains(event.target)) setMenu(false);
     for (const dropdown of dropdowns) {
       if (!dropdown.contains(event.target)) dropdown.open = false;

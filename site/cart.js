@@ -28,6 +28,29 @@ function readCart() {
 }
 let cart = readCart();
 
+const continueLinks = document.querySelectorAll("[data-continue-shopping]");
+if (continueLinks.length) {
+  function shoppingPath(value) {
+    if (!value) return "";
+    try {
+      const url = new URL(value, location.origin);
+      const browsingPage = /^\/(?:catalog(?:\/.*)?|search|favorites|compare)\/?$/.test(url.pathname);
+      return url.origin === location.origin && browsingPage ? url.pathname + url.search + url.hash : "";
+    } catch {
+      return "";
+    }
+  }
+  let previous = shoppingPath(document.referrer);
+  try {
+    if (previous) sessionStorage.setItem("lusar-shopping-return", previous);
+    else previous = shoppingPath(sessionStorage.getItem("lusar-shopping-return"));
+  } catch {}
+  if (previous) for (const link of continueLinks) link.href = previous;
+  if (previous && new URL(previous, location.origin).pathname === "/favorites") {
+    for (const link of document.querySelectorAll(".cart-return-links a[href='/favorites'], .empty-state-actions a[href='/favorites']")) link.hidden = true;
+  }
+}
+
 function save(next) {
   localStorage.setItem(cartKey, JSON.stringify(next));
   cart = next;
@@ -116,6 +139,7 @@ function renderCart() {
     const titleId = "cart-product-" + id;
     row.setAttribute("aria-labelledby", titleId);
     const picture = element(product ? "a" : "span", "cart-row-photo");
+    let controls;
     if (product) {
       picture.href = product.path; picture.tabIndex = -1; picture.setAttribute("aria-hidden", "true");
       if (product.image) {
@@ -134,7 +158,7 @@ function renderCart() {
       const unit = element("p", "cart-unit-price");
       unit.append(element("span", "", "Цена за штуку"), " · ", element("span", "", product.price === null ? "Цена по запросу" : formatMoney(product.price)));
       info.append(unit);
-      const controls = element("div", "quantity-stepper");
+      controls = element("div", "quantity-stepper");
       controls.setAttribute("role", "group"); controls.setAttribute("aria-label", "Количество"); controls.setAttribute("aria-describedby", titleId);
       const minus = element("button", "", "−"); minus.type = "button"; minus.dataset.quantityStep = "minus";
       minus.setAttribute("aria-label", "Уменьшить количество"); minus.disabled = quantity <= 1;
@@ -148,7 +172,7 @@ function renderCart() {
         if (!field.checkValidity() || !Number.isInteger(field.valueAsNumber)) { field.value = String(quantity); return; }
         changeQuantity(id, field.valueAsNumber, "input");
       });
-      controls.append(minus,field,plus); info.append(controls);
+      controls.append(minus,field,plus);
     } else info.append(element("p", "cart-row-warning", "Товар снят с публикации или сейчас недоступен."));
     const actions = element("div", "cart-row-end");
     if (product) actions.append(element("p", "cart-line-total", product.price === null ? "Цена по запросу" : formatMoney(product.price * quantity)));
@@ -163,12 +187,16 @@ function renderCart() {
         (items.querySelector("h2 a, [data-remove]") || document.querySelector("#cart-empty a")).focus();
       } catch { cartMessage("Не удалось обновить корзину."); }
     });
-    actions.append(remove); row.append(picture,info,actions); items.append(row);
+    actions.append(remove); row.append(picture,info);
+    if (controls) row.append(controls);
+    row.append(actions); items.append(row);
   }
   const unavailable = lines.some(([id]) => !Object.hasOwn(products, id));
+  if (review && unavailable) review.open = true;
   document.querySelector("#order-flow").hidden = !lines.length;
+  document.querySelector(".order-steps").hidden = !lines.length;
   document.querySelector("#cart-empty").hidden = !!lines.length;
-  const count = document.querySelector("#cart-count"); if (count) count.textContent = lines.length ? `Товаров: ${lines.length}` : "";
+  const count = document.querySelector("#cart-count"); if (count) count.textContent = lines.length ? `Товаров: ${lines.reduce((sum, [,quantity]) => sum + quantity, 0)}` : "";
   const link = document.querySelector("#checkout-link"); if (link) link.hidden = unavailable || !lines.length;
   if (checkout) checkout.hidden = unavailable || !lines.length;
   updatePromoTotal();
