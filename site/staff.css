@@ -1,14 +1,14 @@
 .staff-page {
   --staff-header: #0a0a0c;
   --staff-sidebar: #0b0b0d;
-  --staff-canvas: #161619;
-  --staff-card: #202024;
-  --staff-raised: #29292f;
-  --staff-input: #121215;
-  --staff-line: #3b3b43;
-  --staff-control-line: #696974;
-  --staff-ink: #f4f4f7;
-  --staff-muted: #b1b1be;
+  --staff-canvas: #171717;
+  --staff-card: #242424;
+  --staff-raised: #303030;
+  --staff-input: #191919;
+  --staff-line: #404040;
+  --staff-control-line: #707070;
+  --staff-ink: #f4f4f4;
+  --staff-muted: #b7b7b7;
   --staff-accent: #cab4ff;
   --staff-on-accent: #201434;
   --staff-accent-wash: #2c223d;
@@ -147,13 +147,12 @@
   gap: .3rem .6rem;
   padding: .9rem 1rem;
   text-align: left;
-  background: linear-gradient(125deg, color-mix(in srgb, var(--staff-tone) 14%, var(--staff-card)), var(--staff-card) 78%);
-  border-color: color-mix(in srgb, var(--staff-tone) 25%, var(--staff-line));
+  background: var(--staff-card);
   color: var(--staff-muted);
 }
 .staff-stats button:hover, .staff-stats button[aria-pressed="true"] {
   border-color: var(--staff-tone);
-  background: color-mix(in srgb, var(--staff-tone) 20%, var(--staff-card));
+  background: var(--staff-raised);
 }
 .staff-stats strong { grid-column: 2; font-size: 1.6rem; line-height: 1.2; color: var(--staff-ink); font-variant-numeric: tabular-nums; }
 .staff-dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--staff-tone); }
@@ -177,8 +176,7 @@
 .staff-order { border-top: 1px solid var(--staff-line); scroll-margin-top: .8rem; }
 .staff-order summary, .staff-history summary, .staff-role-edit summary { cursor: pointer; list-style: none; }
 .staff-page summary::-webkit-details-marker { display: none; }
-.staff-order-row:hover { background: var(--staff-raised); }
-.staff-order[open] > summary { background: var(--staff-accent-wash); }
+.staff-order-row:hover, .staff-order[open] > summary { background: var(--staff-raised); }
 .staff-order[open] .staff-order-chevron svg, .staff-history[open] > summary svg, .staff-role-edit[open] > summary svg { transform: rotate(180deg); }
 .staff-order-row time, .staff-order-row small { display: block; color: var(--staff-muted); }
 .staff-order-chevron { color: var(--staff-muted); line-height: 0; }
