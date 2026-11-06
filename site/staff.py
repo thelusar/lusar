@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from urllib.parse import parse_qs, urlencode
 
 import order_storage
+import staff_ui as ui
 
 ROLE_NAMES = {'admin': 'Администратор', 'manager': 'Менеджер'}
 ACTION_NAMES = {'status': 'Статус', 'payment': 'Оплата', 'return': 'Возврат', 'refund_paid': 'Выплата по возврату'}
@@ -53,11 +54,13 @@ def identity(handler, db=None):
     return Actor(session['id'], row[0], role, bytes.fromhex(session['csrf']))
 
 
-def page(handler, status, title, content):
-    body = ('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="robots" content="noindex">'
+def page(handler, status, title, content, *, actor=None, active=None):
+    layout = ui.layout(title, content, actor=actor, active=active, role_label=ROLE_NAMES[actor.role] if actor and actor.role else '')
+    body = ('<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            f'<title>{html.escape(title)}</title><link rel="stylesheet" href="/site.css">'
-            f'<main class="staff-panel"><h1>{html.escape(title)}</h1>{content}</main></html>').encode()
+            f'<title>{html.escape(title)} · LUSAR</title><script src="/theme.js"></script>'
+            '<link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/staff.css">'
+            f'<script src="/staff.js" defer></script></head><body class="staff-page">{layout}</body></html>').encode()
     handler.send_response(status)
     handler.send_header('Content-Type', 'text/html; charset=utf-8')
     handler.send_header('Cache-Control', 'no-store')
@@ -75,9 +78,10 @@ def sign_in_page(handler, destination, actor):
     url = '/auth/start?' + html.escape(urlencode(query), quote=True)
     if actor:
         return page(handler, 403, 'Доступ к панели сотрудников',
-                    '<p>Для этого аккаунта не выданы права сотрудника. Передайте администратору код своего аккаунта.</p>'
-                    f'<p><code>{html.escape(actor.id)}</code></p><p><a href="{url}">Войти другим аккаунтом</a></p>')
-    return page(handler, 401, 'Панель сотрудников', f'<p><a href="{url}">Войти в LUSAR</a></p>')
+                    '<p>Передайте администратору код аккаунта, чтобы получить доступ.</p>'
+                    f'<p><code>{html.escape(actor.id)}</code></p><a class="staff-button" href="{url}">Войти другим аккаунтом</a>')
+    return page(handler, 401, 'Панель сотрудников',
+                f'<p>Войдите в рабочий аккаунт, чтобы открыть заказы.</p><a class="staff-button staff-primary" href="{url}">Войти в LUSAR</a>')
 
 
 def require_origin(handler, actor):
@@ -111,42 +115,73 @@ def history_markup(events):
         return ''
     items = []
     for action, detail, email, changed in events:
-        changed = str(changed)
-        items.append(f'<li><time>{html.escape(changed)}</time> · {html.escape(email)} · '
-                     f'{html.escape(ACTION_NAMES[action])}: {html.escape(detail)}</li>')
-    return '<details><summary>Журнал заказа</summary><ul>' + ''.join(items) + '</ul></details>'
+        items.append(f'<li><div><strong>{html.escape(ACTION_NAMES[action])}</strong><span>{ui.timestamp(changed)}</span></div>'
+                     f'<p>{html.escape(detail)}</p><small>{html.escape(email)}</small></li>')
+    return (f'<details class="staff-history"><summary><span>Журнал заказа <small>{len(events)}</small></span>'
+            f'{ui.icon("chevron")}</summary><ol>{"".join(items)}</ol></details>')
 
 
 def access_token(actor):
     return hmac.digest(actor.form_key, b'staff-access-v1', 'sha256').hex()
 
 
+def form_error(handler, status, message, destination, actor):
+    if 'text/html' not in handler.headers.get('Accept', ''):
+        return handler.reply(status, {'error': message})
+    return page(handler, status, 'Не удалось сохранить',
+                ui.heading('Не удалось сохранить', message)
+                + f'<a class="staff-button" href="{destination}">Вернуться к разделу</a>',
+                actor=actor, active='access' if destination == ACCESS_PATH else 'orders')
+
+
+def role_options(selected):
+    return ''.join(f'<option value="{key}"{" selected" if key == selected else ""}>{name}</option>'
+                   for key, name in ROLE_NAMES.items())
+
+
 def access_page(handler, actor):
     if actor.role != 'admin':
-        return page(handler, 403, 'Доступ сотрудников', '<p>Этот раздел доступен администратору.</p>')
+        return page(handler, 403, 'Доступ сотрудников',
+                    ui.heading('Доступ сотрудников', 'Назначать роли может администратор.'), actor=actor)
+    owner = owner_id()
     with order_storage.connect(handler.customer_service().database) as db:
-        rows = db.execute('SELECT customers.email, staff_roles.role, staff_roles.customer_id FROM staff_roles '
-                          'JOIN customers ON customers.id = staff_roles.customer_id ORDER BY customers.email').fetchall()
-    token = access_token(actor)
+        rows = db.execute('SELECT customers.email, staff_roles.role, customers.id FROM customers '
+                          'LEFT JOIN staff_roles ON customers.id = staff_roles.customer_id '
+                          'WHERE customers.id = ? OR staff_roles.role IS NOT NULL ORDER BY customers.email', (owner,)).fetchall()
+    rows.sort(key=lambda row: row[2] != owner)
+    form_start = f'<form method="post" action="{ACCESS_PATH}"><input type="hidden" name="token" value="{access_token(actor)}">'
     staff_list = []
     for email, role, user_id in rows:
-        if user_id == owner_id():
-            continue
-        revoke = ''
-        if user_id != actor.id:
-            revoke = (f'<form method="post" action="{ACCESS_PATH}"><input type="hidden" name="token" value="{token}">'
-                      f'<input type="hidden" name="account" value="{html.escape(user_id, quote=True)}">'
-                      '<button name="role" value="remove">Отозвать доступ</button></form>')
-        staff_list.append(f'<li>{html.escape(email)} · {ROLE_NAMES[role]}{revoke}</li>')
-    content = (f'<nav><a href="{ORDERS_PATH}">К заказам</a></nav>'
-               '<p>Сотрудник входит в LUSAR, открывает панель заказов и передаёт вам свой код аккаунта.</p>'
-               f'<form method="post" action="{ACCESS_PATH}"><input type="hidden" name="token" value="{token}">'
-               '<label>Код аккаунта <input name="account" required maxlength="36" autocomplete="off"></label> '
-               '<label>Роль <select name="role"><option value="manager">Менеджер</option>'
-               '<option value="admin">Администратор</option></select></label> '
-               '<button>Сохранить доступ</button></form><h2>Назначенные сотрудники</h2>'
-               + ('<ul>' + ''.join(staff_list) + '</ul>' if staff_list else '<p>Дополнительных сотрудников пока нет.</p>'))
-    return page(handler, 200, 'Доступ сотрудников', content)
+        label = 'Основной администратор' if user_id == owner else ROLE_NAMES[role]
+        actions = ''
+        if user_id not in {actor.id, owner}:
+            edit_form = form_start + f'<input type="hidden" name="account" value="{html.escape(user_id, quote=True)}">'
+            actions = (f'<details class="staff-role-edit"><summary>Управлять {ui.icon("chevron")}</summary>'
+                       f'<div class="staff-role-actions">{edit_form}<label>Роль <select name="role">{role_options(role)}</select></label>'
+                       '<button class="staff-primary">Сохранить роль</button></form>'
+                       f'<details class="staff-revoke"><summary>Отозвать доступ</summary><p>Сотрудник сразу потеряет доступ к панели.</p>'
+                       f'{edit_form}<button class="staff-danger" name="role" value="remove">Подтвердить отзыв</button>'
+                       '</form></details></div></details>')
+        marker = '<small>Ваш аккаунт</small>' if user_id == actor.id else ''
+        staff_list.append(f'<li class="staff-person"><div class="staff-person-info"><span class="staff-avatar">{ui.icon("account")}</span>'
+                          f'<div><strong>{html.escape(email)}</strong>{marker}</div></div>'
+                          f'<span class="staff-badge">{label}</span>{actions}</li>')
+    feedback = ui.notice(handler, {'access': 'Доступ сотрудника сохранён.', 'removed': 'Доступ сотрудника отозван.'})
+    people = f'<ul class="staff-people">{"".join(staff_list)}</ul>'
+    content = (ui.heading('Сотрудники', 'Выдавайте доступ к панели и меняйте роли сотрудников.') + feedback
+               + '<div class="staff-access-grid"><section class="staff-surface staff-grant" aria-labelledby="grant-title">'
+               f'<span class="staff-tile-icon">{ui.icon("team")}</span><h2 id="grant-title">Выдать доступ</h2>'
+               f'<p>Сотрудник входит в LUSAR и открывает <a href="{ORDERS_PATH}">панель заказов</a>. Там он увидит свой код аккаунта.</p>'
+               f'{form_start}<label>Код аккаунта<input name="account" required maxlength="36" autocomplete="off" spellcheck="false" '
+               'placeholder="Вставьте код сотрудника"></label>'
+               f'<label>Роль<select name="role">{role_options("manager")}</select></label>'
+               '<button class="staff-primary">Выдать доступ</button></form></section>'
+               '<section class="staff-surface staff-permissions" aria-labelledby="roles-title"><h2 id="roles-title">Что доступно по ролям</h2>'
+               '<dl><dt>Менеджер</dt><dd>Просмотр заказов, смена статуса, отметки оплаты и возвратов.</dd>'
+               '<dt>Администратор</dt><dd>Работа с заказами, выдача доступа, смена ролей и отзыв доступа.</dd></dl></section></div>'
+               '<section class="staff-surface staff-team" aria-labelledby="team-title"><div class="staff-section-head">'
+               f'<h2 id="team-title">Команда</h2><span class="staff-badge">{len(staff_list)}</span></div>{people}</section>')
+    return page(handler, 200, 'Сотрудники', content, actor=actor, active='access')
 
 
 def update_access(handler, actor):
@@ -167,20 +202,21 @@ def update_access(handler, actor):
         if role not in {*ROLE_NAMES, 'remove'}:
             raise ValueError
     except (ValueError, KeyError):
-        return handler.reply(400, {'error': 'Проверьте код аккаунта и роль.'})
+        return form_error(handler, 400, 'Проверьте код аккаунта и роль.', ACCESS_PATH, actor)
     if not hmac.compare_digest(token.encode(), access_token(actor).encode()):
         return handler.reply(403, {'error': 'Откройте страницу доступа и повторите действие.'})
     if target in {actor.id, owner_id()}:
-        return handler.reply(409, {'error': 'Нельзя менять собственные права или права основного администратора.'})
+        return form_error(handler, 409, 'Менять собственную роль и роль основного администратора нельзя.', ACCESS_PATH, actor)
     with order_storage.connect(handler.customer_service().database, write=True) as db:
         db.execute('BEGIN IMMEDIATE')
         if not write_allowed(handler, actor, db, admin=True):
             return
         if not db.execute('SELECT 1 FROM customers WHERE id = ?', (target,)).fetchone():
-            return handler.reply(404, {'error': 'Аккаунт с таким кодом не найден.'})
+            return form_error(handler, 404, 'Аккаунт с таким кодом не найден. Уточните код у сотрудника.', ACCESS_PATH, actor)
         if role == 'remove':
             db.execute('DELETE FROM staff_roles WHERE customer_id = ?', (target,))
         else:
             db.execute('INSERT INTO staff_roles (customer_id, role) VALUES (?, ?) '
                        'ON CONFLICT(customer_id) DO UPDATE SET role = excluded.role', (target, role))
-    return handler.customer_service().redirect(handler, ACCESS_PATH)
+    result = 'removed' if role == 'remove' else 'access'
+    return handler.customer_service().redirect(handler, f'{ACCESS_PATH}?saved={result}')

@@ -17,6 +17,7 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 import order_storage
 import customer_accounts
 import staff
+import staff_ui as ui
 from threading import Lock
 from loyalty import FIRST_ORDER_PERCENT
 from sync_catalog import revision
@@ -279,38 +280,70 @@ class Handler(SimpleHTTPRequestHandler):
         history = {}
         for number, *event in events:
             history.setdefault(number, []).append(event)
+        counts = dict.fromkeys(STATUS_LABELS, 0)
         cards = []
         for number, status, created, raw in rows:
+            if status in counts:
+                counts[status] += 1
             order = json.loads(raw)
-            contact = order["contact"]
+            contact = {key: html.escape(value) for key, value in order["contact"].items() if value}
             lines = "".join(
-                f'<li>{html.escape(line["name"])} · {html.escape(line["sku"])} · {line["quantity"]} шт.</li>'
+                f'<li><div>{html.escape(line["name"])}<small>Арт. {html.escape(line["sku"])}</small></div>'
+                f'<strong>{line["quantity"]} шт.</strong></li>'
                 for line in order["items"]
             )
-            total = order.get("total")
-            summary = "Сумму нужно уточнить" if total is None else f"Итог: {total} ֏"
-            details = " · ".join(html.escape(value) for value in contact.values() if value)
+            number_attr = html.escape(number, quote=True)
+            status_attr = html.escape(status, quote=True)
+            total = ui.amount(order.get("total"))
+            contact_fields = ''.join(f'<dt>{label}</dt><dd>{contact[key]}</dd>'
+                                     for key, label in (("name", "Имя"), ("phone", "Телефон"), ("email", "Email"), ("address", "Адрес"))
+                                     if key in contact)
+            contact_name = contact.get("name") or "Гость"
+            phone = contact.get("phone", "")
+            status_label = html.escape(STATUS_LABELS.get(status, status))
             targets = TRANSITIONS.get(status, ())
             if order.get("payment"):
                 targets = tuple(target for target in targets if target != "cancelled")
             options = "".join(f'<option value="{target}">{STATUS_LABELS[target]}</option>' for target in targets)
-            controls = (f'<form method="post" action="/manager/orders/status">'
-                        f'<input type="hidden" name="number" value="{html.escape(number, quote=True)}">'
-                        f'<input type="hidden" name="current" value="{html.escape(status, quote=True)}">'
+            controls = (f'<form class="staff-action" method="post" action="/manager/orders/status">'
+                        f'<input type="hidden" name="number" value="{number_attr}">'
+                        f'<input type="hidden" name="current" value="{status_attr}">'
                         f'<input type="hidden" name="token" value="{status_token(number, status, actor.form_key)}">'
-                        f'<label>Новый статус <select name="target">{options}</select></label>'
-                        '<button>Сохранить статус</button></form>') if options else ""
-            cards.append(f'<article id="{html.escape(number, quote=True)}"><h2>{html.escape(number)}</h2><p>{html.escape(str(created))} · '
-                         f'{html.escape(STATUS_LABELS.get(status, status))}</p>'
-                         f'<p>{details}</p><ul>{lines}</ul><p>{summary}</p>{controls}'
-                         f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}'
-                         f'{staff.history_markup(history.get(number))}</article>')
-        toolbar = f'<p>{html.escape(actor.email)} · {staff.ROLE_NAMES[actor.role]}</p>'
-        if actor.role == 'admin':
-            toolbar += f'<nav><a href="{staff.ACCESS_PATH}">Доступ сотрудников</a></nav>'
-        if actor.id:
-            toolbar += '<p><a href="/account">Личный кабинет и выход</a></p>'
-        return staff.page(self, 200, "Заказы LUSAR", toolbar + ("".join(cards) or "<p>Заявок пока нет.</p>"))
+                        f'<label>Новый статус <select name="target" required><option value="" disabled selected>Выберите статус</option>{options}</select></label>'
+                        '<button class="staff-primary">Сохранить статус</button></form>') if options else ""
+            cards.append(
+                f'<details class="staff-order" id="{number_attr}" data-status="{status_attr}"><summary class="staff-order-row">'
+                f'<span class="staff-order-id"><strong>{html.escape(number)}</strong>{ui.timestamp(created)}</span>'
+                f'<span class="staff-order-customer"><strong>{contact_name}</strong><small>{phone}</small></span>'
+                f'<span class="staff-order-status"><span class="staff-badge" data-tone="{status_attr}">{status_label}</span></span>'
+                f'<strong class="staff-total">{total}</strong><span class="staff-order-chevron">{ui.icon("chevron")}</span></summary>'
+                '<div class="staff-order-details"><div class="staff-detail-grid">'
+                f'<section><h3>Состав заказа</h3><ul class="staff-items">{lines}</ul></section>'
+                f'<section><h3>Контакты клиента</h3><dl class="staff-contact">{contact_fields}</dl></section></div>'
+                '<div class="staff-detail-grid staff-operations">'
+                f'<section><h3>Статус заказа</h3>{controls or f"<p>{status_label}</p>"}</section>'
+                '<section><h3>Оплата и возвраты</h3>'
+                f'{self.adjustment_controls(number, status, raw, order, actor.form_key)}</section></div>'
+                f'{staff.history_markup(history.get(number))}</div></details>')
+        stats = ''.join(f'<button type="button" data-filter="{key}" aria-pressed="false"><span class="staff-dot" data-tone="{key}"></span>'
+                        f'<span>{STATUS_LABELS[key]}</span><strong>{count}</strong></button>' for key, count in counts.items())
+        feedback = ui.notice(self, {'status': 'Статус заказа обновлён.', 'payment': 'Оплата отмечена.',
+                                    'return': 'Возврат сохранён.', 'refund_paid': 'Выплата отмечена.'})
+        empty = ui.empty('Заказов пока нет', 'Новые заявки с сайта появятся здесь.', 'orders')
+        no_match = ui.empty('Заказы не найдены', 'Попробуйте изменить запрос или сбросить фильтр.', 'search')
+        listing = ('<div class="staff-table-head" aria-hidden="true"><span>Заявка · время Еревана</span><span>Клиент</span>'
+                   f'<span>Статус</span><span>Сумма</span></div>{"".join(cards)}'
+                   f'<div id="staff-no-match" hidden>{no_match}</div>') if cards else empty
+        content = (ui.heading('Заказы', 'Заявки с сайта, оплата и возвраты в одном месте.') + feedback
+                   + f'<div class="staff-stats" role="group" aria-label="Фильтр по статусу" hidden>{stats}</div>'
+                   '<section class="staff-surface staff-list" aria-labelledby="orders-title"><div class="staff-section-head">'
+                   '<div><h2 id="orders-title">Список заказов</h2>'
+                   f'<p id="staff-result-count" aria-live="polite">Всего заявок: {len(rows)}</p></div>'
+                   '<div class="staff-filter-tools" hidden><label class="staff-search">'
+                   f'{ui.icon("search")}<input type="search" id="staff-order-search" aria-label="Поиск заказов" '
+                   'placeholder="Номер, имя или телефон"></label>'
+                   f'<button type="button" id="staff-reset" hidden>Сбросить</button></div></div>{listing}</section>')
+        return staff.page(self, 200, "Заказы LUSAR", content, actor=actor, active='orders')
 
     def do_POST(self):
         if self.customer_service().post(self):
@@ -327,7 +360,7 @@ class Handler(SimpleHTTPRequestHandler):
                 try:
                     return staff.update_access(self, actor)
                 except order_storage.DatabaseError:
-                    return self.reply(503, {"error": "Не удалось сохранить доступ."})
+                    return staff.form_error(self, 503, "Повторите попытку через несколько минут.", staff.ACCESS_PATH, actor)
             return
         if self.path != "/api/orders":
             return self.reply(404, {"error": "Страница не найдена."})
@@ -496,7 +529,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not hmac.compare_digest(token.encode(), status_token(number, current, actor.form_key).encode()):
             return self.reply(403, {"error": "Откройте список заказов и повторите действие."})
         if target not in TRANSITIONS.get(current, ()):
-            return self.reply(409, {"error": "Этот переход недоступен."})
+            return staff.form_error(self, 409, "Выбранный переход недоступен.", staff.ORDERS_PATH, actor)
         if not order_storage.available(DATABASE):
             return self.reply(404, {"error": "Заказ не найден."})
         try:
@@ -508,7 +541,7 @@ class Handler(SimpleHTTPRequestHandler):
                                     "AND (? != 'cancelled' OR json_extract(payload, '$.payment') IS NULL)",
                                     (target, number, current, target))
                 if result.rowcount != 1:
-                    return self.reply(409, {"error": "Статус уже изменился. Обновите список заказов."})
+                    return staff.form_error(self, 409, "Статус уже изменился. Откройте заказ заново.", staff.ORDERS_PATH, actor)
                 db.execute("""CREATE TABLE IF NOT EXISTS order_status_history (
                     number TEXT NOT NULL, previous TEXT NOT NULL, current TEXT NOT NULL,
                     changed TEXT DEFAULT CURRENT_TIMESTAMP)""")
@@ -516,14 +549,11 @@ class Handler(SimpleHTTPRequestHandler):
                            (number, current, target))
                 staff.record(db, number, actor, 'status', f'{STATUS_LABELS[current]} → {STATUS_LABELS[target]}')
         except order_storage.DatabaseError:
-            return self.reply(503, {"error": "Не удалось сохранить статус. Повторите попытку."})
-        self.send_response(303)
-        self.send_header("Location", "/manager/orders/")
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
+            return staff.form_error(self, 503, "Повторите попытку через несколько минут.", staff.ORDERS_PATH, actor)
+        return self.customer_service().redirect(self, f'{staff.ORDERS_PATH}?saved=status#{quote(number, safe="")}')
 
     def adjustment_controls(self, number, status, raw, order, key):
-        form = (f'<form method="post" action="/manager/orders/adjust">'
+        form = (f'<form class="staff-action" method="post" action="/manager/orders/adjust">'
                 f'<input type="hidden" name="number" value="{html.escape(number, quote=True)}">'
                 f'<input type="hidden" name="token" value="{adjustment_token(number, status, raw, key)}">')
         if not order.get("payment"):
@@ -535,17 +565,19 @@ class Handler(SimpleHTTPRequestHandler):
         returns = order.get("returns", [])
         refund_paid = sum(entry["refundDue"] for entry in returns if entry.get("refundPaid"))
         refund_due = sum(entry["refundDue"] for entry in returns if not entry.get("refundPaid"))
-        summary = f'<p>Оплачено: {payment["amount"]} ֏ · {PAYMENT_METHODS[payment["method"]]}</p>'
+        summary = f'<p>Оплачено <strong>{ui.amount(payment["amount"])}</strong> · {PAYMENT_METHODS[payment["method"]]}</p>'
         if returns:
             remaining_total = order["remainingAmount"]["total"]
-            summary += (f"<p>Итог по оставшимся товарам: {remaining_total} ֏ · "
-                        f"Выплачено по возвратам: {refund_paid} ֏ · Осталось вернуть: {refund_due} ֏</p>")
+            summary += ('<dl class="staff-refund-summary">'
+                        f'<dt>Итог по оставшимся товарам</dt><dd>{ui.amount(remaining_total)}</dd>'
+                        f'<dt>Выплачено по возвратам</dt><dd>{ui.amount(refund_paid)}</dd>'
+                        f'<dt>Осталось вернуть</dt><dd>{ui.amount(refund_due)}</dd></dl>')
             item_names = {line["id"]: line["name"] for line in order["items"]}
             for index, entry in enumerate(returns):
                 if entry["refundDue"] > 0 and not entry.get("refundPaid"):
                     name = html.escape(item_names[entry["id"]])
                     summary += (form + f'<input type="hidden" name="value" value="{index}">'
-                                f'<p>{name} · {entry["quantity"]} шт. · {entry["refundDue"]} ֏</p>'
+                                f'<p>{name} · {entry["quantity"]} шт. · {ui.amount(entry["refundDue"])}</p>'
                                 '<button name="action" value="refund_paid">Отметить выплату</button></form>')
         if status != "completed":
             return summary
@@ -584,12 +616,12 @@ class Handler(SimpleHTTPRequestHandler):
                     return self.reply(404, {"error": "Заказ не найден."})
                 status, raw = row
                 if not hmac.compare_digest(token.encode(), adjustment_token(number, status, raw, actor.form_key).encode()):
-                    return self.reply(409, {"error": "Заказ изменился. Обновите список заказов."})
+                    return staff.form_error(self, 409, "Заказ изменился. Откройте его заново.", staff.ORDERS_PATH, actor)
                 order = json.loads(raw)
                 try:
                     target = apply_adjustment(order, status, action, value, quantity)
                 except ValueError as error:
-                    return self.reply(409, {"error": str(error)})
+                    return staff.form_error(self, 409, str(error), staff.ORDERS_PATH, actor)
                 db.execute("UPDATE orders SET status = ?, payload = ? WHERE number = ?",
                            (target, json.dumps(order, ensure_ascii=False), number))
                 if action == 'payment':
@@ -608,11 +640,8 @@ class Handler(SimpleHTTPRequestHandler):
                     db.execute("INSERT INTO order_status_history (number, previous, current) VALUES (?, ?, ?)",
                                (number, status, target))
         except order_storage.DatabaseError:
-            return self.reply(503, {"error": "Не удалось сохранить изменение."})
-        self.send_response(303)
-        self.send_header("Location", "/manager/orders/")
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
+            return staff.form_error(self, 503, "Повторите попытку через несколько минут.", staff.ORDERS_PATH, actor)
+        return self.customer_service().redirect(self, f'{staff.ORDERS_PATH}?saved={action}#{quote(number, safe="")}')
 
 if __name__ == "__main__":
     ThreadingHTTPServer(("127.0.0.1", 8080), Handler).serve_forever()

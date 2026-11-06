@@ -21,6 +21,8 @@ async function until(predicate){for(let i=0;i<150;i++){if(predicate())return;awa
 async function open(path){await new Promise(resolve=>{frame.onload=resolve;frame.src=path;});const page=frame.contentDocument;await frame.contentWindow.lusarAccount?.ready;await tick();return page;}
 function layout(page){require(page.documentElement.scrollWidth<=page.documentElement.clientWidth+1,'Overflow: '+page.location.pathname+' '+frame.style.width+' '+page.documentElement.lang);}
 async function sizes(page){for(const width of [320,390,1440]){frame.style.width=width+'px';await tick();for(const lang of ['ru','hy','en']){const picker=page.querySelector('#language');picker.value=lang;picker.dispatchEvent(new frame.contentWindow.Event('change'));await tick();layout(page);page.querySelector('#theme-toggle').click();layout(page);}}frame.style.width='390px';}
+async function staffSizes(page){for(const width of [320,390,720,1024,1440]){frame.style.width=width+'px';await tick();layout(page);page.querySelector('#theme-toggle').click();layout(page);page.querySelector('#theme-toggle').click();}frame.style.width='390px';}
+async function submit(form,button){await new Promise(resolve=>{frame.onload=resolve;form.requestSubmit(button);});return frame.contentDocument;}
 (async()=>{try{
  localStorage.clear();sessionStorage.clear();localStorage.setItem('lusar-cookie-choice-v1','essential');
  localStorage.setItem('lusar-cart',JSON.stringify({[ITEM.id]:1}));localStorage.setItem('lusar-favorites',JSON.stringify([ITEM.id]));
@@ -46,15 +48,41 @@ async function sizes(page){for(const width of [320,390,1440]){frame.style.width=
  await until(()=>frame.contentWindow.location.pathname==='/checkout/received');
  page=frame.contentDocument;await until(()=>page.querySelector('#receipt-number')?.textContent.includes('LS-'));
  const number=page.querySelector('#receipt-number').textContent;
+ const orderId=number.match(/LS-[A-F0-9]{12}/)[0];
  page=await open('/account/orders');await until(()=>page.querySelector('.account-order'));
  require(page.querySelector('.account-order').textContent.includes(number.match(/LS-[A-F0-9]{12}/)[0]),'Own order not shown');await sizes(page);
  require(Object.keys(frame.contentWindow.lusarAccount.value.state.cart).length===0,'Purchased bag still saved on account');
- page=await open('/manager/orders/');
+ page=await open('/manager/orders/#'+orderId);
+ const order=page.getElementById(orderId);
+ require(order.open,'Telegram order link did not open the order');
+ const search=page.querySelector('#staff-order-search');
+ search.value='does not exist';search.dispatchEvent(new frame.contentWindow.Event('input'));
+ require(order.hidden&&!page.querySelector('#staff-no-match').hidden,'Search empty state missing');
+ page.querySelector('#staff-reset').click();
+ require(!order.hidden,'Reset did not restore the order');
+ page.querySelector('[data-filter="completed"]').click();require(order.hidden,'Status filter failed');
+ page.querySelector('[data-filter="new"]').click();require(!order.hidden,'New order filter failed');
+ await staffSizes(page);
  const statusForm=page.querySelector('form[action="/manager/orders/status"]');
  require(statusForm&&page.querySelector('a[href="/manager/access"]'),'Administrator order controls missing');
  statusForm.elements.target.value='in_progress';
- await new Promise(resolve=>{frame.onload=resolve;statusForm.requestSubmit();});
- require(frame.contentDocument.body.textContent.includes('Журнал заказа'),'Staff form did not save: '+frame.contentDocument.body.textContent.slice(0,180));
+ page=await submit(statusForm);
+ require(page.getElementById(orderId)?.open&&page.querySelector('.staff-notice')&&page.querySelector('.staff-history'),'Staff status, order focus or audit missing');
+ page=await open('/manager/access');
+ require(page.querySelector('.staff-person').textContent.includes('Ваш аккаунт'),'Owner missing from staff list');
+ form=page.querySelector('.staff-grant form');
+ form.elements.account.value=EMPLOYEE;
+ page=await submit(form);
+ require(page.querySelector('.staff-role-edit')&&page.querySelector('.staff-notice'),'Staff grant failed');
+ page.querySelector('.staff-role-edit').open=true;
+ form=page.querySelector('.staff-role-actions form');form.elements.role.value='admin';
+ page=await submit(form);
+ require(page.querySelector('.staff-person:last-child .staff-badge').textContent==='Администратор','Role change failed');
+ page.querySelector('.staff-role-edit').open=true;page.querySelector('.staff-revoke').open=true;
+ await staffSizes(page);
+ const revoke=page.querySelector('.staff-revoke button');
+ page=await submit(revoke.form,revoke);
+ require(page.querySelectorAll('.staff-person').length===1&&page.querySelector('.staff-notice').textContent.includes('отозван'),'Revocation failed');
  page=await open('/account/loyalty');await until(()=>page.querySelector('#loyalty-first-order').textContent.length>0);require(frame.contentWindow.lusarAccount.value.loyalty.firstOrderReserved,'First discount not reserved');await sizes(page);
  // Remove and decrease saved shopping state, then reload; it must not reappear.
  localStorage.setItem('lusar-cart',JSON.stringify({[ITEM.id]:2}));frame.contentDocument.dispatchEvent(new frame.contentWindow.Event('lusar-shopping-change'));await frame.contentWindow.lusarAccount.flush();
@@ -77,7 +105,7 @@ class Handler(Quiet):
     def do_GET(self):
         if urlsplit(self.path).path != '/account-ui-check':
             return super().do_GET()
-        payload = CHECK.replace('ITEM', json.dumps(PRODUCT)).encode()
+        payload = CHECK.replace('ITEM', json.dumps(PRODUCT)).replace('EMPLOYEE', json.dumps(self.server.employee)).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Content-Length', str(len(payload)))
@@ -97,6 +125,7 @@ def main():
             server.customer_accounts = accounts.Service(serve.DATABASE, config, BrowserIdentity(config))
             threading.Thread(target=server.serve_forever, daemon=True).start()
             try:
+                server.employee = Client(server).login('employee')['profile']['id']
                 owner = Client(server).login()['profile']['id']
                 with patch.dict(os.environ, {'LUSAR_STAFF_ADMIN_ID': owner}):
                     result = subprocess.run([str(browser), '--headless=new', '--no-first-run', '--disable-gpu', '--user-data-dir='+directory+'/browser',
@@ -106,7 +135,7 @@ def main():
                 server.shutdown()
         if '<output>PASS</output>' not in result.stdout:
             raise RuntimeError(result.stdout.partition('<output>')[2].partition('</output>')[0] or result.stderr[-500:])
-    print('Local signed login, guest bag merge, profile, addresses, checkout discount/autofill, own history, staff form and audit, logout and restored bag passed; account pages fit three widths, three languages and both themes.')
+    print('Account and staff browser flows passed, including order deep links and filters, status and audit, role changes and revocation, and responsive layouts in both themes.')
 
 
 if __name__ == '__main__':

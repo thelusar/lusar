@@ -736,6 +736,8 @@ for url in sorted(set(indexable)):
 ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xml_declaration=True)
 (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {PUBLIC_ORIGIN}/sitemap.xml\n", encoding="utf-8")
 (OUT / "site.css").write_bytes((ROOT / "site.css").read_bytes())
+for asset in ("staff.css", "staff.js"):
+    (OUT / asset).write_bytes((ROOT / asset).read_bytes())
 (OUT / "theme.js").write_bytes((ROOT / "theme.js").read_bytes())
 (OUT / "locale.js").write_bytes((ROOT / "locale.js").read_bytes())
 (OUT / "cookie-settings.js").write_bytes((ROOT / "cookie-settings.js").read_bytes())
