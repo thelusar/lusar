@@ -57,6 +57,9 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  require(profileBounds.top===addressBounds.top&&profileBounds.bottom===addressBounds.bottom&&Math.abs(profileBounds.width-addressBounds.width)<1,'Profile cards do not align');
  page=await follow(page.querySelector('.account-nav a[href="/cart"]'));
  require(!page.querySelector('.account-nav').hidden&&page.querySelector('.account-nav [aria-current="page"]').pathname==='/cart','Signed-in bag lost the account navigation');
+ const cartRow=page.querySelector('.cart-row');
+ await frame.contentWindow.lusarAccount.refresh();
+ require(cartRow&&page.querySelector('.cart-row')===cartRow,'An unchanged account refresh rebuilt the bag');
  await sizes(page);
  page=await follow(page.querySelector('.account-nav a[href="/favorites"]'));
  require(page.querySelector('.account-nav [aria-current="page"]').pathname==='/favorites','Wishlist lost the account navigation');
@@ -107,7 +110,10 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  frame.style.width='1440px';await tick();
  page.querySelector('.staff-queue a').click();
  require(drawer.open&&drawer.querySelector('h2').textContent===orderId,'Queue link did not open the drawer');
- const outside={clientX:5,clientY:50,bubbles:true}, inside={clientX:1430,clientY:50,bubbles:true};
+ const bounds=drawer.getBoundingClientRect();
+ require(bounds.left>2&&bounds.width>0,'Order drawer leaves no clickable backdrop');
+ const inside={clientX:bounds.left+bounds.width/2,clientY:bounds.top+bounds.height/2,bubbles:true};
+ const outside={...inside,clientX:bounds.left/2};
  const pointer=(type, position)=>drawer.dispatchEvent(new frame.contentWindow.PointerEvent(type,position));
  pointer('pointerdown',inside);pointer('click',outside);
  require(drawer.open,'Dragging from the drawer onto the backdrop closed it');
@@ -259,7 +265,7 @@ def main():
                 server.employee = Client(server).login('employee')['profile']['id']
                 owner = Client(server).login()['profile']['id']
                 with patch.dict(os.environ, {'LUSAR_STAFF_ADMIN_ID': owner}):
-                    result = subprocess.run([str(browser), '--headless=new', '--no-first-run', '--disable-gpu', '--user-data-dir='+directory+'/browser',
+                    result = subprocess.run([str(browser), '--headless=new', '--no-first-run', '--disable-gpu', '--force-prefers-reduced-motion', '--user-data-dir='+directory+'/browser',
                                              '--window-size=1600,1100', '--virtual-time-budget=28000', '--dump-dom', origin+'/account-ui-check'],
                                             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60)
             finally:

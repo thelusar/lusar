@@ -232,7 +232,7 @@ def main():
                 threading.Thread(target=server.serve_forever, daemon=True).start()
                 try:
                     result = subprocess.run([
-                        str(browser), "--headless=new", "--no-first-run", "--disable-gpu",
+                        str(browser), "--headless=new", "--no-first-run", "--disable-gpu", "--force-prefers-reduced-motion",
                         "--user-data-dir=" + str(Path(temp) / "browser"), "--window-size=430,900",
                         "--virtual-time-budget=12000", "--dump-dom", f"http://127.0.0.1:{server.server_port}/{name}",
                     ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=45)

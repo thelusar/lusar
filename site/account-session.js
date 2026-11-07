@@ -5,11 +5,11 @@
   const read = (key, fallback) => {try {return JSON.parse(localStorage.getItem(key)) || fallback;} catch {return fallback;}};
   const notify = () => document.dispatchEvent(new CustomEvent('lusar-account-change', {detail:account}));
   const error = message => document.dispatchEvent(new CustomEvent('lusar-account-error', {detail:message}));
-  function signalStorage() {
-    for (const key of ['lusar-cart','lusar-favorites']) window.dispatchEvent(new StorageEvent('storage',{key}));
-  }
   function install(data) {
+    let changed = [];
     try {
+      const shoppingKeys = ['lusar-cart','lusar-favorites'];
+      const before = shoppingKeys.map(key => localStorage.getItem(key));
       const previous = localStorage.getItem(ownerKey);
       if (data.authenticated) {
         const guest = !previous || previous === 'guest';
@@ -30,10 +30,12 @@
         }
         localStorage.setItem(ownerKey,'guest'); localStorage.removeItem(versionKey);
       }
+      changed = shoppingKeys.filter((key, index) => localStorage.getItem(key) !== before[index]);
     } catch {error('Браузер не сохранил корзину. Проверьте настройки хранения данных.');}
     account = {...data, loading:false};
     for (const link of document.querySelectorAll('a[href="/account"]')) link.toggleAttribute('data-signed-in',!!data.authenticated);
-    signalStorage(); notify();
+    for (const key of changed) window.dispatchEvent(new StorageEvent('storage',{key}));
+    notify();
   }
   async function request(path, data) {
     const response = await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Lusar-CSRF':account.csrfToken || ''},body:JSON.stringify(data)});
@@ -61,7 +63,7 @@
   async function load() {
     if (saving) await saving;
     if(dirty)await flush();
-    const response=await fetch('/api/account/me',{cache:'no-store'});
+    const response=await fetch('/api/account/me',{cache:'no-store',signal:AbortSignal.timeout?.(6000)});
     if (!response.ok) throw Error('Личный кабинет временно недоступен. Попробуйте позже.');
     install(await response.json());
     if(queued) await flush();

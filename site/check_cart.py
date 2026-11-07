@@ -161,7 +161,7 @@ def main():
         with serve.ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
             threading.Thread(target=server.serve_forever, daemon=True).start()
             try:
-                result = subprocess.run([str(browser), "--headless=new", "--no-first-run", "--disable-gpu", "--user-data-dir="+profile,
+                result = subprocess.run([str(browser), "--headless=new", "--no-first-run", "--disable-gpu", "--force-prefers-reduced-motion", "--user-data-dir="+profile,
                                          "--window-size=1600,1100", "--virtual-time-budget=16000", "--dump-dom",
                                          f"http://127.0.0.1:{server.server_port}/cart-check"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=45)
             finally:

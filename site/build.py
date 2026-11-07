@@ -133,7 +133,7 @@ def header_markup():
             '</span><span class="theme-moon">' + nav_icon("moon") + '</span></button>'
             '<button class="icon-link menu-toggle" id="menu-toggle" type="button" aria-label="Меню" '
             'aria-controls="main-nav" aria-expanded="false" hidden>' + nav_icon("menu") +
-            '</button></nav></div></header><script src="/site-nav.js" defer></script>')
+            '</button></nav></div></header>')
 
 
 def footer_markup():
@@ -172,9 +172,19 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         attrs = "".join(f' data-{provider}="{value}"' for provider, value in ANALYTICS_IDS.items() if value)
         if attrs:
             analytics = ' data-analytics-enabled="true"' + attrs
-    cart_script = ('<script src="/cart.js" defer></script>'
-                   if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/") or "data-add=" in body
-                   else "")
+    critical_scripts = ["locale.js", "site-nav.js"]
+    for script in ("product-filters.js", "product-gallery.js", "receipt.js?v=3"):
+        tag = f'<script src="/{script}" defer></script>'
+        if tag in body:
+            body = body.replace(tag, "")
+            critical_scripts.append(script)
+    if path in {"catalog", "cart", "checkout", "favorites", "compare"} or path.startswith("catalog/product/") or "data-add=" in body:
+        critical_scripts.append("cart.js")
+    scripts = "".join(f'<script src="/{script}" defer blocking="render"></script>' for script in critical_scripts)
+    if path in {"cart", "favorites", "checkout"}:
+        body = ('<p id="shopping-loading" role="status" hidden>Загружаем…</p>'
+                '<noscript><p>Для покупок включите JavaScript в браузере.</p></noscript>'
+                f'<div id="shopping-ready" hidden>{body}</div>')
     page_class = {"": "home", "catalog": "catalog-page", "ai": "ai-page", "cart": "cart-page", "checkout": "checkout-page",
                   "checkout/received": "receipt-page", "favorites": "wishlist-page", "order-status": "tracking-page"}.get(path, "content-page")
     if 'id="account-member"' in body:
@@ -186,7 +196,9 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received", "favorites", "order-status"} or page_class in {"product-page", "account-page"} else f"<h1>{html.escape(title)}</h1>"
     target.write_text(f"""<!doctype html>
 <html lang="ru" data-catalog-revision="{CATALOG_REVISION}"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
-{robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title><script src="/theme.js"></script><script src="/locale.js" defer></script><script src="/account-session.js" defer></script><link rel="stylesheet" href="/site.css"></head>
+{robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title>
+<link rel="stylesheet" href="/site.css"><link rel="expect" href="#main" blocking="render">
+<script src="/theme.js"></script><script src="/account-session.js" defer></script>{scripts}</head>
 <body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
 <main id="main" tabindex="-1" class="{page_class}">{page_heading}{body}</main>
 {footer_markup()}
@@ -199,7 +211,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
   <p id="cookie-status" role="status"></p>
 </section>
 {'<dialog id="first-order-promo" aria-labelledby="promo-heading"><h2 id="promo-heading">10% на первый заказ</h2><p>Зарегистрируйтесь и получите скидку на первую покупку.</p><p>' + link("offers/", "Посмотреть условия") + '</p><form method="dialog"><button>Закрыть</button></form></dialog>' if path.rstrip("/") == "catalog" or path.startswith("catalog/product/") else ""}
-<script src="/analytics.js" defer></script>{cart_script}<script src="/cookie-settings.js" defer></script><script src="/catalog-live.js" defer></script></body></html>""".replace('src="/cart.js"', f'src="/cart.js?catalog={CATALOG_REVISION}&amp;orders=3"')
+<script src="/analytics.js" defer></script><script src="/cookie-settings.js" defer></script><script src="/catalog-live.js" defer></script></body></html>""".replace('src="/cart.js"', f'src="/cart.js?catalog={CATALOG_REVISION}&amp;orders=3"')
         .replace('src="/search.js"', f'src="/search.js?catalog={CATALOG_REVISION}"')
         .replace('src="/ai-preview.js"', f'src="/ai-preview.js?catalog={CATALOG_REVISION}"')
         .replace('src="/support.js"', f'src="/support.js?catalog={CATALOG_REVISION}"'), encoding="utf-8")

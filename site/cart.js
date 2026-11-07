@@ -125,7 +125,7 @@ function changeQuantity(id, quantity, focus) {
     renderCart();
     const row = items.querySelector(`[data-cart-row="${CSS.escape(id)}"]`);
     const target = row.querySelector(focus);
-    (target && !target.disabled ? target : row.querySelector("input")).focus();
+    (target && !target.disabled ? target : row.querySelector("input")).focus({preventScroll:true});
     cartMessage("");
   } catch { cartMessage("Не удалось изменить количество."); }
 }
@@ -276,7 +276,22 @@ function accountCheckout(){
 document.querySelector('#discount-mode')?.addEventListener('change',event=>{event.target.dataset.chosen='true';updatePromoTotal();});
 document.addEventListener('lusar-account-change',accountCheckout);
 document.addEventListener('lusar-account-error',event=>{if(items)cartMessage(event.detail);});
-window.lusarAccount?.ready.then(accountCheckout);
+accountCheckout();
+
+const shoppingReady = document.querySelector("#shopping-ready");
+if (shoppingReady) {
+  const loading = document.querySelector("#shopping-loading");
+  loading.hidden = false;
+  function reveal() {
+    loading.hidden = true;
+    shoppingReady.hidden = false;
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.lusarAccount?.value.loading) document.addEventListener("lusar-account-change", reveal, {once:true});
+    else reveal();
+  }, {once:true});
+}
+
 let request;
 checkout?.addEventListener("submit", async event => {
   event.preventDefault();
@@ -293,7 +308,8 @@ checkout?.addEventListener("submit", async event => {
   const payload = {...fields, cart:{...cart}, displayedPrices, numberFormat:"short"};
   const signature = JSON.stringify(payload);
   if (request?.signature !== signature) request = {signature, id:crypto.randomUUID()};
-  submitting = true; checkout.setAttribute("aria-busy", "true"); status.textContent = "Отправляем заявку…";
+  submitting = true; checkout.setAttribute("aria-busy", "true");
+  status.classList.add("visually-hidden"); status.textContent = "Отправляем заявку…";
   const controls = [...document.querySelectorAll("#checkout input, #cart-items button, #cart-items input, #order-promo, #discount-mode, #checkout-submit")].map(control => [control,control.disabled]);
   for (const [control] of controls) control.disabled = true;
   submit.textContent = "Отправляем заявку…";
@@ -302,14 +318,6 @@ checkout?.addEventListener("submit", async event => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Не удалось отправить заявку. Попробуйте ещё раз.");
     if (!/^LS-(?:[0-9]{6}|[A-F0-9]{12})$/.test(result.number)) throw new Error("Не удалось отправить заявку. Попробуйте ещё раз.");
-    document.querySelector("#order-flow").hidden = true;
-    document.querySelector("#checkout-success").hidden = false;
-    document.querySelector("#checkout-success-number").textContent = `Заявка №${result.number} получена.`;
-    status.textContent = "";
-    const trackingLink = document.querySelector("#order-status-link");
-    if (typeof result.trackingToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(result.trackingToken)) {
-      trackingLink.href = "/order-status#" + new URLSearchParams({number:result.number,key:result.trackingToken}); trackingLink.hidden = false;
-    }
     // Leave items added in another tab while this request was in flight.
     const remaining = readCart();
     for (const [id,count] of Object.entries(payload.cart)) {
@@ -324,9 +332,19 @@ checkout?.addEventListener("submit", async event => {
       location.replace("/checkout/received");
     } catch {
       if (response.status === 201) window.lusarAnalytics?.submitted();
+      document.querySelector("#order-flow").hidden = true;
+      document.querySelector("#checkout-success").hidden = false;
+      document.querySelector("#checkout-success-number").textContent = `Заявка №${result.number} получена.`;
+      status.textContent = "";
+      const trackingLink = document.querySelector("#order-status-link");
+      if (typeof result.trackingToken === "string" && /^[A-Za-z0-9_-]{43}$/.test(result.trackingToken)) {
+        trackingLink.href = "/order-status#" + new URLSearchParams({number:result.number,key:result.trackingToken});
+        trackingLink.hidden = false;
+      }
       const heading = document.querySelector("#checkout-success h2"); heading.tabIndex = -1; heading.focus();
     }
   } catch (error) {
+    status.classList.remove("visually-hidden");
     status.textContent = error instanceof TypeError ? "Не удалось отправить заявку. Попробуйте ещё раз." : error.message;
     submitting = false; checkout.removeAttribute("aria-busy");
     for (const [control,disabled] of controls) control.disabled = disabled;
