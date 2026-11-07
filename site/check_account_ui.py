@@ -19,6 +19,7 @@ const require=(value,message)=>{if(!value)throw Error(message);};
 const tick=()=>new Promise(resolve=>setTimeout(resolve,40));
 async function until(predicate,attempts=150){for(let i=0;i<attempts;i++){if(predicate())return;await tick();}throw Error('Timed out: '+predicate);}
 async function open(path){await new Promise(resolve=>{frame.onload=resolve;frame.src=path;});const page=frame.contentDocument;await frame.contentWindow.lusarAccount?.ready;await tick();return page;}
+async function follow(link){await new Promise(resolve=>{frame.onload=resolve;link.click();});const page=frame.contentDocument;await frame.contentWindow.lusarAccount.ready;return page;}
 function layout(page){require(page.documentElement.scrollWidth<=page.documentElement.clientWidth+1,'Overflow: '+page.location.pathname+' '+frame.style.width+' '+page.documentElement.lang);}
 async function sizes(page){for(const width of [320,390,1440]){frame.style.width=width+'px';await tick();for(const lang of ['ru','hy','en']){const picker=page.querySelector('#language');picker.value=lang;picker.dispatchEvent(new frame.contentWindow.Event('change'));await tick();layout(page);page.querySelector('#theme-toggle').click();layout(page);}}frame.style.width='390px';}
 async function staffSizes(page){for(const width of [320,390,720,1024,1440]){frame.style.width=width+'px';await tick();layout(page);page.querySelector('#theme-toggle').click();layout(page);page.querySelector('#theme-toggle').click();}frame.style.width='390px';}
@@ -26,6 +27,7 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
 (async()=>{try{
  localStorage.clear();sessionStorage.clear();localStorage.setItem('lusar-cookie-choice-v1','essential');
  localStorage.setItem('lusar-cart',JSON.stringify({[ITEM.id]:1}));localStorage.setItem('lusar-favorites',JSON.stringify([ITEM.id]));
+ let guestBag=await open('/cart');require(guestBag.querySelector('.account-nav').hidden,'Guest bag exposes the account menu');
  let page=await open('/account');require(!page.querySelector('#account-guest').hidden,'Guest gate missing');await sizes(page);
  page=await open('/auth/start');await until(()=>!page.querySelector('#account-member').hidden);
  require(page.querySelector('#account-guest').hidden,'Guest gate visible after login');
@@ -49,6 +51,19 @@ async function submit(form,button){await new Promise(resolve=>{frame.onload=reso
  require(page.querySelector('.account-nav')===sidebar,'Back replaced the account navigation');
  page=await open('/account/addresses');
  require(page.querySelector('#account-profile-form')&&page.querySelector('#account-address-editor').open,'Legacy address link lost the address section');
+ frame.style.width='1440px';await tick();
+ const profileBounds=page.querySelector('#account-profile-form').getBoundingClientRect();
+ const addressBounds=page.querySelector('#saved-addresses').getBoundingClientRect();
+ require(profileBounds.top===addressBounds.top&&profileBounds.bottom===addressBounds.bottom&&Math.abs(profileBounds.width-addressBounds.width)<1,'Profile cards do not align');
+ page=await follow(page.querySelector('.account-nav a[href="/cart"]'));
+ require(!page.querySelector('.account-nav').hidden&&page.querySelector('.account-nav [aria-current="page"]').pathname==='/cart','Signed-in bag lost the account navigation');
+ await sizes(page);
+ page=await follow(page.querySelector('.account-nav a[href="/favorites"]'));
+ require(page.querySelector('.account-nav [aria-current="page"]').pathname==='/favorites','Wishlist lost the account navigation');
+ require(page.querySelectorAll('.wishlist-toolbar a[href="/cart"]').length===1&&page.querySelector('.wishlist-remove svg'),'Wishlist actions are duplicated or missing');
+ await sizes(page);
+ page=await follow(page.querySelector('.account-nav a[href="/account/settings"]'));
+ require(page.querySelector('#account-profile-form'),'Cannot return from shopping to the profile');
  page=await open('/checkout');form=page.querySelector('#checkout');
  require(form.elements.name.value==='Browser customer'&&form.elements.address.value==='Yerevan, Test address','Checkout autofill failed');
  require(!page.querySelector('#account-checkout-benefits').hidden,'Discount chooser missing');

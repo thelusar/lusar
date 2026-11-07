@@ -1,0 +1,17 @@
+<aside class="account-nav" hidden>
+  <div class="account-identity"><span id="account-avatar" class="account-avatar" aria-hidden="true"></span>
+    <div><strong id="account-nav-name" data-locale-source></strong><p id="account-nav-email" data-locale-source></p></div>
+  </div>
+  <nav aria-label="Разделы личного кабинета">
+    <a href="/account" data-account-tab="overview">{{icon:overview}}<span>Обзор</span></a>
+    <a href="/account/orders" data-account-tab="orders">{{icon:orders}}<span>Мои заказы</span></a>
+    <a href="/account/loyalty" data-account-tab="loyalty">{{icon:spark}}<span>Мои скидки</span></a>
+    <a href="/account/settings" data-account-tab="settings">{{icon:account}}<span>Профиль</span></a>
+  </nav>
+  <div class="account-utilities">
+    <a href="/cart" data-shopping-tab>{{icon:cart}}<span>Корзина</span></a>
+    <a href="/favorites" data-shopping-tab>{{icon:favorites}}<span>Избранное</span></a>
+    <button type="button" data-account-logout class="text-button">{{icon:logout}}<span>Выйти</span></button>
+  </div>
+  <p class="account-nav-status" role="status" tabindex="-1"></p>
+</aside>

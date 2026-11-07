@@ -57,7 +57,9 @@ for item in data["products"]:
             product_brand_ids[item["id"]] = brand_id
             brands.setdefault(brand_id, {"name": brand_registry[brand_id]["name"], "products": []})["products"].append(item)
 
-def link(path, title):
+def link(path, title, *, direction=False):
+    if direction:
+        return f'<a class="direction-link" href="/{path.strip("/")}">{html.escape(title)}{nav_icon("forward")}</a>'
     return f'<a href="/{path.strip("/")}">{html.escape(title)}</a>'
 
 NAV_ICONS = {
@@ -75,6 +77,10 @@ NAV_ICONS = {
     "pin": '<path d="M19 10c0 5-7 10-7 10s-7-5-7-10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/>',
     "logout": '<path d="M11 4H5v16h6m2-12 4 4-4 4m-4-4h8"/>',
     "check": '<path d="m5 12 4 4 10-10"/>',
+    "back": '<path d="M19 12H5m6-6-6 6 6 6"/>',
+    "forward": '<path d="M5 12h14m-6-6 6 6-6 6"/>',
+    "chevron": '<path d="m7 10 5 5 5-5"/>',
+    "close": '<path d="m6 6 12 12M18 6 6 18"/>',
 }
 
 
@@ -90,7 +96,7 @@ def nav_dropdown(title, items, path, overview):
             '<path d="m2 4 4 4 4-4" fill="none" stroke="currentColor"/></svg></summary>'
             '<div class="nav-panel"><ul>' +
             "".join(f"<li>{link(url, label)}</li>" for url, label in items) +
-            f'</ul><p>{link(path, overview)}</p></div></details>')
+            f'</ul><p>{link(path, overview, direction=True)}</p></div></details>')
 
 
 def wordmark():
@@ -112,8 +118,8 @@ def header_markup():
     return ('<header class="site-header"><div class="header-inner">'
             + wordmark() +
             '<nav class="main-nav" id="main-nav" aria-label="Основная навигация">' +
-            nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог →") +
-            nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты →") + link("ai", "Lusar AI") +
+            nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог") +
+            nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты") + link("ai", "Lusar AI") +
             link("contacts", "Контакты") +
             '<a class="mobile-shortcut" href="/favorites">' + nav_icon("favorites") + '<span>Избранное</span></a>' +
             '<a class="mobile-shortcut" href="/account">' + nav_icon("account") + '<span>Личный кабинет</span></a>' +
@@ -277,7 +283,7 @@ def product_grid(items, *, filters=True):
                    + nav_icon("cart") + '</button></div>') if filters else ""
         cards.append(
             f'<li {attrs}><a href="/{product_path(item).strip("/")}">'
-            f'<span class="product-thumb">{photo}<span class="card-arrow" aria-hidden="true">↗</span></span>'
+            f'<span class="product-thumb">{photo}<span class="card-arrow">{nav_icon("forward")}</span></span>'
             f'<span class="tile-name" data-locale-source>{html.escape(item["name"])}</span>'
             f'<span class="tile-meta"><span class="tile-sku">{html.escape(item["sku"])}</span>'
             f'<span class="tile-price">{html.escape(display_price(item))}</span></span></a>{actions}</li>'
@@ -347,7 +353,7 @@ def category_cards(keys, *, eager=False):
         label = html.escape(short_names.get(key, category["name"]))
         cards.append(
             f'<li><a href="/{category_path(key).strip("/")}"><span class="category-photo">{photo}</span>'
-            f'<span class="category-label">{label}<span aria-hidden="true">↗</span></span></a></li>'
+            f'<span class="category-label">{label}{nav_icon("forward")}</span></a></li>'
         )
     return '<ul class="category-cards">' + "".join(cards) + '</ul>'
 
@@ -361,7 +367,7 @@ write("", "Свет для жизни", """
 <div class="hero-copy">
   <h1 id="home-title">Свет для жизни</h1>
   <p class="lead">Светильники для дома и проектов.</p>
-  <div class="hero-actions"><a class="button-link" href="/catalog">Открыть каталог <span aria-hidden="true">↗</span></a>
+  <div class="hero-actions"><a class="button-link" href="/catalog">Открыть каталог</a>
   <a href="/ai">Примерить с Lusar AI</a></div>
 </div>
 <figure class="light-scene">
@@ -379,22 +385,22 @@ write("", "Свет для жизни", """
 </section>
 <script src="/scenes.js" defer></script>
 """ + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
-      link("rooms", "По комнатам →") + '</div>' +
+      link("rooms", "По комнатам", direction=True) + '</div>' +
       category_cards(home_categories) +
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +
-      link("catalog", "Все светильники →") + '</div>' +
+      link("catalog", "Все светильники", direction=True) + '</div>' +
       product_grid(featured_products or data["products"][:4], filters=False) + '</section>' +
       '<section class="home-rooms"><div class="section-heading"><h2>Свет по комнатам</h2>' +
-      link("rooms", "Все комнаты →") + '</div><ul>' +
+      link("rooms", "Все комнаты", direction=True) + '</div><ul>' +
       "".join(f'<li><a href="/rooms/{key}"><span class="room-number" aria-hidden="true">{index:02}</span>'
-              f'<span>{html.escape(name)}</span><span aria-hidden="true">↗</span></a></li>'
+              f'<span>{html.escape(name)}</span>{nav_icon("forward")}</a></li>'
               for index, (key, (name, *_)) in enumerate(ROOMS.items(), 1)) +
       '</ul></section><section class="home-ai"><div class="home-ai-photo">'
       '<img src="/scenes/ai-interior.jpg" alt="" width="1536" height="1024" loading="lazy" decoding="async">'
       '<span class="image-caption">Пример интерьера</span></div><div class="home-ai-copy">'
       '<span class="eyebrow">' + nav_icon("spark") + ' Lusar AI</span><h2>Ваш интерьер. Новый свет.</h2>'
       '<p>Загрузите фото комнаты и примерьте светильники из каталога.</p>'
-      '<a class="button-link" href="/ai">Начать примерку <span aria-hidden="true">↗</span></a>'
+      '<a class="button-link" href="/ai">Начать примерку</a>'
       '</div></section>',
       description="Светильники LUSAR для дома и проектов. Каталог освещения и примерка светильников в вашем интерьере с Lusar AI.")
 write("catalog", "Каталог освещения",
@@ -427,15 +433,15 @@ for item in data["products"]:
             f'<section class="product-gallery" aria-label="Фотографии товара">'
             f'<a class="product-photo" id="product-photo-link" href="{first_url}" aria-label="Увеличить фото">'
             f'<img id="product-photo" src="{first_url}" alt="{name}" fetchpriority="high"></a>'
-            '<div class="gallery-navigation" hidden><button type="button" data-gallery-step="-1" aria-label="Предыдущее фото">←</button>'
+            f'<div class="gallery-navigation" hidden><button type="button" data-gallery-step="-1" aria-label="Предыдущее фото">{nav_icon("back")}</button>'
             f'<span id="gallery-counter" aria-live="polite">1 / {len(item["images"])}</span>'
-            '<button type="button" data-gallery-step="1" aria-label="Следующее фото">→</button></div>'
+            f'<button type="button" data-gallery-step="1" aria-label="Следующее фото">{nav_icon("forward")}</button></div>'
             f'<div class="photo-thumbnails">{thumbnails}</div>'
             f'<dialog id="product-photo-dialog" aria-label="Увеличенное фото товара">'
             '<form method="dialog"><button>Закрыть</button></form>'
             f'<img id="product-photo-large" alt="{name}">'
-            '<div class="gallery-modal-navigation" hidden><button type="button" data-gallery-step="-1" aria-label="Предыдущее фото">←</button>'
-            '<span class="gallery-modal-counter"></span><button type="button" data-gallery-step="1" aria-label="Следующее фото">→</button></div>'
+            f'<div class="gallery-modal-navigation" hidden><button type="button" data-gallery-step="-1" aria-label="Предыдущее фото">{nav_icon("back")}</button>'
+            f'<span class="gallery-modal-counter"></span><button type="button" data-gallery-step="1" aria-label="Следующее фото">{nav_icon("forward")}</button></div>'
             '</dialog></section>'
             '<script src="/product-gallery.js" defer></script>'
         )
@@ -466,7 +472,7 @@ for item in data["products"]:
                                      "price": item["price"], "priceCurrency": "AMD"}
     related = [candidate for candidate in data["products"] if candidate["categoryId"] == item["categoryId"] and candidate["id"] != item["id"]][:4]
     related_section = ('<section class="related-products"><div class="section-heading"><h2>В этой категории</h2>' +
-                       link(category_path(item["categoryId"]), "Все модели →") + '</div>' + product_grid(related, filters=False) + '</section>') if related else ""
+                       link(category_path(item["categoryId"]), "Все модели", direction=True) + '</div>' + product_grid(related, filters=False) + '</section>') if related else ""
     write(product_path(item), item["name"],
           f'<nav class="breadcrumbs" aria-label="Навигация по каталогу">{link("catalog", "Каталог")} <span aria-hidden="true">/</span> '
           f'{link(category_path(item["categoryId"]), categories[item["categoryId"]]["name"])}</nav>'
@@ -517,9 +523,9 @@ store_routes = (
 write("contacts", "Контакты LUSAR",
       '<p class="lead">Ждём вас в наших магазинах в Ереване.</p><div class="contact-layout">'
       '<div class="info-cards"><section><span class="eyebrow">01 · LUSAR</span><h2>Аршакуняц</h2>'
-      f'<address>{store_address}</address><p>Ярмарка «Еранкюни»</p>{link(store_path, "Как добраться →")}</section>'
+      f'<address>{store_address}</address><p>Ярмарка «Еранкюни»</p>{link(store_path, "Как добраться", direction=True)}</section>'
       '<section><span class="eyebrow">02 · LUSAR</span><h2>Смбата Зоравара</h2>'
-      f'<address>{d50_address}</address><p>Павильон D50</p>{link(d50_path, "Как добраться →")}</section></div>'
+      f'<address>{d50_address}</address><p>Павильон D50</p>{link(d50_path, "Как добраться", direction=True)}</section></div>'
       '<aside class="contact-aside"><p class="eyebrow">На связи</p>' + store_phone +
       f'<p>Ежедневно · {SERVICE_HOURS}</p><p>{link("order-status", "Проверить статус заявки")}</p></aside></div>')
 write("stores", "Магазины LUSAR", listing([(store_path, store_address), (d50_path, d50_address + ", павильон D50")]))
@@ -548,7 +554,7 @@ FAQ = [
 ]
 write("faq", "Частые вопросы",
       '<div class="faq-layout"><aside><p class="lead">Поможем с заказом и выбором света.</p>' +
-      link("support", "Задать вопрос →") + '</aside><div class="faq-list">' +
+      link("support", "Задать вопрос", direction=True) + '</aside><div class="faq-list">' +
       "".join(f'<details><summary>{html.escape(question)}</summary><p>{html.escape(answer)}</p></details>'
               for question, answer in FAQ) + '</div></div><p>' +
       link("payment", "Подробнее об оплате") + ' · ' + link("support", "Поддержка") + '</p>')
@@ -609,10 +615,21 @@ ACCOUNT_VIEWS = {"account": ("Личный кабинет", "overview"), "accoun
                  "account/addresses": ("Профиль", "settings"), "account/loyalty": ("Мои скидки", "loyalty"),
                  "account/settings": ("Профиль", "settings"), "account/sign-in": ("Вход в LUSAR", "sign-in"),
                  "account/register": ("Регистрация", "register"), "account/recovery": ("Восстановление доступа", "recovery")}
+def customer_icons(markup):
+    return re.sub(r"{{icon:([a-z]+)}}", lambda match: nav_icon(match[1]), markup)
+
+
+account_nav = customer_icons((ROOT / "account-nav.html").read_text(encoding="utf-8"))
+account_nav += '<script src="/account-nav.js" defer></script>'
+account_page = (ROOT / "account-page.html").read_text(encoding="utf-8")
 for account_path, (account_title, account_view) in ACCOUNT_VIEWS.items():
-    account_body = (ROOT / "account-page.html").read_text(encoding="utf-8").replace("{{title}}", html.escape(account_title)).replace("{{view}}", account_view)
-    account_body = re.sub(r"{{icon:([a-z]+)}}", lambda match: nav_icon(match[1]), account_body)
+    account_body = customer_icons(account_page.replace("{{title}}", html.escape(account_title))
+                                  .replace("{{view}}", account_view).replace("{{account_nav}}", account_nav))
     write(account_path, account_title, account_body, draft=True)
+
+
+def shopping_workspace(body):
+    return f'<div class="shopping-workspace">{account_nav}<div class="shopping-content">{body}</div></div>'
 
 
 def order_steps(current):
@@ -627,8 +644,8 @@ def order_steps(current):
 
 def order_summary(checkout=False):
     promo_form = ' form="checkout"' if checkout else ''
-    action = ('<button id="checkout-submit" class="primary-action" type="submit" form="checkout">Отправить заявку <span aria-hidden="true">↗</span></button>'
-              if checkout else '<p id="checkout-link" hidden><a class="button-link" href="/checkout">К оформлению <span aria-hidden="true">→</span></a></p>')
+    action = ('<button id="checkout-submit" class="primary-action" type="submit" form="checkout">Отправить заявку</button>'
+              if checkout else f'<p id="checkout-link" hidden><a class="button-link" href="/checkout">К оформлению {nav_icon("forward")}</a></p>')
     return ('<aside id="order-summary" class="order-summary" aria-labelledby="order-summary-heading">'
             '<h2 id="order-summary-heading">' + nav_icon("cart") + 'Ваш заказ</h2><dl class="order-totals">'
             '<div><dt>Товары</dt><dd id="order-subtotal">—</dd></div>'
@@ -651,27 +668,28 @@ def order_summary(checkout=False):
 
 
 def empty_bag():
-    return ('<section id="cart-empty" class="cart-empty" hidden><div class="empty-state-copy">'
-            '<h2>Корзина пока пуста</h2><p>Вернитесь к выбору света или откройте сохранённые модели.</p>'
-            '<div class="empty-state-actions"><a class="button-link" href="/catalog" data-continue-shopping>Продолжить покупки <span aria-hidden="true">→</span></a>'
-            '<a class="cart-continue" href="/favorites">Избранное →</a></div></div>'
-            '<div class="empty-state-orbit" aria-hidden="true"><span>' + nav_icon("cart") + '</span></div></section>')
+    return ('<section id="cart-empty" class="cart-empty" hidden>'
+            f'<span class="empty-state-icon">{nav_icon("cart")}</span><div class="empty-state-copy">'
+            '<h2>Пока нет товаров</h2><p>Вернитесь к выбору света или откройте сохранённые модели.</p>'
+            '<div class="empty-state-actions"><a class="button-link" href="/catalog" data-continue-shopping>Продолжить покупки</a>'
+            '<a class="cart-continue" href="/favorites">Избранное</a></div></div></section>')
 
 
-write("cart", "Корзина", '<div class="order-page-heading"><h1>Корзина</h1><p id="cart-count"></p>'
+write("cart", "Корзина", shopping_workspace('<div class="order-page-heading"><h1>Корзина</h1><p id="cart-count"></p>'
       '<div class="order-flow-links cart-return-links">'
-      '<a class="cart-continue" href="/catalog" data-continue-shopping>← Продолжить покупки</a>'
-      '<a class="cart-continue" href="/favorites">Избранное →</a></div></div>' + order_steps(1) +
+      f'<a class="cart-continue direction-link" href="/catalog" data-continue-shopping>{nav_icon("back")}Продолжить покупки</a>'
+      '<a class="cart-continue" href="/favorites">Избранное</a></div></div>' + order_steps(1) +
       '<div class="order-flow-layout" id="order-flow"><section class="cart-content" aria-label="Товары в корзине">'
-      '<div id="cart-items"></div><p id="cart-message" role="status"></p></section>' + order_summary() + '</div>' + empty_bag(), draft=True)
-write("favorites", "Избранное", '<div class="order-page-heading"><h1>Избранное</h1>'
-      '<a class="cart-continue" href="/cart">Перейти в корзину →</a></div>'
-      '<ul id="favorite-items" class="wishlist-grid" aria-label="Избранное"></ul><p id="favorite-status" role="status"></p>'
-      '<p id="cart-status" role="status"></p><p id="cart-next" hidden><a href="/cart">Перейти в корзину →</a></p>'
-      '<section id="wishlist-empty" class="cart-empty" hidden><div class="empty-state-copy">'
-      '<h2>В избранном пока нет товаров.</h2><p>Сохраняйте светильники, к которым хотите вернуться.</p>'
-      '<div class="empty-state-actions"><a class="button-link" href="/catalog">Открыть каталог ↗</a></div></div>'
-      '<div class="empty-state-orbit" aria-hidden="true"><span>' + nav_icon("favorites") + '</span></div></section>', draft=True)
+      '<div id="cart-items"></div><p id="cart-message" role="status"></p></section>' + order_summary() + '</div>' + empty_bag()), draft=True)
+write("favorites", "Избранное", shopping_workspace('<div class="order-page-heading wishlist-toolbar"><h1>Избранное</h1>'
+      f'<a class="button-link wishlist-cart-link" id="cart-next" href="/cart">{nav_icon("cart")}Перейти в корзину</a></div>'
+      '<p id="favorite-status" role="status"></p><p id="cart-status" role="status"></p>'
+      '<ul id="favorite-items" class="wishlist-grid" aria-label="Избранное"></ul>'
+      f'<template id="wishlist-remove-icon">{nav_icon("close")}</template>'
+      '<section id="wishlist-empty" class="cart-empty" hidden>'
+      f'<span class="empty-state-icon">{nav_icon("favorites")}</span><div class="empty-state-copy">'
+      '<h2>Пока нет сохранённых товаров</h2><p>Сохраняйте светильники, к которым хотите вернуться.</p>'
+      '<div class="empty-state-actions"><a class="button-link" href="/catalog">Открыть каталог</a></div></div></section>'), draft=True)
 write("compare", "Сравнение светильников", '<p id="compare-status" role="status"></p>'
       '<div id="compare-table" class="comparison-scroll" role="region" aria-label="Таблица сравнения" tabindex="0"></div>'
       '<p>' + link("catalog", "Открыть каталог") + '</p>', draft=True)
@@ -716,7 +734,7 @@ write("checkout/received", "Подтверждение заявки", '<div id="
   <p>Менеджер свяжется с вами, чтобы подтвердить наличие, итоговую сумму и способ получения.</p>
   <div class="receipt-contact"><p><span>На связи</span> · <span class="receipt-hours">{SERVICE_HOURS}</span></p>{store_phone}</div>
   <p class="receipt-note">При звонке назовите номер заявки.</p>
-  <p><a id="receipt-tracking" class="button-link" hidden>Проверить статус заявки <span aria-hidden="true">↗</span></a></p>
+  <p><a id="receipt-tracking" class="button-link" hidden>Проверить статус заявки</a></p>
 </div>
 <div class="receipt-links"><a href="/catalog">Вернуться в каталог</a><a href="/contacts">Контакты</a></div>
 </section>
@@ -769,6 +787,7 @@ for asset in ("staff.css", "staff.js"):
 (OUT / "catalog-live.js").write_bytes((ROOT / "catalog-live.js").read_bytes())
 (OUT / "account-session.js").write_bytes((ROOT / "account-session.js").read_bytes())
 (OUT / "account-page.js").write_bytes((ROOT / "account-page.js").read_bytes())
+(OUT / "account-nav.js").write_bytes((ROOT / "account-nav.js").read_bytes())
 (OUT / "favicon.svg").write_bytes((ROOT / "favicon.svg").read_bytes())
 (OUT / "order-status.js").write_bytes((ROOT / "order-status.js").read_bytes())
 (OUT / "receipt.js").write_bytes((ROOT / "receipt.js").read_bytes())

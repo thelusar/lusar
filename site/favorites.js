@@ -3,6 +3,7 @@ const favoriteButtons = [...document.querySelectorAll("[data-favorite]")];
 const favoriteList = document.querySelector("#favorite-items");
 const favoriteStatus = document.querySelector("#favorite-status");
 const wishlistEmpty = document.querySelector("#wishlist-empty");
+const removeIcon = document.querySelector("#wishlist-remove-icon");
 
 if (favoriteButtons.length || favoriteList) {
   function readFavorites() {
@@ -65,8 +66,11 @@ if (favoriteButtons.length || favoriteList) {
       } else {
         body.append(element("p", "", "Товар сейчас недоступен."));
       }
-      const remove = element("button", "text-button wishlist-remove", "Убрать из избранного");
+      const remove = element("button", "text-button wishlist-remove");
       remove.type = "button";
+      remove.setAttribute("aria-label", "Убрать из избранного");
+      remove.title = "Убрать из избранного";
+      remove.append(removeIcon.content.cloneNode(true));
       if (product) {
         const title = body.querySelector("a");
         title.id = "wishlist-product-" + id;

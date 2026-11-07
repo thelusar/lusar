@@ -6,49 +6,33 @@
     <h1>Войти в LUSAR</h1><p>Заказы, адреса и скидки — в одном месте.</p>
     <p id="account-auth-note" role="status"></p>
     <a class="button-link account-google" data-auth-link href="/auth/start?connection=google"><span aria-hidden="true">G</span>Продолжить с Google</a>
-    <a class="button-link" data-auth-link href="/auth/start">Войти по email <span aria-hidden="true">↗</span></a>
+    <a class="button-link" data-auth-link href="/auth/start">Войти по email</a>
     <div class="account-login-links"><a data-auth-link href="/auth/start?screen=signup">Создать аккаунт</a><a href="/account/recovery">Восстановить доступ</a></div>
     <p id="account-recovery-note" hidden>На странице входа выберите «Не помню пароль» и следуйте инструкции в письме.</p>
     <a href="/catalog">Продолжить без входа</a>
   </div>
 </section>
 <div id="account-member" class="account-layout" hidden>
-  <aside class="account-nav">
-    <div class="account-identity"><span id="account-avatar" class="account-avatar" aria-hidden="true"></span>
-      <div><strong id="account-nav-name" data-locale-source></strong><p id="account-nav-email" data-locale-source></p></div>
-    </div>
-    <nav aria-label="Разделы личного кабинета">
-      <a href="/account" data-account-tab="overview">{{icon:overview}}<span>Обзор</span></a>
-      <a href="/account/orders" data-account-tab="orders">{{icon:orders}}<span>Мои заказы</span></a>
-      <a href="/account/loyalty" data-account-tab="loyalty">{{icon:spark}}<span>Мои скидки</span></a>
-      <a href="/account/settings" data-account-tab="settings">{{icon:account}}<span>Профиль</span></a>
-    </nav>
-    <div class="account-utilities">
-      <a href="/cart">{{icon:cart}}<span>Корзина</span></a>
-      <a href="/favorites">{{icon:favorites}}<span>Избранное</span></a>
-      <button type="button" data-account-logout class="text-button">{{icon:logout}}<span>Выйти</span></button>
-    </div>
-  </aside>
+  {{account_nav}}
   <section class="account-panel" aria-labelledby="account-view-title">
-    <h1 id="account-view-title" tabindex="-1">{{title}}</h1>
+    <h1 id="account-view-title" class="visually-hidden" tabindex="-1">{{title}}</h1>
     <div id="account-content" data-account-view="{{view}}"></div>
   </section>
 </div>
 <p id="account-status" class="account-status" role="status" tabindex="-1"></p>
 <template id="account-overview-template">
   <div class="account-overview-grid">
-    <section class="account-history"><div class="section-heading"><h2>Последние заказы</h2><a href="/account/orders" data-account-tab="orders">Все заказы →</a></div><div id="account-orders"></div></section>
+    <section class="account-history"><div class="section-heading"><h2>Последние заказы</h2><a href="/account/orders" data-account-tab="orders">Все заказы</a></div><div id="account-orders"></div></section>
     <section class="account-benefits">
-      <span class="account-emblem">{{icon:spark}}</span>
-      <h2>Мои скидки</h2>
+      <h2>{{icon:spark}} Программа лояльности</h2>
       <div id="account-stats" class="account-stats"></div>
-      <a href="/account/loyalty" data-account-tab="loyalty">Условия скидок →</a>
+      <a href="/account/loyalty" data-account-tab="loyalty">Условия скидок</a>
     </section>
   </div>
 </template>
 <template id="account-empty-orders-template">
   <div class="account-empty account-empty-orders"><span class="account-emblem">{{icon:orders}}</span>
-    <p>У вас пока нет заказов.</p><a class="button-link" href="/catalog">Открыть каталог ↗</a></div>
+    <p>У вас пока нет заказов.</p><a class="button-link" href="/catalog">Открыть каталог</a></div>
 </template>
 <template id="account-orders-template">
   <div id="account-orders"></div><button id="account-more-orders" type="button" hidden>Показать ещё</button>
@@ -61,13 +45,13 @@
     <label>Телефон <input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
     <label>Email <input name="email" type="email" readonly autocomplete="email"></label>
     <button class="primary-action" type="submit">Сохранить изменения</button>
-    <a class="account-recovery-link" href="/account/recovery">Восстановить доступ →</a>
+    <a class="account-recovery-link" href="/account/recovery">Восстановить доступ</a>
   </form>
   <section id="saved-addresses" class="account-address-panel" aria-labelledby="saved-addresses-title">
   <h2 id="saved-addresses-title">{{icon:pin}} Адреса</h2>
   <div id="account-addresses" class="account-addresses"></div>
   <details id="account-address-editor">
-  <summary><span id="address-form-heading">Добавить адрес</span><span aria-hidden="true">+</span></summary>
+  <summary><span id="address-form-heading">Добавить адрес</span><span class="account-expand-icon" aria-hidden="true">{{icon:chevron}}</span></summary>
   <form id="account-address-form" class="account-form">
     <input type="hidden" name="id">
     <label>Название адреса <input name="label" maxlength="50" placeholder="Например, дом"></label>
@@ -80,6 +64,5 @@
   <section class="account-loyalty-progress"><p id="loyalty-next"></p><progress id="loyalty-progress" max="1" value="0" aria-label="Прогресс скидки"></progress><p>Накопления бессрочные.</p></section>
   <section class="account-first-order"><h2>10% на первый заказ</h2><p id="loyalty-first-order"></p></section>
   <p class="account-form-note">Учитываются выполненные и оплаченные заказы после скидок. При возврате накопления пересчитываются.</p>
-  <a href="/cart">Перейти в корзину →</a>
 </template>
 <script src="/account-page.js" defer></script>

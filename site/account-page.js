@@ -14,15 +14,6 @@
   const element=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;};
   const tell=(text,focus=false)=>{status.textContent=text;if(focus)status.focus();};
   function stat(label,value){const card=element('div');card.append(element('span','',label),element('strong','',value));return card;}
-  function showIdentity(profile){
-    const name=profile.name.trim();
-    const words=(name||profile.email.split('@')[0]).split(/\s+/u);
-    const initials=words.length>1?Array.from(words[0])[0]+Array.from(words.at(-1))[0]:Array.from(words[0]).slice(0,2).join('');
-    document.querySelector('#account-avatar').textContent=initials.toUpperCase();
-    document.querySelector('#account-nav-name').textContent=name||profile.email;
-    const email=document.querySelector('#account-nav-email');
-    email.textContent=profile.email;email.hidden=!name;
-  }
   async function orders(append=false,limit=20){
     const root=content.querySelector('#account-orders');
     const more=content.querySelector('#account-more-orders');
@@ -48,7 +39,7 @@
       const identity=element('span','account-order-id');identity.append(element('strong','',order.number),date);
       const badge=element('span','order-status-badge',labels[order.status]);badge.dataset.status=order.status;
       const amount=money(order.returned?order.remainingTotal:order.total);
-      const marker=element('span','account-order-toggle','+');marker.setAttribute('aria-hidden','true');
+      const marker=element('span','account-order-toggle');marker.setAttribute('aria-hidden','true');
       head.append(identity,badge,element('strong','account-order-price',amount),marker);
       const details=element('div','account-order-body');
       const list=element('ul');
@@ -62,7 +53,7 @@
       if(order.returned)details.append(element('p','account-form-note','Итог после возврата'));
       if(order.paid)details.append(element('p','account-form-note','Оплата отмечена менеджером.'));
       card.append(head,details);
-      card.open=location.hash.slice(1)===order.number||(limit===3&&data.orders.length===1);
+      card.open=location.hash.slice(1)===order.number;
       root.append(card);
     }
     nextOffset=data.nextOffset;
@@ -119,12 +110,11 @@
     if(recovery)return;
     if(!data.authenticated){renderedUser=null;return;}
     const [view,title]=views[location.pathname]||views['/account'];
-    if(renderedUser===data.profile.id&&renderedView===view){showIdentity(data.profile);if(view==='loyalty')showLoyalty();return;}
+    if(renderedUser===data.profile.id&&renderedView===view){if(view==='loyalty')showLoyalty();return;}
     renderedUser=data.profile.id;renderedView=view;
     heading.textContent=title;
     document.title=(window.lusarLocale?.text(title)||title)+' — LUSAR';
     content.replaceChildren(document.querySelector('#account-'+view+'-template').content.cloneNode(true));
-    showIdentity(data.profile);
     for(const link of document.querySelectorAll('.account-nav [data-account-tab]')){
       if(link.dataset.accountTab===view)link.setAttribute('aria-current','page');
       else link.removeAttribute('aria-current');
@@ -164,7 +154,6 @@
     tell('');
     render().catch(problem=>tell(problem.message,true));
   });
-  document.querySelector('[data-account-logout]').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await window.lusarAccount.logout();}catch(problem){tell(problem.message,true);button.disabled=false;}});
   document.addEventListener('lusar-account-change',()=>render().catch(problem=>tell(problem.message,true)));
   document.addEventListener('lusar-account-error',event=>tell(event.detail));
   document.addEventListener('lusar-language-change',()=>{for(const link of document.querySelectorAll('[data-auth-link]')){const url=new URL(link.href);url.searchParams.set('lang',document.documentElement.lang);link.href=url;}});
