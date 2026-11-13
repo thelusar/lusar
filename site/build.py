@@ -129,7 +129,7 @@ def header_markup():
             '<nav class="main-nav" id="main-nav" aria-label="Основная навигация">' +
             link("", "Главная") + nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог") +
             nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты") +
-            '<a class="nav-ai" href="/ai">' + nav_icon("spark") + 'Lusar AI</a>' + link("journal", "Статьи") +
+            '<a class="nav-ai" href="/ai">' + nav_icon("spark") + '<span class="ai-gradient">Lusar AI</span></a>' + link("journal", "Статьи") +
             link("contacts", "Контакты") + link("about", "О нас") + link("offers", "Акции") +
             '<a class="mobile-shortcut" href="/favorites">' + nav_icon("favorites") + '<span>Избранное</span></a>' +
             '<a class="mobile-shortcut" href="/account">' + nav_icon("account") + '<span>Личный кабинет</span></a>' +
@@ -407,7 +407,7 @@ featured_products = [products[1] if len(products) > 1 else products[0]
                      for key in home_categories if (products := products_with_photos.get(key))]
 
 write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding="utf-8")
-      + design.home_service(nav_icon) + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
+      + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
       link("rooms", "По комнатам", direction=True) + '</div>' +
       category_cards(home_categories) +
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +

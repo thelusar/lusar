@@ -63,7 +63,7 @@ f.onload = async () => { try {
  for (let value = 1; value <= 100; value++) input('fixture-brightness', value);
  require(levels()[2] === 1 && !hero.querySelector('[data-scene][aria-pressed="true"]'), 'Rapid adjustments lost state or left a stale preset');
  const samples = [];
- for (const width of [320,390,768,1024,1440,1920]) {
+ for (const width of [320,390,768,1024,1440,1920,2560]) {
   f.width = String(width); await tick();
   for (const [language, expected] of [['ru','Правое бра'],['hy','Աջ պատի լուսատու'],['en','Right wall light']]) {
    const picker = d.querySelector('#language'); picker.value = language; picker.dispatchEvent(new w.Event('change')); await tick();
@@ -78,6 +78,9 @@ f.onload = async () => { try {
     if(width>=1440){
      const copy=hero.querySelector('.hero-copy').getBoundingClientRect(),panel=hero.querySelector('.room-console').getBoundingClientRect();
      require(Math.abs(panel.width-hero.getBoundingClientRect().width)<2,'Bottom control bar must span hero width');
+     for(const pin of hero.querySelectorAll('[data-fixture]')){
+      const r=pin.getBoundingClientRect();require(r.top>=hero.getBoundingClientRect().top && r.bottom<panel.top,'A light hotspot is cropped or hidden by controls at '+width);
+     }
      require(copy.bottom+8<=panel.top,'Glass controls overlap intro at '+width+'/'+language);
      d.querySelector('[data-select-all]').click();
      require(copy.bottom+8<=hero.querySelector('.room-console').getBoundingClientRect().top,'Group controls overlap intro at '+width+'/'+language);
@@ -85,12 +88,19 @@ f.onload = async () => { try {
     }
     const stage = hero.querySelector('.room-stage').getBoundingClientRect();
     require(Math.abs(stage.width / stage.height - 1672/941) < .01, 'Room frame distorted at ' + width);
+    const curtainRect=d.querySelector('.curtain-control').getBoundingClientRect(),consoleRect=d.querySelector('.room-console').getBoundingClientRect();
+    require(curtainRect.bottom+8<=consoleRect.top && curtainRect.top>=hero.getBoundingClientRect().top,'Curtain control is hidden or overlaps bottom controls at '+width+'/'+language);
+    const glass=w.getComputedStyle(d.querySelector('.room-console'));
+    require(glass.borderTopWidth==='0px' && glass.backgroundColor==='rgba(0, 0, 0, 0)','Bottom glass has an opaque surface or border');
     samples.push({width,language,theme});
    }
   }
  }
  require(w.getComputedStyle(layers[0]).transitionDuration === '0s', 'Reduced motion is ignored');
  require(d.querySelector('#scene-image').complete && d.querySelector('#scene-image').naturalWidth === 1672, 'Room image missing');
+ let afterHero=hero.nextElementSibling;while(afterHero?.tagName==='SCRIPT')afterHero=afterHero.nextElementSibling;
+ require(!d.querySelector('.home-service') && afterHero?.classList.contains('home-collection'),'Hero should lead straight to the collection');
+ require(w.getComputedStyle(d.querySelector('.hero-copy .ai-gradient')).backgroundImage.includes('linear-gradient'),'AI colour treatment missing');
  out.textContent = 'PASS:' + JSON.stringify({responsiveStates:samples.length,independentLights:layers.length});
 } catch (error) { out.textContent = 'FAIL:' + error.message; }};
 f.src = '/';
@@ -152,7 +162,7 @@ def main():
                     args.screenshots.mkdir(parents=True, exist_ok=True)
                     for name, width, height, preset, language, opening in [('desktop',1440,1000,'day','ru',100),('day',1440,1000,'morning','ru',100),
                         ('closed',1440,1000,'day','ru',0),('half',1440,1000,'day','ru',50),
-                        ('evening',1440,1000,'evening','ru',100),('mobile',390,1050,'day','ru',100),('mobile-hy',320,1100,'day','hy',50)]:
+                        ('evening',1440,1000,'evening','ru',100),('wide',2560,1440,'day','ru',100),('mobile',390,1050,'day','ru',100),('mobile-hy',320,1100,'day','hy',50)]:
                         subprocess.run(common + ['--user-data-dir=' + temp + '/' + name, '--window-size=' + str(max(width,600)) + ',' + str(height),
                             '--virtual-time-budget=4000', '--screenshot=' + str(args.screenshots / (name + '.png')),
                             origin + f'/hero-screenshot?width={width}&preset={preset}&language={language}&opening={opening}'], capture_output=True, timeout=35, check=True)
