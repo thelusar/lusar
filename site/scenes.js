@@ -7,7 +7,7 @@
   const presets = {morning:{levels:[65,25,25,20,35],temperature:4500},day:{levels:[90,40,40,30,45],temperature:3800},evening:{levels:[35,65,65,45,70],temperature:2700}};
   const keys=Object.keys(fixtures), selected=new Set(['pendant']);
   const $=selector=>hero.querySelector(selector), pins=[...hero.querySelectorAll('[data-fixture]')];
-  const brightness=$('#fixture-brightness'),temperature=$('#fixture-temperature'),power=$('#fixture-power'),globalPower=$('#scene-power');
+  const brightness=$('#fixture-brightness'),temperature=$('#fixture-temperature'),power=$('#fixture-power'),globalPower=$('#scene-power'),curtain=$('#curtain-opening');
   const translate=source=>window.lusarLocale?.text(source)||source;
   let currentPreset='day', savedScene=null;
   function render() {
@@ -34,6 +34,20 @@
     hero.querySelectorAll('[data-scene]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.scene===currentPreset)));
   }
   function announce(text) {$('#scene-caption').textContent=text;}
+  function renderCurtain() {
+    const opening=Number(curtain.value), closed=1-opening/100;
+    const edge=28.2+closed*17.2;
+    // Follow the perspective of the window's top and bottom rails.
+    $('.window-curtain').style.clipPath=`polygon(24.1% 1.9%,${edge}% ${9.4+closed*13.9}%,${edge}% ${82-closed*10.2}%,24.1% 84%)`;
+    $('.window-curtain').style.setProperty('--drape-width',`${4.1+closed*17.2}%`);
+    $('#scene-image').style.filter=`brightness(${.18+.82*opening/100})`;
+    $('#curtain-value').value=opening+'%';
+    curtain.style.setProperty('--fill',opening+'%');
+    curtain.setAttribute('aria-valuetext',opening+'% · '+translate(opening===0?'Закрыта':opening===100?'Полностью открыта':'Открытие шторы'));
+    hero.dataset.curtainOpening=String(opening);
+  }
+  curtain.addEventListener('input',renderCurtain);
+  curtain.addEventListener('change',()=>announce(translate('Штора')+': '+$('#curtain-value').value));
   pins.forEach(pin=>pin.addEventListener('click',()=>{
     const key=pin.dataset.fixture;
     selected.has(key)?selected.delete(key):selected.add(key);
@@ -66,8 +80,8 @@
     render();announce(button.textContent+' · '+preset.temperature+' K');
   }));
   [brightness,temperature].forEach(input=>input.addEventListener('change',()=>announce($('#fixture-name').textContent+': '+$('#brightness-value').value+', '+$('#temperature-value').value)));
-  document.addEventListener('lusar-language-change',render);render();
-  const image=new Image();image.onload=()=>{hero.querySelectorAll('.room-console,.room-hotspots').forEach(item=>item.hidden=false);hero.dataset.interactive='true';};
+  document.addEventListener('lusar-language-change',()=>{render();renderCurtain();});render();renderCurtain();
+  const image=new Image();image.onload=()=>{hero.querySelectorAll('.room-console,.room-hotspots,.curtain-control').forEach(item=>item.hidden=false);hero.dataset.interactive='true';};
   image.onerror=()=>hero.querySelectorAll('.room-light').forEach(item=>item.hidden=true);
   image.src='/scenes/lusar-room-ararat-on.webp';
 })();

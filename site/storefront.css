@@ -3,7 +3,7 @@
 .category-cards .category-photo,.cart-row-photo,.wishlist-photo,.search-results img,.comparison-scroll thead img{background:#fff}
 .category-cards .category-photo img{object-fit:contain}
 .category-cards a:hover .category-photo img,.wishlist-photo:hover img{transform:none}
-.home .light-scene figcaption.room-console{grid-template-columns:1fr;gap:.65rem;padding:1rem 1.15rem;background:rgb(30 33 36 / 54%);border:1px solid #ffffff2b}
+.home .light-scene figcaption.room-console{gap:.65rem;background:rgb(22 25 28 / 64%);border:1px solid #ffffff2b}
 .room-console .light-editor{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.4rem 1rem}
 .home-hero #scene-caption{position:static;width:auto;height:auto;clip-path:none;white-space:normal;overflow:visible}
 .home-hero .pin-label{bottom:auto}
@@ -70,3 +70,24 @@
 .journal-grid li:first-child .journal-card-media{aspect-ratio:auto;min-height:20rem}
 .room-card img,.home-rooms li img,.article-cover img{height:auto}
 @media(max-width:38rem){.journal-grid li:first-child .journal-card-media{aspect-ratio:16/10;min-height:0}}
+
+/* One continuous control bar; the window slider stays on the room itself. */
+.home .light-scene figcaption.room-console{left:0;right:0;bottom:0;width:100%;max-width:none;margin:0;padding:1rem var(--gutter);border-radius:0;border-width:1px 0 0;grid-template-columns:minmax(16rem,1fr) minmax(10rem,.65fr) minmax(26rem,1.65fr);gap:.6rem 2rem;box-shadow:inset 0 1px #ffffff0a,0 -12px 40px #0002}
+.room-console .scene-presets{grid-column:1;grid-row:1;align-self:center}
+.room-console .fixture-choices{grid-column:2;grid-row:1;flex-direction:column;align-items:flex-start;justify-content:center}
+.room-console .light-editor{grid-column:3;grid-row:1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.2rem 1.5rem}
+.room-console .fixture-heading{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+.room-console .light-slider{min-width:0}.room-console .light-slider input{min-width:0;max-width:100%;padding:.725rem 0;border-radius:0}
+.room-console #scene-caption{grid-column:1/3;grid-row:2}
+.room-console .scene-note{grid-column:3;grid-row:2;text-align:right;align-self:center}
+.room-stage #scene-image{will-change:filter}
+.window-curtain{position:absolute;inset:0;z-index:2;pointer-events:none;clip-path:polygon(24.1% 1.9%,28.2% 9.4%,28.2% 82%,24.1% 84%);background:repeating-linear-gradient(90deg,#101213 0,#222527 5px,#35383a 10px,#1b1e20 17px,#0b0d0f 24px,#272a2c 32px);background-size:var(--drape-width,4.1%) 100%;box-shadow:inset 0 0 40px #0008;filter:drop-shadow(8px 3px 6px #0009)}
+.curtain-control{position:absolute;left:29%;top:70%;z-index:4;display:grid;grid-template-columns:1fr auto;gap:.1rem .5rem;width:clamp(8rem,17vw,19rem);padding:.5rem .7rem;border:1px solid #ffffff30;border-radius:.75rem;background:#1216199c;backdrop-filter:blur(20px);color:#f0e9db;font-size:1rem;box-shadow:0 4px 20px #0004}
+.curtain-control output{color:#dfc99e;font-variant-numeric:tabular-nums}
+.curtain-control input{grid-column:1/-1;appearance:none;-webkit-appearance:none;width:100%;min-width:0;height:1.75rem;margin:0;padding:.725rem 0;border:0;border-radius:0;background:linear-gradient(90deg,#dfc99e var(--fill,100%),#ffffff35 var(--fill,100%));background-clip:content-box;cursor:ew-resize;touch-action:pan-y}
+.curtain-control input::-webkit-slider-thumb{appearance:none;width:1.1rem;height:1.1rem;border:3px solid #cfb98d;border-radius:50%;background:#f2e6ce;box-shadow:0 0 0 4px #dfc99e18}
+.curtain-control input::-moz-range-thumb{width:.75rem;height:.75rem;border:3px solid #cfb98d;border-radius:50%;background:#f2e6ce}
+@media(max-width:78rem){.home .light-scene figcaption.room-console{position:relative;inset:auto;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-column:1/-1;gap:.6rem 1.5rem;margin:0}.room-console .scene-presets{grid-column:1;grid-row:1}.room-console .fixture-choices{grid-column:1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between}.room-console .light-editor{grid-column:2;grid-row:1/3}.room-console #scene-caption{grid-column:1;grid-row:3}.room-console .scene-note{grid-column:2;grid-row:3;text-align:left}.home-hero .light-scene{gap:0}}
+@media(max-width:58rem){.home .light-scene figcaption.room-console{grid-template-columns:1fr;gap:.75rem;padding:1rem var(--gutter)}.room-console .scene-presets,.room-console .fixture-choices,.room-console .light-editor,.room-console #scene-caption,.room-console .scene-note{grid-column:1;grid-row:auto}.room-console .light-editor{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.3rem 1rem}.curtain-control{top:68%;padding:.3rem .5rem}.room-console .scene-note{font-size:.75rem}.home-hero .light-scene{padding-bottom:0}}
+@media(prefers-reduced-motion:reduce){.room-stage #scene-image,.window-curtain{transition:none}}
+@media(max-width:38rem){.room-console .light-editor{grid-template-columns:minmax(0,1fr)}}

@@ -27,6 +27,16 @@ f.onload = async () => { try {
  const select = key => { for(const pin of hero.querySelectorAll('[data-fixture][aria-pressed="true"]')) pin.click(); hero.querySelector(`[data-fixture="${key}"]`).click(); };
  const input = (id, value) => { const slider = d.getElementById(id); slider.value = value; slider.dispatchEvent(new w.Event('input', {bubbles: true})); };
  const initial = levels();
+ const curtain=d.getElementById('curtain-opening'),room=d.getElementById('scene-image');
+ require(curtain.value==='100' && hero.dataset.curtainOpening==='100','Curtain must start fully open');
+ const openFilter=room.style.filter, lightBeforeCurtain=JSON.stringify(initial);
+ input('curtain-opening',0);
+ require(hero.dataset.curtainOpening==='0' && room.style.filter!==openFilter,'Closing curtain did not dim daylight');
+ const closedClip=d.querySelector('.window-curtain').style.clipPath;
+ input('curtain-opening',50);
+ require(d.querySelector('.window-curtain').style.clipPath!==closedClip && d.querySelector('#curtain-value').value==='50%','Curtain does not move continuously');
+ require(JSON.stringify(levels())===lightBeforeCurtain,'Curtain changed artificial light settings');
+ input('curtain-opening',100);require(room.style.filter===openFilter,'Reopening did not restore daylight');
  select('right'); input('fixture-brightness', 23);
  require(levels()[2] === .23 && levels().every((value, index) => index === 2 || value === initial[index]), 'Brightness changed an unrelated fixture');
  const filters = layers.map(layer => layer.style.filter);
@@ -63,10 +73,11 @@ f.onload = async () => { try {
     require(d.documentElement.scrollWidth <= w.innerWidth + 1, 'Horizontal overflow at ' + width + '/' + language + '/' + theme);
     for (const element of hero.querySelectorAll('button, input')) {
      const rect = element.getBoundingClientRect();
-     require(rect.width >= 24 && rect.height >= 24 && rect.left >= -1 && rect.right <= w.innerWidth + 1, 'Control outside viewport or too small at ' + width);
+     require(rect.width >= 24 && rect.height >= 24 && rect.left >= -1 && rect.right <= w.innerWidth + 1, 'Control outside viewport or too small at ' + width+': '+element.id+' '+JSON.stringify(rect.toJSON()));
     }
     if(width>=1440){
      const copy=hero.querySelector('.hero-copy').getBoundingClientRect(),panel=hero.querySelector('.room-console').getBoundingClientRect();
+     require(Math.abs(panel.width-hero.getBoundingClientRect().width)<2,'Bottom control bar must span hero width');
      require(copy.bottom+8<=panel.top,'Glass controls overlap intro at '+width+'/'+language);
      d.querySelector('[data-select-all]').click();
      require(copy.bottom+8<=hero.querySelector('.room-console').getBoundingClientRect().top,'Group controls overlap intro at '+width+'/'+language);
@@ -98,6 +109,7 @@ class Handler(serve.Handler):
             params = parse_qs(urlsplit(self.path).query)
             width = int(params.get('width', ['1440'])[0])
             preset = params.get('preset', ['day'])[0]
+            opening = int(params.get('opening', ['100'])[0])
             language = params.get('language', ['ru'])[0]
             # The iframe preserves real narrow viewports despite Edge's minimum window size.
             self.send_html('''<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#080808}iframe{display:block;border:0}</style>
@@ -105,8 +117,8 @@ class Handler(serve.Handler):
 localStorage.setItem('lusar-cookie-choice-v1','essential'); sessionStorage.setItem('lusar-first-order-promo-seen','1');
 localStorage.setItem('lusar-language',LANGUAGE); const f=document.querySelector('iframe');f.onload=()=>{
 const wait=()=>{const b=f.contentDocument.querySelector('[data-scene=PRESET]');
-if(!f.contentDocument.querySelector('.home-hero').dataset.interactive)return setTimeout(wait,50);b.click();};wait();};f.src='/';</script>'''
-                .replace('WIDTH', str(width)).replace('PRESET', preset).replace('LANGUAGE', json.dumps(language)))
+if(!f.contentDocument.querySelector('.home-hero').dataset.interactive)return setTimeout(wait,50);b.click();const s=f.contentDocument.querySelector('#curtain-opening');s.value=OPENING;s.dispatchEvent(new f.contentWindow.Event('input'));};wait();};f.src='/';</script>'''
+                .replace('WIDTH', str(width)).replace('PRESET', preset).replace('LANGUAGE', json.dumps(language)).replace('OPENING',str(opening)))
         else:
             super().do_GET()
 
@@ -138,11 +150,12 @@ def main():
                 print(output)
                 if args.screenshots:
                     args.screenshots.mkdir(parents=True, exist_ok=True)
-                    for name, width, height, preset, language in [('desktop',1440,1000,'day','ru'),('day',1440,1000,'morning','ru'),
-                        ('evening',1440,1000,'evening','ru'),('mobile',390,1050,'day','ru'),('mobile-hy',320,1100,'day','hy')]:
+                    for name, width, height, preset, language, opening in [('desktop',1440,1000,'day','ru',100),('day',1440,1000,'morning','ru',100),
+                        ('closed',1440,1000,'day','ru',0),('half',1440,1000,'day','ru',50),
+                        ('evening',1440,1000,'evening','ru',100),('mobile',390,1050,'day','ru',100),('mobile-hy',320,1100,'day','hy',50)]:
                         subprocess.run(common + ['--user-data-dir=' + temp + '/' + name, '--window-size=' + str(max(width,600)) + ',' + str(height),
                             '--virtual-time-budget=4000', '--screenshot=' + str(args.screenshots / (name + '.png')),
-                            origin + f'/hero-screenshot?width={width}&preset={preset}&language={language}'], capture_output=True, timeout=35, check=True)
+                            origin + f'/hero-screenshot?width={width}&preset={preset}&language={language}&opening={opening}'], capture_output=True, timeout=35, check=True)
                     print('Screenshots:', args.screenshots)
             finally:
                 server.shutdown()
