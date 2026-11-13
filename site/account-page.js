@@ -46,7 +46,6 @@
       for(const item of order.items){
         const row=element('li'), details=element('div'), name=element('span','',item.name);
         name.dataset.localeSource='';details.append(name);
-        if(item.sku)details.append(element('small','','Артикул '+item.sku));
         row.append(details,element('span','account-order-quantity','×'+item.quantity));list.append(row);
       }
       details.append(list);

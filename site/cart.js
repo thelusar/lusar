@@ -154,7 +154,6 @@ function renderCart() {
     if (product) { title.href = product.path; title.dataset.localeSource = ""; }
     heading.append(title); info.append(heading);
     if (product) {
-      info.append(element("p", "cart-row-sku", "Артикул " + product.sku));
       const unit = element("p", "cart-unit-price");
       unit.append(element("span", "", "Цена за штуку"), " · ", element("span", "", product.price === null ? "Цена по запросу" : formatMoney(product.price)));
       info.append(unit);

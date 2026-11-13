@@ -34,6 +34,7 @@ function layout(page) {
     layout(page);
     const total = visible(page).length;
     require(total > 2, "Catalog products missing");
+    require(!page.querySelector(".tile-sku"), "Catalog tiles show an SKU");
     input(page, "q", TEST_SKU);
     require(visible(page).length === 1, "SKU search failed");
     require(new URL(frame.contentWindow.location.href).searchParams.get("q") === TEST_SKU, "Search URL missing");
@@ -74,6 +75,7 @@ function layout(page) {
     require(favorite.getAttribute("aria-pressed") === "true", "Category wishlist action failed");
     layout(page);
     page = await open(TEST_PATH);
+    require(page.querySelector(".product-info .eyebrow").textContent.includes(TEST_SKU), "Product page lost its SKU");
     const gallery = page.querySelector(".product-gallery"), photos = gallery.querySelectorAll("[data-photo]");
     require(photos.length > 1, "Gallery test needs multiple photos");
     gallery.querySelector('[data-gallery-step="1"]').click();
@@ -111,6 +113,9 @@ function layout(page) {
         if (lang === "en") require(page.querySelector("#product-filter-count").textContent.startsWith("Products:"), "Result counter not translated");
       }
     }
+    page = await open("/search?q=" + encodeURIComponent(TEST_SKU));
+    const result = page.querySelector("#search-results a");
+    require(result?.pathname === TEST_PATH && !result.textContent.includes(TEST_SKU), "Site search should find the SKU without displaying it");
     output.textContent = "PASS";
   } catch (error) { output.textContent = "FAIL: " + error.message; }
 })();

@@ -28,7 +28,7 @@
       localStorage.setItem(key, JSON.stringify(selected ? ids.filter(item => item !== id) : [...ids, id]));
       render();
       if (button) status.textContent = selected ? "Товар убран из сравнения." : "Товар добавлен к сравнению.";
-      else (tableRoot.querySelector("button") || tableRoot).focus();
+      else (tableRoot.querySelector("button") || tableRoot).focus({preventScroll: true});
     } catch {
       status.textContent = "Не удалось сохранить список в этом браузере.";
     }
@@ -57,14 +57,26 @@
     for (const id of ids) {
       const heading = cell(head, "th", "", "col");
       const link = document.createElement("a");
-      link.href = products[id].path;
-      link.textContent = products[id].name;
+      const product = products[id];
+      link.href = product.path;
+      link.setAttribute("data-locale-source", "");
+      if (product.image) {
+        const image = document.createElement("img");
+        image.src = product.image;
+        image.alt = "";
+        image.loading = "lazy";
+        image.decoding = "async";
+        image.width = 72;
+        image.height = 72;
+        link.append(image);
+      }
+      link.append(product.name);
       const remove = document.createElement("button");
       remove.type = "button";
       remove.textContent = "Убрать";
-      remove.setAttribute("aria-label", `Убрать из сравнения: ${products[id].name}`);
+      remove.setAttribute("aria-label", `Убрать из сравнения: ${product.name}`);
       remove.addEventListener("click", () => toggle(id));
-      heading.append(link, document.createElement("br"), remove);
+      heading.append(link, remove);
     }
     const body = table.createTBody();
     function row(label, value) {
@@ -74,7 +86,6 @@
     }
     const format = new Intl.NumberFormat("ru-RU");
     row("Цена", item => item.price === null ? "Цена по запросу" : format.format(item.price) + " ֏");
-    row("Артикул", item => item.sku);
     const fields = new Map();
     for (const id of ids) {
       for (const field of products[id].attributes) fields.set(field.key, field.label);

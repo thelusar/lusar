@@ -57,7 +57,6 @@ if (favoriteButtons.length || favoriteList) {
         title.href = product.path;
         title.dataset.localeSource = "";
         body.append(title);
-        if (product.sku) body.append(element("p", "wishlist-sku", "Артикул " + product.sku));
         body.append(element("p", "wishlist-price", product.price === null ? "Цена по запросу" : formatMoney(product.price)));
         const add = element("button", "primary-action", "В корзину");
         add.type = "button";

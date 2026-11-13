@@ -31,15 +31,27 @@ function renderSearch() {
     const item = document.createElement("li");
     const link = document.createElement("a");
     link.href = match.path;
-    link.textContent = match.sku ? `${match.name} · ${match.sku}` : match.name;
-    item.append(link);
-    results.append(item);
-  }
-  if (!matches.length) {
-    const item = document.createElement("li");
-    const link = document.createElement("a");
-    link.href = "/catalog";
-    link.textContent = "Открыть каталог";
+    if (match.image) {
+      const image = document.createElement("img");
+      image.src = match.image;
+      image.alt = "";
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.width = 64;
+      image.height = 64;
+      link.append(image);
+    }
+    const label = document.createElement("span");
+    const name = document.createElement("span");
+    name.textContent = match.name;
+    if (match.price !== undefined) name.setAttribute("data-locale-source", "");
+    label.append(name);
+    if (match.price !== undefined) {
+      const price = document.createElement("small");
+      price.textContent = match.price;
+      label.append(price);
+    }
+    link.append(label);
     item.append(link);
     results.append(item);
   }

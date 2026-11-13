@@ -81,6 +81,14 @@ NAV_ICONS = {
     "forward": '<path d="M5 12h14m-6-6 6 6-6 6"/>',
     "chevron": '<path d="m7 10 5 5 5-5"/>',
     "close": '<path d="m6 6 12 12M18 6 6 18"/>',
+    "phone": '<path d="M8 4H5a1 1 0 0 0-1 1c0 8.3 6.7 15 15 15a1 1 0 0 0 1-1v-3l-4-2-2 2a13 13 0 0 1-6-6l2-2Z"/>',
+    "lamp": '<path d="M12 2v5M8 7h8l4 7H4Zm1 10 1 2m6-2-1 2m-3-2v4"/>',
+    "delivery": '<path d="M3 6h11v11H3Zm11 4h4l3 3v4h-7"/><circle cx="7" cy="17" r="2" fill="var(--surface)"/><circle cx="17" cy="17" r="2" fill="var(--surface)"/>',
+    "sofa": '<path d="M5 12V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4M4 11a2 2 0 0 0-2 2v4h20v-4a2 2 0 0 0-4 0v1H6v-1a2 2 0 0 0-2-2ZM5 17v2m14-2v2"/>',
+    "bed": '<path d="M3 18V6m0 9h18v3m-18-7h16a2 2 0 0 1 2 2v2M6 11V9h4v2"/>',
+    "dining": '<path d="M3 10h18M6 10l-2 9m14-9 2 9M9 10v5h6v-5"/>',
+    "desk": '<path d="M3 13h18M5 13v6m14-6v6M8 13V5h8v5H8m4 0v3"/>',
+    "outdoor": '<path d="m12 3-4 5h2l-4 5h3l-4 5h14l-4-5h3l-4-5h2ZM12 18v3"/>',
 }
 
 
@@ -173,7 +181,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         if attrs:
             analytics = ' data-analytics-enabled="true"' + attrs
     critical_scripts = ["locale.js", "site-nav.js"]
-    for script in ("product-filters.js", "product-gallery.js", "receipt.js?v=3"):
+    for script in ("product-filters.js", "product-gallery.js", "receipt.js?v=3", "search.js"):
         tag = f'<script src="/{script}" defer></script>'
         if tag in body:
             body = body.replace(tag, "")
@@ -193,7 +201,10 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         page_class = "catalog-page category-page"
     if path.startswith("catalog/product/"):
         page_class = "product-page"
-    page_heading = "" if path in {"", "catalog", "ai", "cart", "checkout", "checkout/received", "favorites", "order-status"} or page_class in {"product-page", "account-page"} else f"<h1>{html.escape(title)}</h1>"
+    if page_class in {"content-page", "catalog-page category-page"}:
+        page_heading = f'<header class="page-heading"><h1>{html.escape(title)}</h1></header>'
+    else:
+        page_heading = ""
     target.write_text(f"""<!doctype html>
 <html lang="ru" data-catalog-revision="{CATALOG_REVISION}"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title>
@@ -254,9 +265,20 @@ ROOMS = {
     "outdoors": ("Улица и терраса", "Отдельно продумайте свет у входа, на дорожке и в зоне отдыха. Проверьте, рассчитана ли модель на условия установки.",
                  ("outdoor", "floodlights")),
 }
+ROOM_ICONS = {"living-room": "sofa", "bedroom": "bed", "kitchen": "dining", "workspace": "desk", "outdoors": "outdoor"}
 
 def listing(items):
-    return '<ul class="tiles">' + ''.join(f"<li>{link(path, title)}</li>" for path, title in items) + "</ul>"
+    return '<ul class="page-links">' + ''.join(f'<li>{link(path, title, direction=True)}</li>' for path, title in items) + '</ul>'
+
+
+def information_card(icon, title, body, *, featured=False):
+    style = ' class="info-feature"' if featured else ""
+    return (f'<section{style}><span class="info-icon">{nav_icon(icon)}</span>'
+            f'<h2>{html.escape(title)}</h2>{body}</section>')
+
+
+def info_actions(items):
+    return '<div class="info-actions">' + ''.join(link(path, title, direction=True) for path, title in items) + '</div>'
 
 def category_path(key):
     return "catalog/category/" + quote(key) + "/"
@@ -275,11 +297,12 @@ def product_grid(items, *, filters=True):
     if not items:
         return "<p>В этой категории пока нет опубликованных товаров.</p>"
     cards = []
-    for item in items:
+    for index, item in enumerate(items):
         photo = ""
         if item["images"]:
             url = html.escape(item["images"][min(1, len(item["images"]) - 1)]["url"], quote=True)
-            photo = f'<img loading="lazy" decoding="async" src="{url}" alt="" width="640" height="640">'
+            loading = "eager" if filters and index < 2 else "lazy"
+            photo = f'<img loading="{loading}" decoding="async" src="{url}" alt="" width="640" height="640">'
         attributes = {a["label"]: a["value"].strip() for a in item["attributes"]}
         keywords = " ".join([item["name"], item["sku"], item["brand"], categories[item["categoryId"]]["name"]] +
                             [f'{a["label"]} {a["value"]} {a["unit"]}' for a in item["attributes"]])
@@ -295,10 +318,9 @@ def product_grid(items, *, filters=True):
                    + nav_icon("cart") + '</button></div>') if filters else ""
         cards.append(
             f'<li {attrs}><a href="/{product_path(item).strip("/")}">'
-            f'<span class="product-thumb">{photo}<span class="card-arrow">{nav_icon("forward")}</span></span>'
+            f'<span class="product-thumb">{photo}</span>'
             f'<span class="tile-name" data-locale-source>{html.escape(item["name"])}</span>'
-            f'<span class="tile-meta"><span class="tile-sku">{html.escape(item["sku"])}</span>'
-            f'<span class="tile-price">{html.escape(display_price(item))}</span></span></a>{actions}</li>'
+            f'<span class="tile-price">{html.escape(display_price(item))}</span></a>{actions}</li>'
         )
     grid = '<ul class="tiles product-tiles">' + "".join(cards) + '</ul>'
     if not filters:
@@ -509,109 +531,195 @@ for item in data["products"]:
           description=" ".join(item["description"].split())[:160],
           image=photo_urls[0] if photo_urls else "", structured_data=structured_data)
 
+draft_routes = {
+    "about/founder": (("about", "О LUSAR"), ("stores", "Магазины")),
+    "partners": (("brands", "Бренды"), ("contacts", "Контакты")),
+    "projects": (("rooms", "По комнатам"), ("ai", "Lusar AI")),
+    "professionals": (("contacts", "Контакты"), ("catalog", "Каталог")),
+    "professionals/request": (("contacts", "Контакты"), ("professionals", "Дизайнерам и бизнесу")),
+    "services": (("ai", "Lusar AI"), ("support", "Поддержка")),
+    "selection": (("catalog", "Каталог"), ("rooms", "По комнатам")),
+    "legal/terms": (("payment", "Оплата"), ("support", "Поддержка")),
+    "legal/privacy": (("legal/cookies", "Политика cookie"), ("contacts", "Контакты")),
+    "legal/loyalty": (("offers", "Акции"), ("account/loyalty", "Скидки и промокоды")),
+    "legal/ai": (("ai", "Lusar AI"), ("contacts", "Контакты")),
+    "account/projects": (("account", "Личный кабинет"), ("ai", "Lusar AI")),
+    "account/notifications": (("account", "Личный кабинет"), ("account/orders", "Мои заказы")),
+}
 for path, title in FOOTER + EXTRA:
-    if path in {"ai", "cart", "checkout", "checkout/received", "payment", "sitemap", "account/loyalty", "offers", "search", "favorites", "compare", "brands", "rooms", "order-status", "legal/cookies", "faq", "support", "contacts", "stores", "about"}:
-        continue
-    children = [(p + "/", name) for p, name in EXTRA if p.rpartition("/")[0] == path]
-    write(path, title, '<p>Страница в разработке</p>' + (listing(children) if children else ""), draft=True)
+    if path in draft_routes:
+        write(path, title, '<div class="info-cards">' +
+              information_card("spark", "Страница в разработке", info_actions(draft_routes[path]), featured=True) +
+              '</div>', draft=True)
+
 write("payment", "Оплата", '<p class="lead">Выберите удобный способ оплаты при подтверждении заказа.</p>'
-      '<div class="info-cards"><section><span class="eyebrow">01</span><h2>В магазине</h2>'
-      '<p>После подтверждения заказа менеджером.</p></section><section><span class="eyebrow">02</span>'
-      '<h2>По чеку менеджера</h2><p>Менеджер пришлёт данные для оплаты.</p></section>'
-      '<section><span class="eyebrow">03</span><h2>При получении</h2>'
-      '<p>Способ оплаты согласует менеджер.</p></section></div>')
+      '<div class="info-cards">' +
+      information_card("pin", "В магазине", '<p>После подтверждения заказа менеджером.</p>') +
+      information_card("orders", "По чеку менеджера", '<p>Менеджер пришлёт данные для оплаты.</p>') +
+      information_card("delivery", "При получении", '<p>Способ оплаты согласует менеджер.</p>') + '</div>' +
+      info_actions((("delivery", "Доставка"), ("support", "Задать вопрос"))))
+write("delivery", "Доставка",
+      '<div class="info-cards info-cards-pair">' +
+      information_card("delivery", "Доставка по адресу", '<p>Укажите адрес при оформлении заявки или сообщите его менеджеру. '
+                       'Менеджер уточнит способ получения, сроки и стоимость.</p>', featured=True) +
+      information_card("pin", "Получение в магазине", '<p>Перед поездкой уточните наличие товара у менеджера.</p>' +
+                       info_actions((("stores", "Магазины"),))) +
+      '</div><p class="page-note">Страница в разработке</p>' +
+      info_actions((("payment", "Оплата"), ("support", "Поддержка"))), draft=True)
+write("returns", "Гарантия и возврат",
+      '<div class="info-cards">' +
+      information_card("orders", "Вопрос по заказу",
+                       '<p>Свяжитесь с менеджером и назовите номер заказа. Менеджер подскажет, что делать дальше.</p>' +
+                       info_actions((("support", "Поддержка"), ("account/orders", "Мои заказы"))), featured=True) +
+      '</div><p class="page-note">Страница в разработке</p>', draft=True)
 store_path = "stores/yerevan-arshakunyats"
 store_address = "Ереван, проспект Аршакуняц, 210/1"
 d50_path = "stores/yerevan-smbat-zoravar"
 d50_address = "Ереван, улица Смбата Зоравара, 11/3"
-store_phone = '<a href="tel:+37477123451">+374 77 123451</a>'
-store_source = '<a href="https://www.spyur.am/ru/companies/luys-plus-shop/52299/">Карточка магазина в «Спюре»</a>'
-maps_query = urlencode({"api": 1, "query": store_address})
-yandex_query = urlencode({"text": store_address})
-store_routes = (
-    f'<a href="https://www.google.com/maps/search/?{html.escape(maps_query, quote=True)}">Найти адрес в Google Картах</a> · '
-    f'<a href="https://yandex.com/maps/?{html.escape(yandex_query, quote=True)}">Найти адрес в Яндекс Картах</a>'
+store_phone = '<a class="contact-phone" href="tel:+37477123451">+374 77 123451</a>'
+stores = (
+    (store_path, "Аршакуняц", store_address, "Ярмарка «Еранкюни»",
+     "https://www.spyur.am/ru/companies/luys-plus-shop/52299/", "Карточка магазина в «Спюре»"),
+    (d50_path, "Смбата Зоравара", d50_address, "Павильон D50 · рядом с метро «Сасунци Давид»",
+     "https://2gis.am/ru/yerevan/firm/70000001110752412", "Карточка магазина в 2ГИС"),
+)
+
+
+def map_links(address):
+    google = html.escape(urlencode({"api": 1, "query": address}), quote=True)
+    yandex = html.escape(urlencode({"text": address}), quote=True)
+    return (f'<div class="map-links"><a href="https://www.google.com/maps/search/?{google}">Google Карты</a>'
+            f'<a href="https://yandex.com/maps/?{yandex}">Яндекс Карты</a></div>')
+
+
+contact_details = f'{store_phone}<p><span>Ежедневно</span> · {SERVICE_HOURS}</p>'
+store_cards = "".join(
+    information_card("pin", name, f'<address>{address}</address><p>{hint}</p>' + map_links(address) +
+                     info_actions(((path, "О магазине"),)))
+    for path, name, address, hint, _, _ in stores
 )
 write("contacts", "Контакты LUSAR",
-      '<p class="lead">Ждём вас в наших магазинах в Ереване.</p><div class="contact-layout">'
-      '<div class="info-cards"><section><span class="eyebrow">01 · LUSAR</span><h2>Аршакуняц</h2>'
-      f'<address>{store_address}</address><p>Ярмарка «Еранкюни»</p>{link(store_path, "Как добраться", direction=True)}</section>'
-      '<section><span class="eyebrow">02 · LUSAR</span><h2>Смбата Зоравара</h2>'
-      f'<address>{d50_address}</address><p>Павильон D50</p>{link(d50_path, "Как добраться", direction=True)}</section></div>'
-      '<aside class="contact-aside"><p class="eyebrow">На связи</p>' + store_phone +
-      f'<p>Ежедневно · {SERVICE_HOURS}</p><p>{link("order-status", "Проверить статус заявки")}</p></aside></div>')
-write("stores", "Магазины LUSAR", listing([(store_path, store_address), (d50_path, d50_address + ", павильон D50")]))
-write(store_path, "Магазин LUSAR в Ереване",
-      f'<address>{store_address}. Территория ярмарки «Еранкюни», Шенгавит.</address>'
-      f'<p>Телефон: {store_phone}</p><p>Ежедневно, {SERVICE_HOURS}.</p>'
-      f'<p>{store_routes}</p><p>{store_source}</p>')
-d50_google = html.escape(urlencode({"api": 1, "query": d50_address}), quote=True)
-d50_yandex = html.escape(urlencode({"text": d50_address}), quote=True)
-write(d50_path, "LUSAR на улице Смбата Зоравара",
-      f'<address>{d50_address}, павильон D50. Шенгавит, рядом с метро «Сасунци Давид».</address>'
-      f'<p>Телефон: {store_phone}</p><p>Ежедневно, {SERVICE_HOURS}.</p>'
-      f'<p><a href="https://www.google.com/maps/search/?{d50_google}">Найти адрес в Google Картах</a> · '
-      f'<a href="https://yandex.com/maps/?{d50_yandex}">Найти адрес в Яндекс Картах</a> · '
-      '<a href="https://2gis.am/ru/yerevan/firm/70000001110752412">Карточка магазина в 2ГИС</a></p>')
+      '<div class="info-cards">' +
+      information_card("phone", "На связи", contact_details +
+                       info_actions((("order-status", "Проверить статус заявки"), ("faq", "Частые вопросы"))), featured=True) +
+      store_cards + '</div>',
+      description="Телефон, часы работы и адреса двух магазинов LUSAR в Ереване. Маршруты в Google и Яндекс Картах.")
+write("stores", "Магазины LUSAR", '<div class="info-cards info-cards-pair">' + store_cards + '</div>' +
+      info_actions((("contacts", "Контакты"),)), description="Адреса магазинов освещения LUSAR в Ереване.")
+for path, name, address, hint, source, source_label in stores:
+    write(path, f"LUSAR · {name}",
+          '<div class="info-cards info-cards-pair">' +
+          information_card("pin", "Как добраться", f'<address>{address}</address><p>{hint}</p>' +
+                           map_links(address) + f'<p><a href="{source}">{source_label}</a></p>', featured=True) +
+          information_card("phone", "На связи", contact_details) + '</div>' +
+          info_actions((("stores", "Магазины"), ("contacts", "Контакты"))),
+          description=f"Магазин освещения LUSAR. {address}. {hint}.")
 write("about", "О LUSAR",
-      '<p>LUSAR — новое название LUYS+. В каталоге представлены светильники для дома, интерьера и улицы.</p>'
-      '<p>' + link("about/founder", "David Matevosyan") + ' · ' + link("stores", "Магазины") + '</p>')
+      '<div class="info-cards">' +
+      information_card("spark", "От LUYS+ к LUSAR",
+                       '<p>LUSAR — новое название LUYS+. В каталоге представлены светильники для дома, интерьера и улицы.</p>' +
+                       info_actions((("catalog", "Открыть каталог"),)), featured=True) +
+      information_card("pin", "Магазины в Ереване", info_actions((("stores", "Адреса и маршруты"),))) +
+      information_card("account", "Основатель", info_actions((("about/founder", "David Matevosyan"),))) + '</div>',
+      description="LUSAR, ранее LUYS+. Светильники для дома, интерьера и улицы. Магазины в Ереване.")
 FAQ = [
     ("Можно ли оформить заявку без регистрации?", "Да. Добавьте товары в корзину, укажите имя и телефон. Email и адрес можно оставить пустыми."),
-    ("Что происходит после отправки заявки?", f"Вы получите номер и приватную ссылку для проверки статуса. Менеджер подтвердит наличие, итоговую сумму и способ получения. Часы связи: {SERVICE_HOURS}."),
+    ("Что происходит после отправки заявки?", "Вы получите номер и приватную ссылку для проверки статуса. Менеджер подтвердит наличие, итоговую сумму и способ получения."),
     ("Как оплатить заказ?", "Оплатить можно в магазине, по чеку от менеджера или при получении. Доступный вариант менеджер согласует при подтверждении заказа."),
-    ("Можно ли узнать наличие по сайту?", "Пока наличие уточняет менеджер. При обращении укажите артикул из карточки товара."),
+    ("Можно ли узнать наличие по сайту?", "Пока наличие уточняет менеджер. При обращении укажите артикул со страницы товара."),
     ("Как действует скидка 10% на первый заказ?", "Пока акция активна, она доступна зарегистрированным покупателям без выполненных заказов. Отменённая заявка не лишает права на скидку. Скидка применяется отдельно от промокода и скидки кабинета."),
     ("Почему скидка по промокоду меньше его номинала?", "Промокод уменьшает стоимость товаров максимум на 20%. Например, при заказе на 10 000 ֏ код на 5 000 ֏ даст скидку 2 000 ֏."),
 ]
 write("faq", "Частые вопросы",
       '<div class="faq-layout"><aside><p class="lead">Поможем с заказом и выбором света.</p>' +
-      link("support", "Задать вопрос", direction=True) + '</aside><div class="faq-list">' +
-      "".join(f'<details><summary>{html.escape(question)}</summary><p>{html.escape(answer)}</p></details>'
-              for question, answer in FAQ) + '</div></div><p>' +
-      link("payment", "Подробнее об оплате") + ' · ' + link("support", "Поддержка") + '</p>')
-write("support", "Поддержка и сервис", f"""
-<p id="support-product" hidden>Вопрос по товару <a id="support-product-link"></a></p>
-<p>Если вопрос связан с заказом, сохраните его номер. Если нужна информация о светильнике, укажите артикул.</p>
-<p>Часы связи с менеджером: {SERVICE_HOURS}.</p>
-<p>Позвонить в LUSAR: {store_phone}.</p>
-<p>WhatsApp и Telegram-бот в разработке.</p>
-<script src="/support.js" defer></script>
-""" + '<p>' + link("contacts", "Телефон и адрес") + ' · ' + link("order-status", "Проверить статус заявки") + ' · ' + link("faq", "Частые вопросы") + '</p>', draft=True)
-write("legal/cookies", "Политика cookie", """
-<p>Страница в разработке.</p>
-<p>В текущей сборке настройки темы и языка, корзина и избранное сохраняются в браузере.
-Выбор статистики можно изменить через «Настройки cookie» в подвале.</p>
-""", draft=True)
+      contact_details + link("support", "Задать вопрос", direction=True) + '</aside><div class="faq-list">' +
+      "".join(f'<details><summary>{html.escape(question)}{nav_icon("chevron")}</summary><p>{html.escape(answer)}</p></details>'
+              for question, answer in FAQ) + '</div></div>' +
+      info_actions((("payment", "Подробнее об оплате"),)),
+      description="Ответы на частые вопросы о заказах, способах оплаты, наличии и скидках LUSAR.")
+write("support", "Поддержка и сервис",
+      '<p id="support-product" class="page-note" hidden><span>Вопрос по товару</span> <a id="support-product-link"></a></p>'
+      '<div class="info-cards info-cards-pair">' +
+      information_card("phone", "Позвонить в LUSAR", contact_details +
+                       '<p>По заказу назовите его номер. По товару назовите артикул со страницы товара.</p>', featured=True) +
+      information_card("orders", "Статус заявки", '<p>Откройте приватную ссылку, выданную после оформления заявки.</p>' +
+                       info_actions((("order-status", "Проверить статус заявки"), ("faq", "Частые вопросы")))) +
+      '</div><script src="/support.js" defer></script>',
+      description="Связь с LUSAR по вопросам товаров и заказов. Часы работы, телефон и проверка статуса заявки.")
+write("legal", "Правовая информация",
+      listing([(path, title) for path, title in EXTRA if path.startswith("legal/")]))
+write("legal/cookies", "Политика cookie",
+      '<div class="info-cards info-cards-pair">' +
+      information_card("orders", "Настройки сайта",
+                       '<p>Браузер сохраняет выбранную тему и язык, корзину и избранное.</p>') +
+      information_card("overview", "Статистика",
+                       '<p>Выбор статистики можно изменить через «Настройки cookie» в подвале.</p>') +
+      '</div><p class="page-note">Страница в разработке</p>', draft=True)
 write("ai", "Lusar AI", (ROOT / "ai-page.html").read_text(encoding="utf-8")
       .replace("<!-- spark-icon -->", nav_icon("spark")).replace("<!-- upload-icon -->", nav_icon("upload")) +
       (f'<p class="ai-telegram"><a href="https://t.me/{AI_TELEGRAM_USERNAME}">Открыть Lusar AI в Telegram</a></p>'
        if AI_TELEGRAM_USERNAME else ""), draft=True)
 write("rooms", "Подобрать свет по комнате",
-      "<p>Выберите помещение, чтобы посмотреть идеи по освещению и перейти в подходящие категории.</p>" +
-      listing([(f"rooms/{key}", title) for key, (title, _, _) in ROOMS.items()]))
+      '<p class="lead">Выберите помещение, чтобы посмотреть идеи по освещению и перейти в подходящие категории.</p>' +
+      '<div class="info-cards room-directory">' +
+      "".join(information_card(ROOM_ICONS[key], title, f'<p>{html.escape(tip)}</p>' +
+                               info_actions(((f"rooms/{key}", "Смотреть варианты"),)), featured=index == 0)
+              for index, (key, (title, tip, _)) in enumerate(ROOMS.items())) + '</div>',
+      description="Подбор светильников для гостиной, спальни, кухни, рабочего места и улицы.")
 for key, (title, tip, related) in ROOMS.items():
+    room_categories = [category for category in related if category in categories]
     write(f"rooms/{key}", title,
-          f'<p>{link("rooms", "Все помещения")}</p><p class="lead">{html.escape(tip)}</p><h2>Что посмотреть в каталоге</h2>' +
-          listing([(category_path(category), categories[category]["name"]) for category in related if category in categories]))
+          f'<p class="lead">{html.escape(tip)}</p>' +
+          '<div class="section-heading info-section"><h2>Что посмотреть в каталоге</h2>' +
+          link("rooms", "Все комнаты", direction=True) + '</div>' +
+          category_cards(room_categories) +
+          info_actions((("ai", "Примерить с Lusar AI"), ("journal/guides", "Как выбрать свет"))),
+          description=tip)
+write("journal", "Статьи",
+      '<div class="info-cards">' +
+      information_card("lamp", "Как выбрать свет", '<p>С чего начать подбор освещения для каждой комнаты.</p>' +
+                       info_actions((("journal/guides", "Читать"),)), featured=True) + '</div>',
+      description="Практические советы по выбору освещения для разных помещений.")
+write("journal/guides", "Как выбрать свет",
+      '<div class="info-cards">' +
+      information_card("overview", "Разделите свет по задачам",
+                       '<p>Отметьте, где нужен общий свет, где вы читаете или работаете и какие детали хотите выделить.</p>') +
+      information_card("lamp", "Проверьте размеры",
+                       '<p>Измерьте высоту потолка и расстояние до мебели. Сверьте размеры светильника и длину подвеса.</p>') +
+      information_card("spark", "Посмотрите на свет в интерьере",
+                       '<p>Загрузите фото комнаты в Lusar AI и оцените, как выбранная модель выглядит в вашем пространстве.</p>') +
+      '</div>' + info_actions((("rooms", "Все комнаты"), ("ai", "Примерить с Lusar AI"), ("journal", "Статьи"))),
+      description="Как спланировать освещение, сверить размеры светильника и примерить модель на фотографии комнаты.")
+write("news", "Новости", '<div class="info-cards">' +
+      information_card("spark", "От LUYS+ к LUSAR", '<p>LUSAR — новое название LUYS+.</p>' +
+                       info_actions((("about", "О LUSAR"),)), featured=True) + '</div>',
+      description="Обновления LUSAR и информация о переходе от LUYS+ к LUSAR.")
 write("brands", "Бренды", listing([(brand_path(key), brand["name"]) for key, brand in sorted(brands.items())])
-      if brands else "<p>Страница в разработке</p>", draft=not brands)
+      if brands else '<div class="info-cards">' +
+      information_card("lamp", "Страница в разработке", info_actions((("catalog", "Каталог"),)), featured=True) +
+      '</div>', draft=not brands)
 for key, brand in brands.items():
-    write(brand_path(key), brand["name"], f'<p>{link("brands", "Все бренды")}</p><h2>Товары бренда</h2>' +
-          product_grid(brand["products"]))
+    write(brand_path(key), brand["name"],
+          '<div class="section-heading info-section"><h2>Товары бренда</h2>' + link("brands", "Все бренды", direction=True) +
+          '</div>' + product_grid(brand["products"]), description=f"Светильники {brand['name']} в каталоге LUSAR.")
 write("search", "Поиск по каталогу", """
-<form id="catalog-search" action="/search" role="search">
-  <label>Название, артикул или характеристика <input type="search" name="q" maxlength="120"></label>
-  <button>Найти</button>
+<form id="catalog-search" class="site-search" action="/search" role="search">
+  <label for="site-search-query" class="visually-hidden">Название, артикул или характеристика</label>
+  <input id="site-search-query" type="search" name="q" maxlength="120" placeholder="Название, артикул или характеристика" autocomplete="off">
+  <button class="primary-action">Найти</button>
 </form>
-<p id="search-status" role="status"></p>
-<ul id="search-results" class="tiles"></ul>
+<p id="search-status" class="lead" role="status"></p>
+<ul id="search-results" class="page-links search-results"></ul>
 <script src="/search.js" defer></script>
-""", draft=True)
+""" + info_actions((("catalog", "Открыть каталог"),)), draft=True)
 write("offers", "Акции",
-      "<h2>10% на первый заказ</h2><p>Предложение доступно всем зарегистрированным покупателям без выполненных заказов. "
-      "Если заказ отменён, скидка остаётся доступной. Минимальной суммы нет. "
-      "Скидка применяется отдельно от промокодов и скидки кабинета.</p>")
+      '<div class="info-cards">' +
+      information_card("spark", f"{FIRST_ORDER_PERCENT}% на первый заказ",
+                       '<p>Предложение доступно всем зарегистрированным покупателям без выполненных заказов. '
+                       'Если заказ отменён, скидка остаётся доступной. Минимальной суммы нет. '
+                       'Скидка применяется отдельно от промокодов и скидки кабинета.</p>' +
+                       info_actions((("account/register", "Регистрация"), ("catalog", "Открыть каталог"))), featured=True) +
+      '</div>', description="Условия скидки LUSAR на первый заказ для зарегистрированных покупателей.")
 loyalty_rows = "".join(
     f'<tr><td>{("От " + f"{threshold:,}".replace(",", " ") + " ֏") if threshold else "До 50 000 ֏"}</td><td>{discount}%</td></tr>'
     for threshold, discount in LOYALTY_TIERS
@@ -702,9 +810,9 @@ write("favorites", "Избранное", shopping_workspace('<div class="order-p
       f'<span class="empty-state-icon">{nav_icon("favorites")}</span><div class="empty-state-copy">'
       '<h2>Пока нет сохранённых товаров</h2><p>Сохраняйте светильники, к которым хотите вернуться.</p>'
       '<div class="empty-state-actions"><a class="button-link" href="/catalog">Открыть каталог</a></div></div></section>'), draft=True)
-write("compare", "Сравнение светильников", '<p id="compare-status" role="status"></p>'
+write("compare", "Сравнение светильников", '<p id="compare-status" class="lead" role="status"></p>'
       '<div id="compare-table" class="comparison-scroll" role="region" aria-label="Таблица сравнения" tabindex="0"></div>'
-      '<p>' + link("catalog", "Открыть каталог") + '</p>', draft=True)
+      + info_actions((("catalog", "Открыть каталог"),)), draft=True)
 write("checkout", "Оформление заявки", """
 <div class="order-page-heading"><h1>Оформление заявки</h1><p id="checkout-account-mode">Без регистрации</p></div>
 """ + order_steps(2) + """
@@ -762,11 +870,25 @@ write("order-status", "Статус заявки", f"""
 </section>
 <script src="/order-status.js" defer></script>
 """, draft=True)
-write("sitemap", "Карта сайта", listing([("", "Главная"), ("catalog/", "Каталог")] +
-      [(p + "/", name) for p, name in FOOTER + EXTRA if p != "sitemap"] +
-      [(f"rooms/{key}", title) for key, (title, _, _) in ROOMS.items()] +
-      [(store_path, store_address), (d50_path, d50_address + ", павильон D50")]))
-write("404", "Страница не найдена", listing([("catalog/", "Вернуться в каталог")]), draft=True)
+sitemap_groups = (
+    ("Каталог", [("", "Главная"), ("catalog", "Все светильники"), ("ai", "Lusar AI"), ("brands", "Бренды")] +
+     [(category_path(key), category["name"]) for key, category in categories.items()] +
+     [(brand_path(key), brand["name"]) for key, brand in brands.items()]),
+    ("По комнатам", [("rooms", "Все комнаты")] + [(f"rooms/{key}", title) for key, (title, _, _) in ROOMS.items()]),
+    ("Покупателям", list(FOOTER_GROUPS[1][1]) + [("order-status", "Статус заявки")]),
+    ("О LUSAR", list(FOOTER_GROUPS[2][1]) +
+     [(path, title) for path, title in EXTRA if path in {"about/founder", "stores", "projects", "professionals", "services"}]),
+    ("Статьи", (("journal", "Все статьи"), ("journal/guides", "Как выбрать свет"), ("offers", "Акции"))),
+    ("Правовая информация", [(path, title) for path, title in EXTRA if path.startswith("legal/")]),
+    ("Личный кабинет", (("account", "Обзор"), ("account/orders", "Мои заказы"), ("account/settings", "Профиль"),
+                       ("account/loyalty", "Мои скидки"), ("cart", "Корзина"), ("favorites", "Избранное"))),
+)
+write("sitemap", "Карта сайта", '<div class="sitemap-groups">' +
+      "".join(f'<section><h2>{title}</h2>{listing(items)}</section>' for title, items in sitemap_groups) + '</div>')
+write("404", "Страница не найдена", '<div class="info-cards">' +
+      information_card("search", "Попробуйте поиск",
+                       info_actions((("search", "Поиск"), ("catalog", "Вернуться в каталог"))), featured=True) +
+      '</div>', draft=True)
 (OUT / "404.html").write_bytes((OUT / "404/index.html").read_bytes())
 (OUT / "catalog.html").write_text(
     '<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="robots" content="noindex">'
@@ -780,8 +902,9 @@ write("404", "Страница не найдена", listing([("catalog/", "Ве
     encoding="utf-8"
 )
 write("catalog/unavailable", "Товар сейчас недоступен",
-      "<p>Возможно, модель снята с продажи. Посмотрите актуальные товары в каталоге.</p>" +
-      listing([("catalog/", "Открыть каталог")]), draft=True)
+      '<div class="info-cards">' +
+      information_card("lamp", "Все светильники", "<p>Посмотрите актуальные товары в каталоге.</p>" +
+                       info_actions((("catalog", "Открыть каталог"),)), featured=True) + '</div>', draft=True)
 sitemap = ElementTree.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
 for url in sorted(set(indexable)):
     ElementTree.SubElement(ElementTree.SubElement(sitemap, "url"), "loc").text = url
@@ -817,6 +940,7 @@ for name in ("lusar-hero.webp", "lusar-scene-day.webp", "lusar-scene-evening.web
     (OUT / "scenes" / name).write_bytes((ROOT / "scenes" / name).read_bytes())
 search_index = [
     {"name": item["name"], "path": "/" + product_path(item).rstrip("/"), "sku": item["sku"],
+     "price": display_price(item), "image": item["images"][0]["url"] if item["images"] else "",
      "keywords": " ".join([item["brand"], categories[item["categoryId"]]["name"],
                           brand_registry.get(product_brand_ids.get(item["id"]), {}).get("name", "")] +
                          [f'{a["label"]} {a["value"]} {a["unit"]}' for a in item["attributes"]])}
@@ -854,7 +978,7 @@ search_index = [
 )
 (OUT / "support.js").write_text(
     "const supportProducts = " + json.dumps({
-        item["id"]: {"name": item["name"], "sku": item["sku"], "path": "/" + product_path(item).rstrip("/")}
+        item["id"]: {"name": item["name"], "path": "/" + product_path(item).rstrip("/")}
         for item in data["products"]
     }, ensure_ascii=False) + ";\n" + (ROOT / "support.js").read_text(encoding="utf-8"), encoding="utf-8"
 )
