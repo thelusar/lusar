@@ -410,7 +410,7 @@ featured_products = [products[1] if len(products) > 1 else products[0]
                      for key in home_categories if (products := products_with_photos.get(key))]
 
 write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding="utf-8")
-      + '<section class="home-collection lighting-collection"><div class="collection-intro"><div><span class="eyebrow">Коллекция LUSAR</span><h2>Форма. Свет. Характер.</h2><p>Один акцент может изменить всё пространство.</p></div>' +
+      + '<section class="home-collection lighting-collection"><div class="collection-intro"><h2>Коллекция LUSAR</h2>' +
       link("catalog", "Весь каталог", direction=True) + '</div>' +
       category_cards(home_categories, atmosphere=True) +
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +

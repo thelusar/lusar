@@ -91,13 +91,27 @@ f.onload = async () => { try {
     const curtainRect=d.querySelector('.curtain-control').getBoundingClientRect(),consoleRect=d.querySelector('.room-console').getBoundingClientRect();
     require(curtainRect.bottom+8<=consoleRect.top && curtainRect.top>=hero.getBoundingClientRect().top,'Curtain control is hidden or overlaps bottom controls at '+width+'/'+language);
     const glass=w.getComputedStyle(d.querySelector('.room-console'));
-    require(w.getComputedStyle(d.querySelector('.room-console'),'::before').backdropFilter==='blur(3px) saturate(1.08)','Bottom glass blur is too strong');
+    require(w.getComputedStyle(d.querySelector('.room-console'),'::before').backdropFilter==='blur(1px) saturate(1.03)','Bottom glass blur is too strong');
     require(glass.borderTopWidth==='0px' && glass.backgroundColor==='rgba(0, 0, 0, 0)','Bottom glass has an opaque surface or border');
+    const header=d.querySelector('.site-header').getBoundingClientRect();
+    require(header.height<=(width<=928?54:58),'Header is too tall at '+width);
+    const cards=[...d.querySelectorAll('.lighting-collection .category-cards a')].map(el=>el.getBoundingClientRect());
+    if(width>=1440)require(cards.every(r=>Math.abs(r.top-cards[0].top)<1&&Math.abs(r.height-cards[0].height)<1),'Collection cards must form one even row');
+    require(d.querySelector('#home-title').textContent===w.lusarLocale.text('Свет для жизни'),'Original hero text not restored');
+    require(parseFloat(w.getComputedStyle(d.querySelector('.collection-intro h2')).fontSize)<=20,'Collection heading is oversized');
+    if(width>=1440){
+     const articles=[...d.querySelectorAll('.home-editorial .journal-card')].map(el=>el.getBoundingClientRect());
+     require(articles.every(r=>Math.abs(r.top-articles[0].top)<1 && Math.abs(r.height-articles[0].height)<1),'Home articles are not aligned');
+     const ai=d.querySelector('.home-ai').getBoundingClientRect(),photo=d.querySelector('.home-ai-photo').getBoundingClientRect();
+     require(Math.abs(ai.height-photo.height)<2,'AI photo does not fill its block');
+     const actions=[...d.querySelectorAll('.hero-actions>a')].map(el=>el.getBoundingClientRect());
+     require(Math.abs(actions[0].height-actions[1].height)<1,'Hero buttons have different heights');
+    }
     samples.push({width,language,theme});
    }
   }
  }
- require(d.querySelectorAll('.curtain-folds path').length===24,'Hanging curtain folds missing');
+ require(w.getComputedStyle(d.querySelector('.curtain-fabric')).backgroundImage.includes('lusar-room-ararat-off.webp'),'Photographed curtain fabric missing');
  require(!d.querySelector('.footer-brand').textContent.includes('LUYS+'),'Retired footer copy remains');
  require(w.getComputedStyle(layers[0]).transitionDuration === '0s', 'Reduced motion is ignored');
  require(d.querySelector('#scene-image').complete && d.querySelector('#scene-image').naturalWidth === 1672, 'Room image missing');

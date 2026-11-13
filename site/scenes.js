@@ -39,16 +39,9 @@
     const edge=28.2+closed*17.2;
     // Follow the perspective of the window's top and bottom rails.
     $('.window-curtain').style.clipPath=`polygon(24.1% 1.9%,${edge}% ${9.4+closed*13.9}%,${edge}% ${82-closed*10.2}%,24.1% 84%)`;
-    // Gathered pleats relax across the opening; each has a curved hanging edge.
-    const left=1672*.241, width=1672*(.041+closed*.172), folds=12;
-    const fabric=Array.from({length:folds},(_,index)=>{
-      const x=left+width*index/folds, span=width/folds;
-      const top=18+(x-left)/width*(70+closed*131), bottom=790-(x-left)/width*(18+closed*96);
-      const bow=span*(.12+index%3*.035), dip=3+closed*3;
-      const path=`M${x},${top} L${x+span},${top+span*.48} C${x+span-bow},${top+240} ${x+span+bow},${bottom-160} ${x+span},${bottom-span*.16} Q${x+span*.5},${bottom+dip} ${x},${bottom} C${x+bow},${bottom-180} ${x-bow},${top+250} ${x},${top} Z`;
-      return `<path d="${path}" fill="url(#curtain-fold)"/><path d="${path}" fill="url(#curtain-shade)"/>`;
-    }).join('');
-    $('.curtain-folds').innerHTML=fabric;
+    // Extend the photographed fabric already in the scene, retaining its folds and grain.
+    $('.window-curtain').style.setProperty('--drape-width',`${4.1+closed*17.2}%`);
+    $('.window-curtain').style.setProperty('--fabric-light',String(.72+opening*.0028));
     $('#scene-image').style.filter=`brightness(${.18+.82*opening/100})`;
     $('#curtain-value').value=closure+'%';
     curtain.style.setProperty('--fill',closure+'%');
