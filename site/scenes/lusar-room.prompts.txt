@@ -1,0 +1,10 @@
+LUSAR interactive room — generation art direction
+
+Base frame (all electric lights off)
+Wide photorealistic architectural interior, 1672 x 941. Neutral matte black and graphite grey, restrained brushed bronze details. Sophisticated modern dining and living room. Quiet dark negative space on the left for a short website headline. On the right: a sculptural thin bronze pendant above a dark dining table; two separate slim vertical wall sconces; a floor lamp near the sofa; a floating console with a concealed strip beneath it. Natural, soft ambient daylight makes the room visible when all electric lights are off. Show all five light sources clearly in the same frame. No people, text, watermarks, invented product branding or oversized decorative elements.
+
+Illuminated frame (edit the base image)
+Preserve exactly the original camera, architecture, objects, perspective and fixture positions. Switch on the pendant, each wall sconce, floor lamp and concealed console strip at approximately 3000 K. Show plausible localized warm light on the wall, table, furniture and floor, with soft falloff. Preserve neutral graphite materials and dark left-hand negative space. Do not redesign the fixtures or room.
+
+Implementation
+The two aligned frames are used for an illustrative lighting preview. Soft masks isolate each fixture and its light pool. This is not a photometric calculation and does not claim that the illustrative fixtures are catalog products. Each circuit has independent brightness and an approximate warm-to-neutral temperature preview. WebP exports are the deployed assets; original generated PNGs remain in the local generation history.

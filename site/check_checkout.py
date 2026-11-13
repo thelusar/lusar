@@ -198,7 +198,7 @@ openPage("/", page => {
   const timeout = Date.now() + 5000;
   function waitForScene() {
     if (day.getAttribute("aria-pressed") === "true") {
-      require(page.querySelector("#scene-image").src.endsWith("lusar-scene-day.webp"), "Wrong daylight frame");
+      require([...page.querySelectorAll("[data-light]")].every(layer => Number(layer.style.getPropertyValue("--level")) === 0), "Daylight preset left an artificial light on");
       mobileLayout(page);
       checkMenuResize(page);
     } else if (Date.now() < timeout) {

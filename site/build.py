@@ -396,29 +396,8 @@ home_categories = [key for key in ("chandeliers", "pendants", "sconces", "outdoo
 featured_products = [products[1] if len(products) > 1 else products[0]
                      for key in home_categories if (products := products_with_photos.get(key))]
 
-write("", "Свет для жизни", """
-<section class="home-hero" aria-labelledby="home-title">
-<div class="hero-copy">
-  <h1 id="home-title">Свет для жизни</h1>
-  <p class="lead">Светильники для дома и проектов.</p>
-  <div class="hero-actions"><a class="button-link" href="/catalog">Открыть каталог</a>
-  <a href="/ai">Примерить с Lusar AI</a></div>
-</div>
-<figure class="light-scene">
-  <img id="scene-image" src="/scenes/lusar-hero.webp" width="1536" height="1024"
-       fetchpriority="high" alt="Тёплый свет подвеса и мягкая подсветка вокруг обеденного стола">
-  <figcaption>
-    <div id="scene-controls" role="group" aria-label="Сценарий освещения" hidden>
-      <button type="button" data-scene="day" aria-pressed="false">День</button>
-      <button type="button" data-scene="warm" aria-pressed="true">Тёплый</button>
-      <button type="button" data-scene="evening" aria-pressed="false">Вечер</button>
-    </div>
-    <p id="scene-caption" role="status">Тёплый свет над столом</p>
-  </figcaption>
-</figure>
-</section>
-<script src="/scenes.js" defer></script>
-""" + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
+write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding="utf-8")
+      + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
       link("rooms", "По комнатам", direction=True) + '</div>' +
       category_cards(home_categories) +
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +
@@ -936,7 +915,8 @@ for asset in ("staff.css", "staff.js"):
     }, ensure_ascii=False) + ";\n" + (ROOT / "ai-preview.js").read_text(encoding="utf-8"), encoding="utf-8"
 )
 (OUT / "scenes").mkdir(exist_ok=True)
-for name in ("lusar-hero.webp", "lusar-scene-day.webp", "lusar-scene-evening.webp", "ai-interior.jpg"):
+for name in ("lusar-hero.webp", "lusar-scene-day.webp", "lusar-scene-evening.webp", "ai-interior.jpg",
+             "lusar-room-off.webp", "lusar-room-on.webp"):
     (OUT / "scenes" / name).write_bytes((ROOT / "scenes" / name).read_bytes())
 search_index = [
     {"name": item["name"], "path": "/" + product_path(item).rstrip("/"), "sku": item["sku"],

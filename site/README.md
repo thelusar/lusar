@@ -60,6 +60,14 @@ Before deploying the staff panel, sign in to the staging storefront as the inten
 
 The shared staging password opens the test site. The order panel requires an individual account with a staff role. Changes to status, payment and returns appear in **Журнал заказа**, with the account that performed them. Earlier history remains in the database. Check access in separate browser sessions for a customer, manager and administrator before using the panel.
 
+## Interactive homepage lighting
+
+`hero.html` and `scenes.js` provide five independent light circuits: pendant, left and right wall lights, floor lamp and console strip. Select a hotspot to adjust its brightness, approximate light temperature or power. Day, warm and evening presets set all circuits; the power icon switches them all off. Switching a light back on restores its last nonzero brightness. Changes are local to the current page and require no API calls.
+
+The two aligned WebP room frames together weigh about 164 KiB. Soft masks isolate the fixture and its light pool without changing camera position. The temperature control is an illustrative color preview, not a physical lighting calculation; the pictured fixtures are illustrative and are not linked to catalog products. The image coordinate plane remains uncropped on mobile. Controls appear after the illuminated frame loads, with space reserved to avoid layout shifts; failed loading leaves the ambient image visible. Motion follows the visitor's reduced-motion preference. Art direction is saved in `scenes/lusar-room.prompts.txt`.
+
+Run `python site/check_hero.py` after building to verify independent circuits, preserved settings, presets, translated controls, reduced motion, and 36 responsive language/theme states. Add `--screenshots <output-directory>` to save desktop and narrow-viewport previews. `check_checkout.py` also verifies the daylight preset and the existing shopping workflow.
+
 ## PostgreSQL preparation
 
 `postgres/001_orders.sql` is the initial migration for the separate integration database. `002_accounts.sql` adds customer records, sessions, shopping state and order ownership. `003_staff.sql` adds staff roles and the order audit trail. With `DATABASE_URL` set on Render, staging applies pending migrations at startup. Without the variable, staging uses temporary SQLite and its data is lost on restart. Keep the connection URL in Render's environment settings.

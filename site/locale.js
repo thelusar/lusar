@@ -1,5 +1,22 @@
 (() => {
   const translations = {
+    "Свет меняет всё": ["Լույսը փոխում է ամեն ինչ", "Light changes everything"],
+    "Один интерьер. Ваш сценарий света.": ["Մեկ ինտերիեր։ Լույսի ձեր սցենարը։", "One room. Your light."],
+    "Графитовый интерьер с подвесом, двумя настенными бра, торшером и подсветкой консоли": ["Գրաֆիտե ինտերիեր՝ կախովի լուսատուով, երկու պատի լուսատուով, հատակի լամպով և կոնսոլի լուսավորությամբ", "A graphite interior with a pendant, two wall lights, a floor lamp and console lighting"],
+    "Светильники в интерьере": ["Լուսատուները ինտերիերում", "Lights in the room"],
+    "Подвес": ["Կախովի լուսատու", "Pendant"],
+    "Левое бра": ["Ձախ պատի լուսատու", "Left wall light"],
+    "Правое бра": ["Աջ պատի լուսատու", "Right wall light"],
+    "Торшер": ["Հատակի լամպ", "Floor lamp"],
+    "Подсветка консоли": ["Կոնսոլի լուսավորություն", "Console lighting"],
+    "Нажмите на светильник": ["Սեղմեք լուսատուին", "Tap a light to adjust it"],
+    "Атмосфера одним касанием": ["Մթնոլորտ՝ մեկ հպումով", "Set the mood with a touch"],
+    "Выключить весь свет": ["Անջատել ամբողջ լույսը", "Turn all lights off"],
+    "Весь свет выключен": ["Ամբողջ լույսն անջատված է", "All lights are off"],
+    "Визуализация световых сценариев": ["Լուսային սցենարների պատկերավորում", "Lighting scenario preview"],
+    "Включить светильник": ["Միացնել լուսատուն", "Light on or off"],
+    "Яркость": ["Պայծառություն", "Brightness"],
+    "Температура света": ["Լույսի ջերմաստիճան", "Light temperature"],
     "Мои заказы": ["Իմ պատվերները", "My orders"],
     "Мои скидки": ["Իմ զեղչերը", "My discounts"],
     "Профиль": ["Պրոֆիլ", "Profile"],
@@ -550,7 +567,7 @@
     let original = attributes.get(element);
     if (!original) {
       original = {};
-      for (const name of ["aria-label", "title", "placeholder"]) {
+      for (const name of ["aria-label", "title", "placeholder", "alt"]) {
         if (element.hasAttribute(name)) original[name] = element.getAttribute(name);
       }
       attributes.set(element, original);
@@ -565,7 +582,7 @@
     }
     if (root.nodeType !== Node.ELEMENT_NODE) return;
     translateElement(root);
-    for (const element of root.querySelectorAll("[aria-label], [title], [placeholder]")) translateElement(element);
+    for (const element of root.querySelectorAll("[aria-label], [title], [placeholder], [alt]")) translateElement(element);
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) translateNode(walker.currentNode);
   }

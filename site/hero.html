@@ -1,0 +1,47 @@
+<section class="home-hero" aria-labelledby="home-title">
+  <div class="hero-copy">
+    <span class="hero-eyebrow">Свет меняет всё</span>
+    <h1 id="home-title">Свет для жизни</h1>
+    <p class="lead">Один интерьер. Ваш сценарий света.</p>
+    <div class="hero-actions"><a class="button-link" href="/catalog">Открыть каталог</a>
+      <a href="/ai">Примерить с Lusar AI</a></div>
+  </div>
+  <figure class="light-scene">
+    <div class="room-stage">
+      <img id="scene-image" src="/scenes/lusar-room-off.webp" width="1672" height="941"
+        fetchpriority="high" alt="Графитовый интерьер с подвесом, двумя настенными бра, торшером и подсветкой консоли">
+      <div class="room-light" data-light="pendant" style="--level:.75" aria-hidden="true"></div>
+      <div class="room-light" data-light="left" style="--level:.65" aria-hidden="true"></div>
+      <div class="room-light" data-light="right" style="--level:.65" aria-hidden="true"></div>
+      <div class="room-light" data-light="floor" style="--level:.45" aria-hidden="true"></div>
+      <div class="room-light" data-light="strip" style="--level:.60" aria-hidden="true"></div>
+      <div class="room-hotspots" hidden role="group" aria-label="Светильники в интерьере">
+        <button type="button" class="light-pin" data-fixture="pendant" style="--x:68.5%;--y:34%" aria-label="Подвес" aria-controls="light-editor" aria-pressed="true"><span aria-hidden="true">＋</span><span class="pin-label">Подвес</span></button>
+        <button type="button" class="light-pin" data-fixture="left" style="--x:47.5%;--y:44%" aria-label="Левое бра" aria-controls="light-editor" aria-pressed="false"><span aria-hidden="true">＋</span><span class="pin-label">Левое бра</span></button>
+        <button type="button" class="light-pin" data-fixture="right" style="--x:87.3%;--y:44%" aria-label="Правое бра" aria-controls="light-editor" aria-pressed="false"><span aria-hidden="true">＋</span><span class="pin-label">Правое бра</span></button>
+        <button type="button" class="light-pin" data-fixture="floor" style="--x:94%;--y:61%" aria-label="Торшер" aria-controls="light-editor" aria-pressed="false"><span aria-hidden="true">＋</span><span class="pin-label">Торшер</span></button>
+        <button type="button" class="light-pin" data-fixture="strip" style="--x:66%;--y:74%" aria-label="Подсветка консоли" aria-controls="light-editor" aria-pressed="false"><span aria-hidden="true">＋</span><span class="pin-label">Подсветка консоли</span></button>
+      </div>
+      <span class="room-hint" hidden><span aria-hidden="true">⊙</span> <span>Нажмите на светильник</span></span>
+    </div>
+    <figcaption class="room-console" hidden>
+      <div class="scene-presets">
+        <span class="console-label">Атмосфера одним касанием</span>
+        <div id="scene-controls" role="group" aria-label="Сценарий освещения">
+          <button type="button" data-scene="day" aria-pressed="false">День</button>
+          <button type="button" data-scene="warm" aria-pressed="true">Тёплый</button>
+          <button type="button" data-scene="evening" aria-pressed="false">Вечер</button>
+          <button type="button" data-scene="off" aria-pressed="false" aria-label="Выключить весь свет"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v9m-5-7a8 8 0 1 0 10 0"/></svg></button>
+        </div>
+        <span class="scene-note">Визуализация световых сценариев</span>
+      </div>
+      <div id="light-editor" class="light-editor" role="group" aria-labelledby="fixture-name">
+        <div class="fixture-heading"><span id="fixture-name">Подвес</span><button type="button" id="fixture-power" role="switch" aria-checked="true" aria-label="Включить светильник"><span></span></button></div>
+        <label class="light-slider" for="fixture-brightness"><span>Яркость</span><output id="brightness-value" for="fixture-brightness">75%</output><input id="fixture-brightness" type="range" min="0" max="100" value="75"></label>
+        <label class="light-slider" for="fixture-temperature"><span>Температура света</span><output id="temperature-value" for="fixture-temperature">3000 K</output><input id="fixture-temperature" type="range" min="2700" max="6500" step="100" value="3000"></label>
+      </div>
+      <p id="scene-caption" role="status" aria-live="polite"></p>
+    </figcaption>
+  </figure>
+</section>
+<script src="/scenes.js" defer></script>
