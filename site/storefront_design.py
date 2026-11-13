@@ -19,16 +19,10 @@ def text(value):
 def footer_intro():
     return '<p>'+t("Люсар — свет для дома, встреч и повседневных открытий. От выразительного подвеса до тихого света у кровати: выбирайте свой характер освещения.",
       "Լյուսար՝ լույս տան, հանդիպումների և առօրյա բացահայտումների համար։ Արտահայտիչ կախովի լուսատուից մինչև մահճակալի մեղմ լույս․ ընտրեք ձեր լուսավորությունը։",
-      "Lusar is light for home, gathering and everyday discovery. From a statement pendant to a quiet bedside glow: find your own way to light a room.")+'</p><p>'+t("Новое имя LUYS+. Магазины в Ереване, каталог онлайн и примерка с Lusar AI.",
-      "LUYS+-ի նոր անունը։ Խանութներ Երևանում, առցանց կատալոգ և փորձարկում Lusar AI-ով։",
-      "The new name of LUYS+. Stores in Yerevan, an online catalogue and room previews with Lusar AI.")+'</p>'
+      "Lusar is light for home, gathering and everyday discovery. From a statement pendant to a quiet bedside glow: find your own way to light a room.")+'</p>'
 
 def footer_stores():
-    return ('<div class="footer-stores"><div><strong>'+t("Магазины в Ереване","Խանութներ Երևանում","Our Yerevan stores")+'</strong><p>'+
-      t("Аршакуняц, 210/1 · ярмарка «Еранкюни»","Արշակունյաց 210/1 · «Եռանկյունի» տոնավաճառ","210/1 Arshakunyats · Yerankyuni market")+'</p></div><div><p>'+
-      t("Смбата Зоравара, 11/3 · павильон D50","Սմբատ Զորավարի 11/3 · տաղավար D50","11/3 Smbat Zoravar · Pavilion D50")+'</p><p>'+
-      t("Ежедневно · 09:30–19:00","Ամեն օր · 09:30–19:00","Every day · 09:30–19:00")+
-      '</p></div><div><a class="footer-phone" href="tel:+37477123451">+374 (77) 12-34-51</a></div></div>')
+    return ('<section class="footer-stores" aria-label="'+t("Наши магазины","Մեր խանութները","Our stores")+'"><div class="stores-invitation"><span class="eyebrow">'+t("Будем рады встрече","Սպասում ենք ձեզ","Come and see us")+'</span><h2>'+t("Увидеть свет вживую","Տեսեք լույսը իրականում","Experience the light")+'</h2><p>'+t("Ереван · ежедневно 09:30–19:00","Երևան · ամեն օր 09:30–19:00","Yerevan · daily 09:30–19:00")+'</p><a class="footer-phone" href="tel:+37477123451">+374 (77) 12-34-51</a></div><a class="store-location" href="/stores/yerevan-arshakunyats"><span class="store-index" aria-hidden="true">01</span><div><strong>'+t("Аршакуняц, 210/1","Արշակունյաց 210/1","210/1 Arshakunyats")+'</strong><p>'+t("Ярмарка «Еранкюни»","«Եռանկյունի» տոնավաճառ","Yerankyuni market")+'</p></div><span class="location-dot" aria-hidden="true"></span></a><a class="store-location" href="/stores/yerevan-smbat-zoravar"><span class="store-index" aria-hidden="true">02</span><div><strong>'+t("Смбата Зоравара, 11/3","Սմբատ Զորավարի 11/3","11/3 Smbat Zoravar")+'</strong><p>'+t("Павильон D50","Տաղավար D50","Pavilion D50")+'</p></div><span class="location-dot" aria-hidden="true"></span></a></section>')
 
 def home_service(icon):
     rows=[
@@ -44,7 +38,7 @@ def article_card(item):
       t("3 минуты","3 րոպե","3 min")+'</span></div><h2>'+text(item["title"])+'</h2><p>'+text(item["intro"])+'</p></div></a>')
 
 def home_editorial():
-    return '<section class="home-editorial"><div class="section-heading"><h2>'+t("Свет в армянском доме","Լույսը հայկական տանը","Light in an Armenian home")+'</h2><a class="direction-link" href="/journal">'+t("Все статьи","Բոլոր հոդվածները","All articles")+'</a></div><ul class="journal-grid">'+''.join('<li>'+article_card(item)+'</li>' for item in ARTICLES[:2])+'</ul></section>'
+    return '<section class="home-editorial"><div class="section-heading"><h2>'+t("О свете и пространстве","Լույսի և տարածքի մասին","Light and space")+'</h2><a class="direction-link" href="/journal">'+t("Все статьи","Բոլոր հոդվածները","All articles")+'</a></div><ul class="journal-grid">'+''.join('<li>'+article_card(item)+'</li>' for item in ARTICLES[:2])+'</ul></section>'
 
 ROOM_PLANS = {
  "living-room":[
@@ -116,9 +110,9 @@ def render_rooms(write, rooms, category_cards, product_grid, products, icon):
 ROOM_ICON={"living-room":"sofa","bedroom":"bed","kitchen":"dining","workspace":"desk","outdoors":"outdoor"}
 
 def render_journal(write):
-    body='<header class="editorial-heading"><div><span class="eyebrow">LUSAR · '+t("Журнал о свете","Լուսավորության ամսագիր","Lighting journal")+'</span><h1>'+t("Свет, с которым удобно жить","Լույս, որի հետ հարմար է ապրել","Light that works for your life")+'</h1><p>'+t("20 практических историй для армянского дома: от небольшой квартиры в Ереване до террасы в Дилижане.","20 գործնական պատմություն հայկական տան համար՝ Երևանի փոքր բնակարանից մինչև Դիլիջանի տեռաս։","20 practical stories for Armenian homes, from a small Yerevan apartment to a Dilijan terrace.")+'</p></div></header>'
+    body='<header class="editorial-heading"><div><span class="eyebrow">LUSAR · '+t("Журнал о свете","Լուսավորության ամսագիր","Lighting journal")+'</span><h1>'+t("Свет, с которым удобно жить","Լույս, որի հետ հարմար է ապրել","Light that works for your life")+'</h1><p>'+t("Как выбрать светильник, продумать свет в комнате и сделать повседневные дела комфортнее.","Ինչպես ընտրել լուսատուն, պլանավորել սենյակի լույսը և առօրյան դարձնել հարմարավետ։","Ideas for choosing fixtures, planning a room’s lighting and making everyday life more comfortable.")+'</p></div></header>'
     body+='<nav class="journal-filters" aria-label="Темы статей">'+''.join('<button type="button" data-journal-filter="'+key+'" aria-pressed="'+str(key=="all").lower()+'">'+text(label)+'</button>' for key,label in [("all",["Все статьи","Բոլոր հոդվածները","All articles"]),("apartment",["Квартира","Բնակարան","Apartment"]),("outside",["Дом и улица","Տուն և բացօթյա","House and outdoors"]),("details",["Детали света","Լույսի մանրամասները","Lighting details"])])+'</nav><ul class="journal-grid">'+''.join('<li data-journal-category="'+item["category"]+'">'+article_card(item)+'</li>' for item in ARTICLES)+'</ul>'
-    write("journal","Статьи",body,description="20 статей об освещении для жителей Армении: квартиры Еревана, дома Гюмри, террасы Дилижана и Севана.")
+    write("journal","Статьи",body,description="Практические статьи об освещении: выбор светильников, уютный дом, рабочий свет и детали интерьера.")
     for item in ARTICLES:
         title=text(item["title"])
         content='<a class="direction-link" href="/journal">'+t("Все статьи","Բոլոր հոդվածները","All articles")+'</a><header class="editorial-heading"><div><span class="eyebrow">'+text(item["place"])+' · '+t("Практика света","Լուսավորության ուղեցույց","Practical lighting")+'</span><h1>'+title+'</h1><p>'+text(item["intro"])+'</p></div></header><figure class="article-cover"><img src="/editorial/'+item["slug"]+'.webp" width="1672" height="941" fetchpriority="high" alt="'+title+'"><figcaption>'+t("Редакционная иллюстрация, созданная ИИ.","Խմբագրական պատկեր՝ ստեղծված ԱԲ-ով։","AI-generated editorial illustration.")+'</figcaption></figure><div class="article-layout"><article class="article-body">'

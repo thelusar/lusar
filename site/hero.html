@@ -7,8 +7,14 @@
       <div class="room-light" data-light="right" aria-hidden="true"></div>
       <div class="room-light" data-light="floor" aria-hidden="true"></div>
       <div class="room-light" data-light="strip" aria-hidden="true"></div>
-      <div class="window-curtain" aria-hidden="true"></div>
-      <label class="curtain-control" for="curtain-opening" hidden><span>Штора</span><output id="curtain-value" for="curtain-opening">100%</output><input id="curtain-opening" type="range" min="0" max="100" value="100" aria-label="Открытие шторы"></label>
+      <svg class="window-curtain" viewBox="0 0 1672 941" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="curtain-fold"><stop stop-color="#0c1013"/><stop offset=".2" stop-color="#242a2e"/><stop offset=".43" stop-color="#42484c"/><stop offset=".58" stop-color="#353c41"/><stop offset=".8" stop-color="#181e22"/><stop offset="1" stop-color="#090d10"/></linearGradient>
+          <linearGradient id="curtain-shade" x2=".8" y2="1"><stop stop-color="#000" stop-opacity=".28"/><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".48"/></linearGradient>
+        </defs>
+        <g class="curtain-folds"></g>
+      </svg>
+      <label class="curtain-control" for="curtain-opening" hidden><span>Штора</span><output id="curtain-value" for="curtain-opening">0%</output><input id="curtain-opening" type="range" min="0" max="100" value="0" aria-label="Закрытие шторы"></label>
       <div class="room-hotspots" hidden role="group" aria-label="Выберите один или несколько светильников">
         <button type="button" class="light-pin" data-fixture="pendant" style="--x:68%;--y:34%" aria-label="Подвес" aria-controls="light-editor" aria-pressed="true"><span class="pin-mark" aria-hidden="true"></span><span class="pin-label">Подвес</span></button>
         <button type="button" class="light-pin" data-fixture="left" style="--x:53.5%;--y:44%" aria-label="Левое бра" aria-controls="light-editor" aria-pressed="false"><span class="pin-mark" aria-hidden="true"></span><span class="pin-label">Левое бра</span></button>
@@ -18,9 +24,9 @@
       </div>
     </div>
     <div class="hero-copy">
-      <span class="hero-eyebrow">Свет меняет всё</span><h1 id="home-title">Свет для жизни</h1>
-      <p class="lead">Утро с видом на Арарат. Вечер в кругу близких. Свет, который чувствует ваш ритм.</p>
-      <p class="hero-description">Соберите свой сценарий: мягкие бра, выразительный подвес или спокойная подсветка. Найдите светильники для дома в каталоге LUSAR и примерьте их на фотографии своей комнаты.</p>
+      <span class="hero-eyebrow">LUSAR · Искусство света</span><h1 id="home-title">Свет в вашем ритме</h1>
+      <p class="lead">Выразительный над столом.<br>Мягкий у любимого кресла.</p>
+      <p class="hero-description">Найдите свет для каждого момента. Меняйте атмосферу в этом интерьере или примерьте светильник в своей комнате с Lusar AI.</p>
       <div class="hero-actions"><a class="button-link" href="/catalog">Открыть каталог</a><a class="ai-action" href="/ai"><span class="ai-orbit" aria-hidden="true">✧</span><span><span class="ai-gradient">Lusar AI</span><small>Примерить в своей комнате</small></span></a></div>
     </div>
     <figcaption class="room-console" hidden>

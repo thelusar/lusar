@@ -383,7 +383,7 @@ for item in data["products"]:
         products_with_photos.setdefault(item["categoryId"], []).append(item)
 
 
-def category_cards(keys, *, eager=False):
+def category_cards(keys, *, eager=False, atmosphere=False):
     short_names = {"pendants": "Подвесы", "outdoor": "Уличный свет"}
     loading = "eager" if eager else "lazy"
     cards = []
@@ -394,6 +394,9 @@ def category_cards(keys, *, eager=False):
         if products:
             url = html.escape(products[0]["images"][0]["url"], quote=True)
             photo = f'<img loading="{loading}" decoding="async" src="{url}" alt="">'
+        if atmosphere:
+            scene = {"chandeliers":"gyumri-home", "pendants":"family-dining", "sconces":"gyumri-bedroom", "outdoor":"dilijan-terrace"}[key]
+            photo = f'<img loading="lazy" decoding="async" src="/editorial/{scene}.webp" width="960" height="540" alt="">'
         label = html.escape(short_names.get(key, category["name"]))
         cards.append(
             f'<li><a href="/{category_path(key).strip("/")}"><span class="category-photo">{photo}</span>'
@@ -407,9 +410,9 @@ featured_products = [products[1] if len(products) > 1 else products[0]
                      for key in home_categories if (products := products_with_photos.get(key))]
 
 write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding="utf-8")
-      + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
-      link("rooms", "По комнатам", direction=True) + '</div>' +
-      category_cards(home_categories) +
+      + '<section class="home-collection lighting-collection"><div class="collection-intro"><div><span class="eyebrow">Коллекция LUSAR</span><h2>Форма. Свет. Характер.</h2><p>Один акцент может изменить всё пространство.</p></div>' +
+      link("catalog", "Весь каталог", direction=True) + '</div>' +
+      category_cards(home_categories, atmosphere=True) +
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +
       link("catalog", "Все светильники", direction=True) + '</div>' +
       product_grid(featured_products or data["products"][:4], filters=False) + '</section>' +

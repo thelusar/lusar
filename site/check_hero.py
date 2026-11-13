@@ -28,15 +28,15 @@ f.onload = async () => { try {
  const input = (id, value) => { const slider = d.getElementById(id); slider.value = value; slider.dispatchEvent(new w.Event('input', {bubbles: true})); };
  const initial = levels();
  const curtain=d.getElementById('curtain-opening'),room=d.getElementById('scene-image');
- require(curtain.value==='100' && hero.dataset.curtainOpening==='100','Curtain must start fully open');
+ require(curtain.value==='0' && hero.dataset.curtainOpening==='100','Curtain must start fully open');
  const openFilter=room.style.filter, lightBeforeCurtain=JSON.stringify(initial);
- input('curtain-opening',0);
+ input('curtain-opening',100);
  require(hero.dataset.curtainOpening==='0' && room.style.filter!==openFilter,'Closing curtain did not dim daylight');
  const closedClip=d.querySelector('.window-curtain').style.clipPath;
  input('curtain-opening',50);
  require(d.querySelector('.window-curtain').style.clipPath!==closedClip && d.querySelector('#curtain-value').value==='50%','Curtain does not move continuously');
  require(JSON.stringify(levels())===lightBeforeCurtain,'Curtain changed artificial light settings');
- input('curtain-opening',100);require(room.style.filter===openFilter,'Reopening did not restore daylight');
+ input('curtain-opening',0);require(room.style.filter===openFilter,'Reopening did not restore daylight');
  select('right'); input('fixture-brightness', 23);
  require(levels()[2] === .23 && levels().every((value, index) => index === 2 || value === initial[index]), 'Brightness changed an unrelated fixture');
  const filters = layers.map(layer => layer.style.filter);
@@ -91,11 +91,14 @@ f.onload = async () => { try {
     const curtainRect=d.querySelector('.curtain-control').getBoundingClientRect(),consoleRect=d.querySelector('.room-console').getBoundingClientRect();
     require(curtainRect.bottom+8<=consoleRect.top && curtainRect.top>=hero.getBoundingClientRect().top,'Curtain control is hidden or overlaps bottom controls at '+width+'/'+language);
     const glass=w.getComputedStyle(d.querySelector('.room-console'));
+    require(w.getComputedStyle(d.querySelector('.room-console'),'::before').backdropFilter==='blur(3px) saturate(1.08)','Bottom glass blur is too strong');
     require(glass.borderTopWidth==='0px' && glass.backgroundColor==='rgba(0, 0, 0, 0)','Bottom glass has an opaque surface or border');
     samples.push({width,language,theme});
    }
   }
  }
+ require(d.querySelectorAll('.curtain-folds path').length===24,'Hanging curtain folds missing');
+ require(!d.querySelector('.footer-brand').textContent.includes('LUYS+'),'Retired footer copy remains');
  require(w.getComputedStyle(layers[0]).transitionDuration === '0s', 'Reduced motion is ignored');
  require(d.querySelector('#scene-image').complete && d.querySelector('#scene-image').naturalWidth === 1672, 'Room image missing');
  let afterHero=hero.nextElementSibling;while(afterHero?.tagName==='SCRIPT')afterHero=afterHero.nextElementSibling;
@@ -119,7 +122,7 @@ class Handler(serve.Handler):
             params = parse_qs(urlsplit(self.path).query)
             width = int(params.get('width', ['1440'])[0])
             preset = params.get('preset', ['day'])[0]
-            opening = int(params.get('opening', ['100'])[0])
+            opening = int(params.get('opening', ['0'])[0])
             language = params.get('language', ['ru'])[0]
             # The iframe preserves real narrow viewports despite Edge's minimum window size.
             self.send_html('''<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#080808}iframe{display:block;border:0}</style>
@@ -160,9 +163,9 @@ def main():
                 print(output)
                 if args.screenshots:
                     args.screenshots.mkdir(parents=True, exist_ok=True)
-                    for name, width, height, preset, language, opening in [('desktop',1440,1000,'day','ru',100),('day',1440,1000,'morning','ru',100),
-                        ('closed',1440,1000,'day','ru',0),('half',1440,1000,'day','ru',50),
-                        ('evening',1440,1000,'evening','ru',100),('wide',2560,1440,'day','ru',100),('mobile',390,1050,'day','ru',100),('mobile-hy',320,1100,'day','hy',50)]:
+                    for name, width, height, preset, language, opening in [('desktop',1440,1000,'day','ru',0),('day',1440,1000,'morning','ru',0),
+                        ('closed',1440,1000,'day','ru',100),('half',1440,1000,'day','ru',50),
+                        ('evening',1440,1000,'evening','ru',0),('wide',2560,1440,'day','ru',0),('mobile',390,1050,'day','ru',0),('mobile-hy',320,1100,'day','hy',50)]:
                         subprocess.run(common + ['--user-data-dir=' + temp + '/' + name, '--window-size=' + str(max(width,600)) + ',' + str(height),
                             '--virtual-time-budget=4000', '--screenshot=' + str(args.screenshots / (name + '.png')),
                             origin + f'/hero-screenshot?width={width}&preset={preset}&language={language}&opening={opening}'], capture_output=True, timeout=35, check=True)
