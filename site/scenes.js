@@ -39,7 +39,7 @@
     const edge=28.2+closed*17.2;
     // Follow the perspective of the window's top and bottom rails.
     $('.window-curtain').style.clipPath=`polygon(24.1% 1.9%,${edge}% ${9.4+closed*13.9}%,${edge}% ${82-closed*10.2}%,24.1% 84%)`;
-    // Extend the photographed fabric already in the scene, retaining its folds and grain.
+    // Unfold a dedicated full-resolution fabric asset instead of enlarging a narrow photo crop.
     $('.window-curtain').style.setProperty('--drape-width',`${4.1+closed*17.2}%`);
     $('.window-curtain').style.setProperty('--fabric-light',String(.72+opening*.0028));
     $('#scene-image').style.filter=`brightness(${.18+.82*opening/100})`;

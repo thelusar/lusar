@@ -919,7 +919,7 @@ for asset in (ROOT / "editorial").glob("*.webp"):
 )
 (OUT / "scenes").mkdir(exist_ok=True)
 for name in ("lusar-hero.webp", "lusar-scene-day.webp", "lusar-scene-evening.webp", "ai-interior.jpg",
-             "lusar-room-off.webp", "lusar-room-on.webp", "lusar-room-ararat-off.webp", "lusar-room-ararat-on.webp"):
+             "lusar-room-off.webp", "lusar-room-on.webp", "lusar-room-ararat-off.webp", "lusar-room-ararat-on.webp", "lusar-curtain-fabric.webp"):
     (OUT / "scenes" / name).write_bytes((ROOT / "scenes" / name).read_bytes())
 search_index = [
     {"name": item["name"], "path": "/" + product_path(item).rstrip("/"), "sku": item["sku"],

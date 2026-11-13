@@ -111,7 +111,9 @@ f.onload = async () => { try {
    }
   }
  }
- require(w.getComputedStyle(d.querySelector('.curtain-fabric')).backgroundImage.includes('lusar-room-ararat-off.webp'),'Photographed curtain fabric missing');
+ require(w.getComputedStyle(d.querySelector('.curtain-fabric')).backgroundImage.includes('lusar-curtain-fabric.webp'),'Dedicated curtain fabric missing');
+ const fabric=new w.Image();fabric.src='/scenes/lusar-curtain-fabric.webp';await fabric.decode();
+ require(fabric.naturalWidth>=1000 && fabric.naturalHeight>=1500,'Curtain texture resolution is too low');
  require(!d.querySelector('.footer-brand').textContent.includes('LUYS+'),'Retired footer copy remains');
  require(w.getComputedStyle(layers[0]).transitionDuration === '0s', 'Reduced motion is ignored');
  require(d.querySelector('#scene-image').complete && d.querySelector('#scene-image').naturalWidth === 1672, 'Room image missing');

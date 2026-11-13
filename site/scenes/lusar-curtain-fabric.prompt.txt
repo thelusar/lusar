@@ -1,0 +1,6 @@
+Asset: lusar-curtain-fabric.webp
+Created with the built-in image generation tool on 2026-11-14.
+Source: 1024 x 1536 PNG. Delivery: WebP quality 93, unchanged dimensions.
+
+Prompt:
+Create a production website material asset: a photorealistic full-frame photograph of a CLOSED luxurious matte charcoal BLACK fabric curtain, portrait aspect ratio 2:3. Curtain fills every single edge of the canvas, absolutely nothing else visible: no room, window, rail, wall, floor, furnishings, people, text or border. Large continuous natural vertical wave pleats from top to bottom, about 12 soft irregular folds, realistic dense finely woven linen velvet blend material, subtle fabric grain, smooth richly detailed folds and gently curved natural drape. Neutral very dark gray-black, no brown, no blue. Soft neutral grazing light from upper left defining fold ridges, low contrast physically realistic lighting; retain enough detail for use in a dark room. Sharp high resolution woven detail across entire fabric, no blur or pixelation, no dramatic spotlight, no metallic sheen. Front-facing photograph, minimal perspective, straight vertical folds. This will be used at approximately 600px wide and 1800px high in an interactive interior visualization.
