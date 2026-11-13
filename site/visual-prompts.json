@@ -1,0 +1,138 @@
+[
+  {
+    "slug": "lusar-room-ararat-off",
+    "path": "site/scenes/lusar-room-ararat-off.webp",
+    "prompt": "Create a new photorealistic wide 16:9 architectural photograph for a premium Armenian lighting website LUSAR, no text or UI. Matte neutral black and graphite luxury apartment in Yerevan, restrained champagne bronze fixtures. A LARGE monumental rounded dark stone dining table in the foreground center-right, thick substantial stone top and pedestal, beautifully lit texture, not a tiny cafe table. A tall floor-to-ceiling window on the middle LEFT with the clearly recognizable twin peaks of Mount Ararat visible in the distant landscape outside, geographically plausible view from Yerevan, no buildings blocking mountain. Leave the LEFTMOST 28 percent quiet and dark for website copy (window begins about x30%). On the right side show a clearly three-dimensional sculptural bronze oval/ring pendant over the stone table: visible actual CEILING plane across top of room, bronze ceiling canopy correctly fixed to ceiling, thin vertical cables down to the pendant, visible depth and perspective so it emphatically floats in the room above table, never looks wall-mounted. Separate vertical wall sconces on BACK WALL at x53% and x85%, a bronze floor lamp far right x94%, a floating low console on right back wall with concealed under-strip. Exactly five independently controlled light circuits (pendant, left sconce, right sconce, floor lamp, strip). OFF STATE: all electric light emitters are completely off, no glowing lamps, no underconsole light, room illuminated by soft natural diffuse daytime window light. Sophisticated calm believable materials, neutral graphite not brown, full furniture visible and spatially coherent. Pendant x69% y29%, sconces around y43%, console bottom y69%, large table top center x62% y70%. No people, no logos, no writing. This is an architectural room photo, not a collage.",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\scenes\\lusar-room-ararat-off.webp"
+  },
+  {
+    "slug": "lusar-room-ararat-on",
+    "path": "site/scenes/lusar-room-ararat-on.webp",
+    "prompt": "Edit this exact room photograph. Preserve pixel-aligned camera, architecture, furniture, ceiling, pendant geometry and location, both sconces, floor lamp, console, window and Mount Ararat view; absolutely no object, material, framing or perspective changes. Switch on ONLY the existing electric lights: the undersurface of the ceiling-hung oval pendant at x68% y35%, both vertical wall sconces at x53.5% and x86% y44%, the floor lamp x95.5% y42%, and the subtle concealed strip under the floating console at x81% y64%. Each light should emit realistic soft warm 3000K light, with natural pools on the graphite wall and LARGE STONE TABLE. Pendant lighting is physically anchored to its lower inner ring, no stray light lines on the wall. The console strip is ONLY beneath console at y64%, NOT the underside of the pendant. Maintain EXACT same daylight from window, mountain view and overall room exposure, do not globally darken photo; only add local illumination. This paired frame will be composited under independent masks so exact alignment is essential. No text, no UI, no people.",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\scenes\\lusar-room-ararat-on.webp"
+  },
+  {
+    "slug": "yerevan-layers",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9 composition, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable, no people, no text, no logos, no watermark, no collage. A contemporary modest Yerevan apartment living room, view of distant Mount Ararat through a window, pale Armenian tuff accent wall, ceiling light, wall sconces and reading lamp forming clear layers, restrained graphite and warm gold lighting, achievable real home. Keep main composition comfortably inside frame. Unique photograph, not a product catalogue shot.",
+    "hint": "Generated images are saved to C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd as C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd\\exec-1644bd9f-8a1a-4779-b2e8-6bdc638bb562.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+    "path": "site/editorial/yerevan-layers.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\yerevan-layers.webp"
+  },
+  {
+    "slug": "low-ceiling",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9 composition, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable, no people, no text, no logos, no watermark, no collage. A real Yerevan apartment living room with a low 2.6 meter ceiling, elegant slim flush ceiling fixtures, wall sconces and indirect lighting, warm white plaster and dark grey furniture, no huge chandelier, realistic proportions. Keep main composition comfortably inside frame. Unique photograph, not a product catalogue shot.",
+    "hint": "Generated images are saved to C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd as C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd\\exec-ca8830da-8438-46db-a9dc-5d76fc2bceb9.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+    "path": "site/editorial/low-ceiling.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\low-ceiling.webp"
+  },
+  {
+    "slug": "tuff-colour",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9 composition, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable, no people, no text, no logos, no watermark, no collage. Close interior view of a beautiful Armenian pink tuff wall and walnut sideboard, two tasteful compact wall sconces showing warm and neutral white illumination with naturally different colour on the stone, subtle textiles. Keep main composition comfortably inside frame. Unique photograph, not a product catalogue shot.",
+    "hint": "Generated images are saved to C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd as C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd\\exec-99ee32fd-f548-467b-a398-969cc7d4d1b5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+    "path": "site/editorial/tuff-colour.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\tuff-colour.webp"
+  },
+  {
+    "slug": "family-dining",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9 composition, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable, no people, no text, no logos, no watermark, no collage. A family dining room in an Armenian home with a generous dark stone table, wooden chairs, a properly suspended elegant bronze linear light over the table, Armenian handmade ceramic plates and a simple pomegranate bowl, understated contemporary design. Keep main composition comfortably inside frame. Unique photograph, not a product catalogue shot.",
+    "hint": "Generated images are saved to C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd as C:\\Users\\Sova\\.codex\\generated_images\\01a1a592-d808-7391-86eb-b8c681d1a4dd\\exec-a7d604f5-98f3-42d9-8ba0-e4110bb47238.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+    "path": "site/editorial/family-dining.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\family-dining.webp"
+  },
+  {
+    "slug": "kitchen-zones",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. Contemporary Yerevan open plan kitchen, bright useful lighting beneath cabinets over the worktop and separate suspended fixtures over a stone breakfast island, dark graphite cabinetry, pale tuff texture, daylight. Unique room photograph, keep main subject comfortably inside frame.",
+    "path": "site/editorial/kitchen-zones.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\kitchen-zones.webp"
+  },
+  {
+    "slug": "gyumri-bedroom",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A calm contemporary bedroom in Gyumri with a black tuff accent detail, subtle Armenian woven textile on the bed, paired reading wall lights, soft warm light, refined simple home design. Unique room photograph, keep main subject comfortably inside frame.",
+    "path": "site/editorial/gyumri-bedroom.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\gyumri-bedroom.webp"
+  },
+  {
+    "slug": "hallway",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A narrow entrance hall in a Yerevan apartment, tall mirror, elegant paired wall lamps, shallow wooden console and tidy shoe storage, light stone, practical comfortable illuminated circulation. Unique room photograph, keep main subject comfortably inside frame.",
+    "path": "site/editorial/hallway.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\hallway.webp"
+  },
+  {
+    "slug": "bathroom",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, beautiful natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. Modern bathroom in an Armenian apartment, softly textured pale tuff-coloured tile, clear evenly illuminated face-height mirror lighting and safe enclosed ceiling lights, clean stone basin, restrained architecture. Unique room photograph, keep main subject comfortably inside frame.",
+    "path": "site/editorial/bathroom.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\bathroom.webp"
+  },
+  {
+    "slug": "home-office",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9. Natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. Small bright home office beside a window overlooking Yerevan with distant Ararat, desk lamp positioned beside a closed laptop to avoid screen reflection, matte surfaces, shelves with Armenian ceramic vessels. Unique room photograph.",
+    "path": "site/editorial/home-office.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\home-office.webp"
+  },
+  {
+    "slug": "child-room",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9. Natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A peaceful child's bedroom in an Armenian home, a small desk with useful task lamp, soft indirect evening light and covered ceiling fixture, restrained woven Armenian pattern on a cushion, no child or person. Unique room photograph.",
+    "path": "site/editorial/child-room.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\child-room.webp"
+  },
+  {
+    "slug": "yerevan-balcony",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9. Natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A compact Yerevan balcony at dusk, distant city rooftops and Ararat skyline, plants, small coffee table, shielded warm wall lights, intimate realistic urban apartment terrace. Unique room photograph.",
+    "path": "site/editorial/yerevan-balcony.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\yerevan-balcony.webp"
+  },
+  {
+    "slug": "dilijan-terrace",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9. Natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A timber and stone family house terrace in Dilijan surrounded by misty green forest, warm shielded wall sconces and gentle step illumination, rainy blue hour, practical outdoor fixtures. Unique room photograph.",
+    "path": "site/editorial/dilijan-terrace.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\dilijan-terrace.webp"
+  },
+  {
+    "slug": "sevan-house",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A modern stone holiday house by Lake Sevan at winter dusk, snowy landscape and blue lake, protected compact exterior wall lights casting soft light by the entrance, no exposed wiring. Unique photograph.",
+    "path": "site/editorial/sevan-house.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\sevan-house.webp"
+  },
+  {
+    "slug": "gyumri-home",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A restored high ceiling room in a historic Gyumri black tuff house, tall windows and refined modern pendant anchored to ceiling, modest contemporary furniture and subtle Armenian textiles, balanced layered lighting. Unique photograph.",
+    "path": "site/editorial/gyumri-home.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\gyumri-home.webp"
+  },
+  {
+    "slug": "yerevan-cafe",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. An intimate contemporary Yerevan cafe, warm pendants properly hung over small tables, stone walls and walnut, beautiful food colour under comfortable light, Armenian handmade ceramics, no people or signs. Unique photograph.",
+    "path": "site/editorial/yerevan-cafe.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\yerevan-cafe.webp"
+  },
+  {
+    "slug": "colour-rendering",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. Editorial still life in an Armenian interior: pomegranates, apricots, a small woven Armenian textile and handmade glazed ceramic vase on a neutral stone table under clean high quality white light, natural accurate rich colours, visible elegant lamp edge. Unique photograph.",
+    "path": "site/editorial/colour-rendering.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\colour-rendering.webp"
+  },
+  {
+    "slug": "track-light",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A contemporary Armenian home art corner with a small painting of Mount Ararat and Armenian ceramics on shelves, neat black ceiling track fixtures aiming at wall and objects without harsh glare, matte plaster and dark stone. Unique photograph.",
+    "path": "site/editorial/track-light.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\track-light.webp"
+  },
+  {
+    "slug": "dimming",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. Close editorial detail of a beautiful modern wall dimmer knob beside a graphite wall, in the background a living room with a ceiling pendant and soft adjustable warm light, walnut console, Armenian ceramics, no text on switch. Unique photograph.",
+    "path": "site/editorial/dimming.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\dimming.webp"
+  },
+  {
+    "slug": "led-shelves",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. An elegant shelving alcove in a Yerevan home, hidden LED strip illuminating handmade Armenian ceramic vessels and books, visible soft reflected light without exposed bright LED points, matte charcoal and natural tuff, restrained. Unique photograph.",
+    "path": "site/editorial/led-shelves.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\led-shelves.webp"
+  },
+  {
+    "slug": "ai-planning",
+    "prompt": "Create one photorealistic editorial interior photograph for LUSAR lighting journal for Armenian readers. Wide landscape 16:9, natural architectural photography, believable materials, physically plausible fixture mounting and illumination, sophisticated but attainable. No people, no text, no logos, no watermark, no collage. A contemporary Armenian apartment room ready for a lighting redesign, handsome stone table and sofa, a simple old pendant and wall space clearly visible, window looking towards Mount Ararat, camera-like realistic wide room photograph suitable for planning, no screen or UI. Unique photograph.",
+    "path": "site/editorial/ai-planning.webp",
+    "asset": "C:\\Users\\Sova\\Documents\\ChatGPT\\Lusar\\lusar-github\\site\\editorial\\ai-planning.webp"
+  }
+]

@@ -2,7 +2,7 @@
   const header = document.querySelector(".site-header");
   const nav = header.querySelector(".main-nav");
   const menuToggle = header.querySelector("#menu-toggle");
-  const narrow = matchMedia("(max-width: 58rem)");
+  const narrow = matchMedia("(max-width: 78rem)");
   const dropdowns = [...nav.querySelectorAll(".nav-dropdown")];
   for (const link of nav.querySelectorAll("a")) {
     if (link.pathname === location.pathname) link.setAttribute("aria-current", "page");

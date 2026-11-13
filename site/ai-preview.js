@@ -133,7 +133,7 @@
   document.querySelector("#ai-form").addEventListener("submit", async event => {
     event.preventDefault();
     const file = input.files[0];
-    if (!available || input.disabled || !file || !document.querySelector("#ai-consent").checked) return;
+    if (!available || input.disabled || !file) return;
     const submittedWishes = wishes.value;
     submit.disabled = true;
     input.disabled = true;

@@ -63,11 +63,13 @@ document.addEventListener("click", event => {
   const id = add.dataset.add;
   const status = document.querySelector("#cart-status");
   try {
+    cart = readCart();
     const quantity = (Number.isSafeInteger(cart[id]) && cart[id] > 0 ? cart[id] : 0) + 1;
     if (quantity > 999) { status.textContent = "Максимальное количество — 999."; return; }
     save({ ...cart, [id]: quantity });
     window.lusarAnalytics?.added(id);
-    status.textContent = `Товар в корзине. Количество: ${quantity}.`;
+    const total = Object.values(cart).reduce((sum, value) => sum + (Number.isSafeInteger(value) && value > 0 && value <= 999 ? value : 0), 0);
+    status.textContent = `В корзине: ${total} шт.`;
     document.querySelector("#cart-next").hidden = false;
   } catch {
     status.textContent = "Не удалось сохранить корзину в этом браузере.";
@@ -229,7 +231,7 @@ function updatePromoTotal() {
   document.querySelector("#order-discount-row").hidden = !discount;
   document.querySelector("#cart-summary").textContent = unavailable ? "Уберите недоступные товары, чтобы оформить заявку." : "";
   const promoStatus = document.querySelector("#promo-total");
-  promoStatus.textContent = unpriced ? "Менеджер подтвердит цену и скидку по этой заявке." : !valid ? "Промокод не найден." : first ? "Скидка на первый заказ применяется отдельно." : code ? "Промокод применён." : "";
+  promoStatus.textContent = unpriced ? "Менеджер подтвердит цену и скидку по этой заявке." : !valid ? "Промокод не найден." : first ? "Скидка на первый заказ применяется отдельно." : code === "HAPPY" ? "Скидка 10% в день рождения. Менеджер подтвердит дату до оплаты." : code ? "Промокод применён." : "";
   promoField.disabled = submitting || unpriced || unavailable || first;
   promoField.setAttribute("aria-invalid", String(priced && !valid));
   promoField.setCustomValidity(priced && !valid ? (window.lusarLocale?.text("Промокод не найден.") || "Промокод не найден.") : "");

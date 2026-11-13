@@ -19,7 +19,7 @@ async function until(condition) { for (let i=0;i<80;i++) { if (condition()) retu
 function open(path) { return new Promise(resolve => { frame.onload = () => resolve(frame.contentDocument); frame.src = path; }); }
 function input(page, field, value) { field.value = value; field.dispatchEvent(new frame.contentWindow.Event("input", {bubbles:true})); }
 function total(page) { return Number(page.querySelector("#order-total").textContent.replace(/[^0-9]/g,"")); }
-function layout(page) { require(page.documentElement.scrollWidth <= page.documentElement.clientWidth + 1, "Overflow: " + page.location.pathname); }
+function layout(page) { require(page.documentElement.scrollWidth <= page.documentElement.clientWidth + 1, "Overflow: " + page.location.pathname + " " + JSON.stringify([...page.querySelectorAll('main *,footer *,header *')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0 && r.right>page.documentElement.clientWidth+1}).slice(0,8).map(el=>({tag:el.tagName,cls:el.className,width:el.getBoundingClientRect().width,right:el.getBoundingClientRect().right,text:el.textContent.slice(0,50)})))); }
 (async () => {
  try {
   localStorage.clear(); sessionStorage.clear(); localStorage.setItem("lusar-cookie-choice-v1","essential");

@@ -534,6 +534,8 @@
       const sku = trimmed.match(/^Артикул (.+)$/u);
       const receipt = trimmed.match(/^Заявка №(LS-(?:[0-9]{6}|[A-F0-9]{12})) получена\.$/u);
       const tracking = trimmed.match(/^Заявка №(LS-(?:[0-9]{6}|[A-F0-9]{12})): (.+)\.$/u);
+      const cartTotal = trimmed.match(/^В корзине: (\d+) шт\.$/u);
+      if (cartTotal) translated = language === "hy" ? "Զամբյուղում՝ " + cartTotal[1] + " հատ։" : "In your bag: " + cartTotal[1] + " items.";
       const quantity = trimmed.match(/^Товар в корзине\. Количество: (\d+)\.$/u);
       const hours = trimmed.match(/^Часы связи с менеджером: (.+)\.$/u);
       if (matches) translated = (language === "hy" ? "Գտնվել է՝ " : "Results: ") + matches[1];
@@ -544,6 +546,7 @@
       if (quantity) translated = language === "hy" ? "Ավելացվել է զամբյուղում։ Քանակ՝ " + quantity[1] + "։" : "Added to bag. Quantity: " + quantity[1] + ".";
       if (hours) translated = (language === "hy" ? "Կապի ժամերը՝ " : "Contact hours: ") + hours[1] + ".";
     }
+    if (translated === undefined && base.includes(" · ")) translated = base.split(" · ").map(part => text(part)).join(" · ");
     if (translated === undefined) return source;
     const result = translated + (arrow ? " " + arrow[2] : "");
     return source.replace(trimmed, result);

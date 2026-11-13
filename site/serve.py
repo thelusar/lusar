@@ -47,7 +47,14 @@ def adjustment_token(number, status, payload, key=MANAGER_FORM_KEY):
 
 
 def apply_adjustment(order, status, action, value, quantity):
+    if action == "verify_birthday":
+        if order.get("promo") != "HAPPY" or order.get("birthdayVerified") or status not in {"new", "in_progress", "completed"}:
+            raise ValueError("Подтверждение дня рождения недоступно.")
+        order["birthdayVerified"] = True
+        return status
     if action == "payment":
+        if order.get("promo") == "HAPPY" and not order.get("birthdayVerified"):
+            raise ValueError("Сначала подтвердите день рождения покупателя.")
         if status not in {"in_progress", "completed"} or order.get("payment") or value not in PAYMENT_METHODS:
             raise ValueError("Оплату нельзя отметить для этого заказа.")
         if order.get("total") is None:
@@ -84,6 +91,7 @@ def apply_adjustment(order, status, action, value, quantity):
     return status if remaining else "cancelled"
 
 def order_amount(lines, promo, *, account_percent=0, first_order=False):
+    promo = promo.strip().upper()
     # Account discounts must come from the authenticated customer's record.
     # first_order must come from a server-side eligibility check.
     if first_order and (promo or account_percent):
@@ -364,7 +372,7 @@ class Handler(SimpleHTTPRequestHandler):
         )
         feedback = ui.notice(self, {'status': 'Статус заказа обновлён.', 'payment': 'Оплата отмечена.',
                                     'return': 'Возврат сохранён.', 'refund_paid': 'Выплата отмечена.',
-                                    'deleted': 'Заказ удалён.'})
+                                    'verify_birthday': 'День рождения подтверждён.', 'deleted': 'Заказ удалён.'})
         empty = ui.empty('Заказов пока нет', 'Новые заявки с сайта появятся здесь.', 'orders')
         no_match = ui.empty('Заказы не найдены', 'Попробуйте изменить запрос или сбросить фильтр.', 'search')
         listing = ('<div class="staff-table-head" aria-hidden="true"><span>Номер · время Еревана</span><span>Клиент</span>'
@@ -647,6 +655,9 @@ class Handler(SimpleHTTPRequestHandler):
         form = (f'<form class="staff-action" method="post" action="/manager/orders/adjust">'
                 f'<input type="hidden" name="number" value="{html.escape(number, quote=True)}">'
                 f'<input type="hidden" name="token" value="{adjustment_token(number, status, raw, key)}">')
+        if order.get("promo") == "HAPPY" and not order.get("birthdayVerified") and status in {"new", "in_progress", "completed"}:
+            return ('<p class="staff-payment-summary">Happy · скидка 10% ожидает подтверждения дня рождения. Проверьте дату перед оплатой. Копию документа сохранять не нужно.</p>'
+                    + form + '<input type="hidden" name="value" value="confirmed"><button name="action" value="verify_birthday">День рождения подтверждён</button></form>')
         if not order.get("payment"):
             if status not in {"in_progress", "completed"} or order.get("total") is None:
                 return '<p class="staff-payment-summary">Оплата не отмечена.</p>'
@@ -717,7 +728,9 @@ class Handler(SimpleHTTPRequestHandler):
                     return staff.form_error(self, 409, str(error), staff.ORDERS_PATH, actor)
                 db.execute("UPDATE orders SET status = ?, payload = ? WHERE number = ?",
                            (target, json.dumps(order, ensure_ascii=False), number))
-                if action == 'payment':
+                if action == 'verify_birthday':
+                    detail = 'Подтверждено право на скидку Happy в день рождения'
+                elif action == 'payment':
                     detail = f'{PAYMENT_METHODS[value]} · {order["payment"]["amount"]} ֏'
                 else:
                     entry = order['returns'][-1 if action == 'return' else int(value)]
@@ -725,7 +738,7 @@ class Handler(SimpleHTTPRequestHandler):
                     detail = f'{item["name"]} · {entry["quantity"]} шт. · {entry["refundDue"]} ֏'
                     if target != status:
                         detail += f' · {STATUS_LABELS[status]} → {STATUS_LABELS[target]}'
-                staff.record(db, number, actor, action, detail)
+                staff.record(db, number, actor, 'status' if action == 'verify_birthday' else action, detail)
                 if target != status:
                     db.execute("""CREATE TABLE IF NOT EXISTS order_status_history (
                         number TEXT NOT NULL, previous TEXT NOT NULL, current TEXT NOT NULL,

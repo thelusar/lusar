@@ -24,7 +24,7 @@ f.onload = async () => { try {
  require(hero.dataset.interactive === 'true', 'Lighting controls did not become ready');
  const layers = [...hero.querySelectorAll('[data-light]')];
  const levels = () => layers.map(layer => Number(layer.style.getPropertyValue('--level')));
- const select = key => hero.querySelector(`[data-fixture="${key}"]`).click();
+ const select = key => { for(const pin of hero.querySelectorAll('[data-fixture][aria-pressed="true"]')) pin.click(); hero.querySelector(`[data-fixture="${key}"]`).click(); };
  const input = (id, value) => { const slider = d.getElementById(id); slider.value = value; slider.dispatchEvent(new w.Event('input', {bubbles: true})); };
  const initial = levels();
  select('right'); input('fixture-brightness', 23);
@@ -39,9 +39,17 @@ f.onload = async () => { try {
  require(levels()[1] === 0 && levels()[2] === .23, 'Wall lights are coupled');
  select('right'); require(d.getElementById('fixture-temperature').value === '6500', 'Temperature did not survive fixture selection');
  hero.querySelector('[data-scene="evening"]').click();
- require(JSON.stringify(levels()) === JSON.stringify([.25,.4,.4,.2,.65]), 'Evening preset failed');
- hero.querySelector('[data-scene="off"]').click(); require(levels().every(value => value === 0), 'All off failed');
- hero.querySelector('[data-scene="warm"]').click(); require(JSON.stringify(levels()) === JSON.stringify(initial), 'Warm preset failed');
+ require(JSON.stringify(levels()) === JSON.stringify([.35,.65,.65,.45,.7]), 'Evening preset failed');
+ const evening = levels(); d.querySelector('#scene-power').click(); require(levels().every(value => value === 0), 'All off failed');
+ d.querySelector('#scene-power').click(); require(JSON.stringify(levels()) === JSON.stringify(evening), 'Global power did not restore previous light');
+ hero.querySelector('[data-scene="morning"]').click(); require(levels().some(value=>value>0) && d.querySelector('#fixture-temperature').value==='4500','Morning needs useful white light');
+ hero.querySelector('[data-scene="day"]').click(); require(JSON.stringify(levels()) === JSON.stringify(initial), 'Day preset failed');
+ hero.querySelector('[data-fixture="left"]').click(); input('fixture-brightness',58);
+ require(levels()[1]===.58 && levels()[2]===.58 && levels()[0]===initial[0], 'Selected group adjustment failed');
+ d.querySelector('[data-select-all]').click(); input('fixture-brightness',42);
+ require(levels().every(value=>value===.42),'All-light adjustment failed');
+ d.querySelector('[data-select-all]').click(); require(d.querySelector('#fixture-brightness').disabled,'Empty selection did not disable adjustment');
+ select('right');
  for (let value = 1; value <= 100; value++) input('fixture-brightness', value);
  require(levels()[2] === 1 && !hero.querySelector('[data-scene][aria-pressed="true"]'), 'Rapid adjustments lost state or left a stale preset');
  const samples = [];
@@ -56,6 +64,13 @@ f.onload = async () => { try {
     for (const element of hero.querySelectorAll('button, input')) {
      const rect = element.getBoundingClientRect();
      require(rect.width >= 24 && rect.height >= 24 && rect.left >= -1 && rect.right <= w.innerWidth + 1, 'Control outside viewport or too small at ' + width);
+    }
+    if(width>=1440){
+     const copy=hero.querySelector('.hero-copy').getBoundingClientRect(),panel=hero.querySelector('.room-console').getBoundingClientRect();
+     require(copy.bottom+8<=panel.top,'Glass controls overlap intro at '+width+'/'+language);
+     d.querySelector('[data-select-all]').click();
+     require(copy.bottom+8<=hero.querySelector('.room-console').getBoundingClientRect().top,'Group controls overlap intro at '+width+'/'+language);
+     select('right');
     }
     const stage = hero.querySelector('.room-stage').getBoundingClientRect();
     require(Math.abs(stage.width / stage.height - 1672/941) < .01, 'Room frame distorted at ' + width);
@@ -82,7 +97,7 @@ class Handler(serve.Handler):
             from urllib.parse import parse_qs, urlsplit
             params = parse_qs(urlsplit(self.path).query)
             width = int(params.get('width', ['1440'])[0])
-            preset = params.get('preset', ['warm'])[0]
+            preset = params.get('preset', ['day'])[0]
             language = params.get('language', ['ru'])[0]
             # The iframe preserves real narrow viewports despite Edge's minimum window size.
             self.send_html('''<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#080808}iframe{display:block;border:0}</style>
@@ -123,8 +138,8 @@ def main():
                 print(output)
                 if args.screenshots:
                     args.screenshots.mkdir(parents=True, exist_ok=True)
-                    for name, width, height, preset, language in [('desktop',1440,1000,'warm','ru'),('day',1440,1000,'day','ru'),
-                        ('evening',1440,1000,'evening','ru'),('mobile',390,1050,'warm','ru'),('mobile-hy',320,1100,'warm','hy')]:
+                    for name, width, height, preset, language in [('desktop',1440,1000,'day','ru'),('day',1440,1000,'morning','ru'),
+                        ('evening',1440,1000,'evening','ru'),('mobile',390,1050,'day','ru'),('mobile-hy',320,1100,'day','hy')]:
                         subprocess.run(common + ['--user-data-dir=' + temp + '/' + name, '--window-size=' + str(max(width,600)) + ',' + str(height),
                             '--virtual-time-budget=4000', '--screenshot=' + str(args.screenshots / (name + '.png')),
                             origin + f'/hero-screenshot?width={width}&preset={preset}&language={language}'], capture_output=True, timeout=35, check=True)

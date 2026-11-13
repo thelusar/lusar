@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import quote, urlencode
 from xml.etree import ElementTree
 from loyalty import FIRST_ORDER_PERCENT, LOYALTY_TIERS
+import storefront_design as design
 from sync_catalog import validate, revision
 
 ROOT = Path(__file__).resolve().parent
@@ -18,7 +19,7 @@ ANALYTICS_IDS = {
     "google-analytics": os.environ.get("LUSAR_GA4_ID", "").strip(),
     "yandex-metrica": os.environ.get("LUSAR_YANDEX_METRICA_ID", "").strip(),
 }
-AI_TELEGRAM_USERNAME = os.environ.get("LUSAR_AI_TELEGRAM_USERNAME", "").strip()
+AI_TELEGRAM_USERNAME = os.environ.get("LUSAR_AI_TELEGRAM_USERNAME", "LusarAiBot").strip()
 AI_TELEGRAM_USERNAME = re.sub(r"^(?:https?://)?(?:www\.)?t\.me/", "", AI_TELEGRAM_USERNAME, flags=re.IGNORECASE)
 AI_TELEGRAM_USERNAME = AI_TELEGRAM_USERNAME.removeprefix("@").removesuffix("/")
 if AI_TELEGRAM_USERNAME and not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{1,28}bot", AI_TELEGRAM_USERNAME, flags=re.IGNORECASE):
@@ -103,7 +104,7 @@ def nav_dropdown(title, items, path, overview):
             '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">'
             '<path d="m2 4 4 4 4-4" fill="none" stroke="currentColor"/></svg></summary>'
             '<div class="nav-panel"><ul>' +
-            "".join(f"<li>{link(url, label)}</li>" for url, label in items) +
+            "".join(f'<li><a href="/{url.strip(chr(47))}">{nav_icon("lamp" if path == "catalog" else ROOM_ICONS.get(url.split(chr(47))[-1], "overview"))}<span>{html.escape(label)}</span></a></li>' for url, label in items) +
             f'</ul><p>{link(path, overview, direction=True)}</p></div></details>')
 
 
@@ -117,7 +118,7 @@ def wordmark():
 def header_markup():
     shortcuts = (("search", "Поиск"), ("favorites", "Избранное"),
                  ("account", "Личный кабинет"), ("cart", "Корзина"))
-    tools = "".join(f'<a class="icon-link" href="/{key}" aria-label="{title}" title="{title}">{nav_icon(key)}</a>'
+    tools = "".join(f'<a class="icon-link" href="/{key}" aria-label="{title}" title="{title}">{nav_icon(key)}{'<span class=cart-badge data-cart-total hidden aria-hidden=true></span>' if key == 'cart' else ''}</a>'
                     for key, title in shortcuts)
     catalog_links = [(category_path(key), category["name"]) for key, category in categories.items()
                      if not category.get("parentId")]
@@ -126,9 +127,10 @@ def header_markup():
     return ('<header class="site-header"><div class="header-inner">'
             + wordmark() +
             '<nav class="main-nav" id="main-nav" aria-label="Основная навигация">' +
-            nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог") +
-            nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты") + link("ai", "Lusar AI") +
-            link("contacts", "Контакты") +
+            link("", "Главная") + nav_dropdown("Каталог", catalog_links, "catalog", "Весь каталог") +
+            nav_dropdown("По комнатам", room_links, "rooms", "Все комнаты") +
+            '<a class="nav-ai" href="/ai">' + nav_icon("spark") + 'Lusar AI</a>' + link("journal", "Статьи") +
+            link("contacts", "Контакты") + link("about", "О нас") + link("offers", "Акции") +
             '<a class="mobile-shortcut" href="/favorites">' + nav_icon("favorites") + '<span>Избранное</span></a>' +
             '<a class="mobile-shortcut" href="/account">' + nav_icon("account") + '<span>Личный кабинет</span></a>' +
             '</nav><nav class="header-tools" aria-label="Поиск и покупки">' + tools +
@@ -149,8 +151,8 @@ def footer_markup():
                      "".join(f"<li>{link(path, label)}</li>" for path, label in items) +
                      "</ul></section>" for title, items in FOOTER_GROUPS)
     return ('<footer class="site-footer"><div class="footer-main"><div class="footer-brand">' +
-            wordmark() + '<p>Светильники для дома и проектов.</p></div>' + groups +
-            '</div><div class="footer-bottom"><span>© LUSAR</span>' +
+            wordmark() + design.footer_intro() + '</div>' + groups +
+            '</div>' + design.footer_stores() + '<div class="footer-bottom"><span>© LUSAR</span>' +
             "".join(link(path, label) for path, label in FOOTER_LEGAL) +
             '<button type="button" id="cookie-settings" hidden>Настройки cookie</button></div></footer>')
 
@@ -180,7 +182,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         attrs = "".join(f' data-{provider}="{value}"' for provider, value in ANALYTICS_IDS.items() if value)
         if attrs:
             analytics = ' data-analytics-enabled="true"' + attrs
-    critical_scripts = ["locale.js", "site-nav.js"]
+    critical_scripts = ["locale.js", "site-nav.js", "storefront.js"]
     for script in ("product-filters.js", "product-gallery.js", "receipt.js?v=3", "search.js"):
         tag = f'<script src="/{script}" defer></script>'
         if tag in body:
@@ -201,6 +203,14 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         page_class = "catalog-page category-page"
     if path.startswith("catalog/product/"):
         page_class = "product-page"
+    if path == "rooms" or path.startswith("rooms/"):
+        page_class = "room-page"
+    if path == "journal":
+        page_class = "journal-page"
+    elif path.startswith("journal/") and path != "journal/guides":
+        page_class = "article-page"
+    if path == "offers":
+        page_class = "offers-page"
     if page_class in {"content-page", "catalog-page category-page"}:
         page_heading = f'<header class="page-heading"><h1>{html.escape(title)}</h1></header>'
     else:
@@ -208,7 +218,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     target.write_text(f"""<!doctype html>
 <html lang="ru" data-catalog-revision="{CATALOG_REVISION}"{analytics}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 {robots}{canonical}{metadata}<title>{html.escape(title)} — LUSAR</title>
-<link rel="stylesheet" href="/site.css"><link rel="expect" href="#main" blocking="render">
+<link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="/storefront.css"><link rel="expect" href="#main" blocking="render">
 <script src="/theme.js"></script><script src="/account-session.js" defer></script>{scripts}</head>
 <body><a class="skip-link" href="#main">К содержанию</a>{header_markup()}
 <main id="main" tabindex="-1" class="{page_class}">{page_heading}{body}</main>
@@ -397,7 +407,7 @@ featured_products = [products[1] if len(products) > 1 else products[0]
                      for key in home_categories if (products := products_with_photos.get(key))]
 
 write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding="utf-8")
-      + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
+      + design.home_service(nav_icon) + '<section class="home-collection"><div class="section-heading"><h2>Выберите свой свет</h2>' +
       link("rooms", "По комнатам", direction=True) + '</div>' +
       category_cards(home_categories) +
       '</section><section class="home-collection"><div class="section-heading"><h2>Из каталога</h2>' +
@@ -406,7 +416,7 @@ write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding=
       '<section class="home-rooms"><div class="section-heading"><h2>Свет по комнатам</h2>' +
       link("rooms", "Все комнаты", direction=True) + '</div><ul>' +
       "".join(f'<li><a href="/rooms/{key}"><span class="room-number" aria-hidden="true">{index:02}</span>'
-              f'<span>{html.escape(name)}</span>{nav_icon("forward")}</a></li>'
+              f'<img src="/editorial/{design.ROOM_IMAGES[key]}.webp" alt="" width="960" height="540" loading="lazy"><span>{html.escape(name)}</span>{nav_icon("forward")}</a></li>'
               for index, (key, (name, *_)) in enumerate(ROOMS.items(), 1)) +
       '</ul></section><section class="home-ai"><div class="home-ai-photo">'
       '<img src="/scenes/ai-interior.jpg" alt="" width="1536" height="1024" loading="lazy" decoding="async">'
@@ -414,10 +424,10 @@ write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding=
       '<span class="eyebrow">' + nav_icon("spark") + ' Lusar AI</span><h2>Ваш интерьер. Новый свет.</h2>'
       '<p>Загрузите фото комнаты и примерьте светильники из каталога.</p>'
       '<a class="button-link" href="/ai">Начать примерку</a>'
-      '</div></section>',
+      '</div></section>' + design.home_editorial(),
       description="Светильники LUSAR для дома и проектов. Каталог освещения и примерка светильников в вашем интерьере с Lusar AI.")
 write("catalog", "Каталог освещения",
-      '<div class="section-heading catalog-heading"><h1>Каталог освещения</h1><nav aria-label="Подбор света">' +
+      '<div class="section-heading catalog-heading"><div><span class="eyebrow">LUSAR · Коллекция света</span><h1>Каталог освещения</h1><p>От света над семейным столом до бра у любимого кресла. Выбирайте по комнате, форме и характеру света.</p></div><nav aria-label="Подбор света">' +
       link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' + category_navigation() +
       '<section class="catalog-products" id="catalog-products" aria-label="Все светильники">' +
       product_grid(sorted(data["products"], key=lambda item: list(categories).index(item["categoryId"]))) + '</section>',
@@ -635,30 +645,9 @@ write("legal/cookies", "Политика cookie",
                        '<p>Выбор статистики можно изменить через «Настройки cookie» в подвале.</p>') +
       '</div><p class="page-note">Страница в разработке</p>', draft=True)
 write("ai", "Lusar AI", (ROOT / "ai-page.html").read_text(encoding="utf-8")
-      .replace("<!-- spark-icon -->", nav_icon("spark")).replace("<!-- upload-icon -->", nav_icon("upload")) +
-      (f'<p class="ai-telegram"><a href="https://t.me/{AI_TELEGRAM_USERNAME}">Открыть Lusar AI в Telegram</a></p>'
-       if AI_TELEGRAM_USERNAME else ""), draft=True)
-write("rooms", "Подобрать свет по комнате",
-      '<p class="lead">Выберите помещение, чтобы посмотреть идеи по освещению и перейти в подходящие категории.</p>' +
-      '<div class="info-cards room-directory">' +
-      "".join(information_card(ROOM_ICONS[key], title, f'<p>{html.escape(tip)}</p>' +
-                               info_actions(((f"rooms/{key}", "Смотреть варианты"),)), featured=index == 0)
-              for index, (key, (title, tip, _)) in enumerate(ROOMS.items())) + '</div>',
-      description="Подбор светильников для гостиной, спальни, кухни, рабочего места и улицы.")
-for key, (title, tip, related) in ROOMS.items():
-    room_categories = [category for category in related if category in categories]
-    write(f"rooms/{key}", title,
-          f'<p class="lead">{html.escape(tip)}</p>' +
-          '<div class="section-heading info-section"><h2>Что посмотреть в каталоге</h2>' +
-          link("rooms", "Все комнаты", direction=True) + '</div>' +
-          category_cards(room_categories) +
-          info_actions((("ai", "Примерить с Lusar AI"), ("journal/guides", "Как выбрать свет"))),
-          description=tip)
-write("journal", "Статьи",
-      '<div class="info-cards">' +
-      information_card("lamp", "Как выбрать свет", '<p>С чего начать подбор освещения для каждой комнаты.</p>' +
-                       info_actions((("journal/guides", "Читать"),)), featured=True) + '</div>',
-      description="Практические советы по выбору освещения для разных помещений.")
+      .replace("<!-- spark-icon -->", nav_icon("spark")).replace("<!-- upload-icon -->", nav_icon("upload"))  , draft=True)
+design.render_rooms(write, ROOMS, category_cards, product_grid, data["products"], nav_icon)
+design.render_journal(write)
 write("journal/guides", "Как выбрать свет",
       '<div class="info-cards">' +
       information_card("overview", "Разделите свет по задачам",
@@ -691,14 +680,8 @@ write("search", "Поиск по каталогу", """
 <ul id="search-results" class="page-links search-results"></ul>
 <script src="/search.js" defer></script>
 """ + info_actions((("catalog", "Открыть каталог"),)), draft=True)
-write("offers", "Акции",
-      '<div class="info-cards">' +
-      information_card("spark", f"{FIRST_ORDER_PERCENT}% на первый заказ",
-                       '<p>Предложение доступно всем зарегистрированным покупателям без выполненных заказов. '
-                       'Если заказ отменён, скидка остаётся доступной. Минимальной суммы нет. '
-                       'Скидка применяется отдельно от промокодов и скидки кабинета.</p>' +
-                       info_actions((("account/register", "Регистрация"), ("catalog", "Открыть каталог"))), featured=True) +
-      '</div>', description="Условия скидки LUSAR на первый заказ для зарегистрированных покупателей.")
+write("offers", "Акции", design.offers(nav_icon), description="Скидка на первый заказ и 10% в день рождения с промокодом Happy. Условия акций LUSAR.")
+design.render_privacy(write)
 loyalty_rows = "".join(
     f'<tr><td>{("От " + f"{threshold:,}".replace(",", " ") + " ֏") if threshold else "До 50 000 ֏"}</td><td>{discount}%</td></tr>'
     for threshold, discount in LOYALTY_TIERS
@@ -893,7 +876,24 @@ ElementTree.ElementTree(sitemap).write(OUT / "sitemap.xml", encoding="utf-8", xm
 for asset in ("staff.css", "staff.js"):
     (OUT / asset).write_bytes((ROOT / asset).read_bytes())
 (OUT / "theme.js").write_bytes((ROOT / "theme.js").read_bytes())
-(OUT / "locale.js").write_bytes((ROOT / "locale.js").read_bytes())
+(OUT / "locale.js").write_text((ROOT / "locale.js").read_text(encoding="utf-8").replace(
+    "const translations = {", "const translations = {" + json.dumps(design.TRANSLATIONS,ensure_ascii=False)[1:-1] + ","), encoding="utf-8")
+for asset in ("storefront.css", "storefront.js"):
+    (OUT / asset).write_bytes((ROOT / asset).read_bytes())
+(OUT / "editorial").mkdir(exist_ok=True)
+# Continue each photograph's edge colours through its containment area.
+# The fixture itself retains object-fit: contain, including in dynamic saved lists.
+photo_surfaces = json.loads((ROOT / "photo-surfaces.json").read_text(encoding="utf-8"))
+photo_rules = []
+for photo_url, surface in photo_surfaces.items():
+    if not re.fullmatch(r"linear-gradient\(180deg,(?:#[0-9a-f]{6} [0-9]+%,?)+\)", surface):
+        raise ValueError("Invalid photograph surface")
+    selector = ':is(.product-thumb,.category-photo,.product-photo,.wishlist-photo,.cart-row-photo):has(>img[src=' + json.dumps(photo_url) + '])'
+    photo_rules.append(selector + '{background:' + surface + '!important}')
+with (OUT / "storefront.css").open("a", encoding="utf-8") as css:
+    css.write("\n" + "\n".join(photo_rules))
+for asset in (ROOT / "editorial").glob("*.webp"):
+    (OUT / "editorial" / asset.name).write_bytes(asset.read_bytes())
 (OUT / "cookie-settings.js").write_bytes((ROOT / "cookie-settings.js").read_bytes())
 (OUT / "analytics.js").write_bytes((ROOT / "analytics.js").read_bytes())
 (OUT / "scenes.js").write_bytes((ROOT / "scenes.js").read_bytes())
@@ -916,7 +916,7 @@ for asset in ("staff.css", "staff.js"):
 )
 (OUT / "scenes").mkdir(exist_ok=True)
 for name in ("lusar-hero.webp", "lusar-scene-day.webp", "lusar-scene-evening.webp", "ai-interior.jpg",
-             "lusar-room-off.webp", "lusar-room-on.webp"):
+             "lusar-room-off.webp", "lusar-room-on.webp", "lusar-room-ararat-off.webp", "lusar-room-ararat-on.webp"):
     (OUT / "scenes" / name).write_bytes((ROOT / "scenes" / name).read_bytes())
 search_index = [
     {"name": item["name"], "path": "/" + product_path(item).rstrip("/"), "sku": item["sku"],
@@ -939,6 +939,7 @@ search_index = [
     {"name": question, "path": "/faq", "sku": "", "keywords": answer}
     for question, answer in FAQ
 ]
+search_index += design.search_entries()
 (OUT / "search.js").write_text(
     "const searchIndex = " + json.dumps(search_index, ensure_ascii=False) + ";\n" +
     (ROOT / "search.js").read_text(encoding="utf-8"), encoding="utf-8"

@@ -1,10 +1,6 @@
-<section class="ai-intro">
-  <span class="eyebrow"><!-- spark-icon --> Lusar AI</span>
-  <h1>Примерьте новый свет</h1>
-  <p id="ai-mode">Ваше фото, ваши пожелания и светильники из каталога LUSAR.</p>
-</section>
 <div class="ai-workspace">
   <form id="ai-form" class="ai-controls">
+    <div class="ai-form-intro"><span class="eyebrow"><!-- spark-icon --> Lusar AI</span><h1>Примерьте новый свет</h1><p id="ai-mode">Ваше фото, ваши пожелания и светильники из каталога LUSAR.</p></div>
     <div class="ai-step-heading"><span aria-hidden="true">01</span><h2>Ваша комната</h2></div>
     <p id="ai-product" hidden><a id="ai-product-link"></a></p>
     <label id="ai-dropzone" class="upload-zone" for="ai-photo">
@@ -22,11 +18,9 @@
       <button type="button" data-ai-wish="Современный стиль" aria-pressed="false">Современный стиль</button>
       <button type="button" data-ai-wish="Мягкое освещение" aria-pressed="false">Мягкое освещение</button>
     </div>
-    <label class="ai-consent"><input id="ai-consent" type="checkbox" required>
-      <span>Согласен на отправку фото и пожеланий в OpenAI для обработки.</span>
-    </label>
     <button id="ai-submit" class="primary-action" type="submit" disabled>Подобрать и примерить свет</button>
-    <p class="ai-photo-note">Используйте фото без людей и личных данных.</p>
+    <p class="ai-privacy-note">Запуская примерку, вы соглашаетесь на обработку фото и пожеланий в OpenAI. <a href="/legal/ai">Подробнее</a></p>
+    <a class="ai-telegram-action" href="https://t.me/LusarAiBot"><!-- spark-icon --><span>Lusar AI Bot<small>Продолжите примерку в Telegram</small></span></a>
   </form>
   <section class="ai-stage" aria-label="Примерка освещения">
     <div class="ai-stage-heading"><h2>Ваша примерка</h2></div>

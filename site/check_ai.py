@@ -72,7 +72,7 @@ frame.onload = async () => {
     const wishes = page.querySelector("#ai-wishes");
     const submittedWishes = wishes.value;
     require(submittedWishes && preset.getAttribute("aria-pressed") === "true", "Quick preference failed");
-    page.querySelector("#ai-consent").checked = true;
+    require(page.querySelector(".ai-privacy-note a[href='/legal/ai']") && !page.querySelector("#ai-consent"), "Concise processing notice missing");
     page.querySelector("#ai-form").requestSubmit();
     require(!page.querySelector("#ai-progress").hidden && input.disabled, "Loading state failed");
     wishes.value = "Changed while processing";

@@ -142,8 +142,8 @@ async function checkMenuResize(page) {
     }
   };
   try {
-    frame.width = "1100";
-    await settleResize(() => frame.contentWindow.innerWidth === 1100);
+    frame.width = "1440";
+    await settleResize(() => frame.contentWindow.innerWidth === 1440);
     page.querySelector(".nav-dropdown summary").focus();
     frame.width = originalWidth;
     // Headless virtual time may coalesce iframe resize notifications; deliver the settled viewport event.
@@ -198,7 +198,7 @@ openPage("/", page => {
   const timeout = Date.now() + 5000;
   function waitForScene() {
     if (day.getAttribute("aria-pressed") === "true") {
-      require([...page.querySelectorAll("[data-light]")].every(layer => Number(layer.style.getPropertyValue("--level")) === 0), "Daylight preset left an artificial light on");
+      require([...page.querySelectorAll("[data-light]")].some(layer => Number(layer.style.getPropertyValue("--level")) > 0), "Day preset needs useful artificial light");
       mobileLayout(page);
       checkMenuResize(page);
     } else if (Date.now() < timeout) {

@@ -60,13 +60,19 @@ Before deploying the staff panel, sign in to the staging storefront as the inten
 
 The shared staging password opens the test site. The order panel requires an individual account with a staff role. Changes to status, payment and returns appear in **Журнал заказа**, with the account that performed them. Earlier history remains in the database. Check access in separate browser sessions for a customer, manager and administrator before using the panel.
 
-## Interactive homepage lighting
+## Interactive homepage and editorial storefront
 
-`hero.html` and `scenes.js` provide five independent light circuits: pendant, left and right wall lights, floor lamp and console strip. Select a hotspot to adjust its brightness, approximate light temperature or power. Day, warm and evening presets set all circuits; the power icon switches them all off. Switching a light back on restores its last nonzero brightness. Changes are local to the current page and require no API calls.
+`hero.html`, `scenes.js` and `storefront.css` provide five independent light circuits over a room with a stone table and an Ararat view. Hotspots visibly select one or several circuits. The glass panel controls brightness, approximate temperature and group power. Morning, day and evening presets include artificial light; global power restores the previous scene, including circuits that were already off. Interaction is local and makes no AI requests.
 
-The two aligned WebP room frames together weigh about 164 KiB. Soft masks isolate the fixture and its light pool without changing camera position. The temperature control is an illustrative color preview, not a physical lighting calculation; the pictured fixtures are illustrative and are not linked to catalog products. The image coordinate plane remains uncropped on mobile. Controls appear after the illuminated frame loads, with space reserved to avoid layout shifts; failed loading leaves the ambient image visible. Motion follows the visitor's reduced-motion preference. Art direction is saved in `scenes/lusar-room.prompts.txt`.
+The two aligned WebP room frames weigh about 187 KiB together. Masks isolate fixtures and light pools. This is an illustrative preview rather than a physical lighting calculation; the depicted fixtures are not linked to catalogue SKUs. The image coordinate plane remains uncropped on mobile. Controls appear once the illuminated frame loads, and motion respects reduced-motion preferences.
 
-Run `python site/check_hero.py` after building to verify independent circuits, preserved settings, presets, translated controls, reduced motion, and 36 responsive language/theme states. Add `--screenshots <output-directory>` to save desktop and narrow-viewport previews. `check_checkout.py` also verifies the daylight preset and the existing shopping workflow.
+`editorial.json` contains 20 distinct Armenia-focused articles in Russian, Armenian and English. `editorial/` holds their 20 individual AI-generated WebP illustrations; each article identifies its illustration as generated. Articles have descriptions, canonical URLs, Article structured data, search entries and sitemap entries. `storefront_design.py` renders the journal, room planning pages, offers and footer. Full legal pages still need the operator's missing details before launch.
+
+`photo-surfaces.json` stores measured edge colours for the current 46 catalogue photographs. The build continues these colours around contained images without changing or cropping the fixture. New photographs fall back to a neutral surface until their edge colours are added.
+
+`Happy` is case-insensitive and gives a preliminary 10% birthday discount without a minimum spend. A staff member must confirm eligibility before recording payment. Confirmation is stored on the order and in its staff journal; no document image or date of birth is collected. Existing first-order, loyalty and single-code combination rules remain in effect.
+
+Run `python site/build.py`, then `python site/check_hero.py` and `python site/check_storefront.py`. The latter verifies the journal, loading of all illustrations, 180 responsive language/theme states, AI actions within the desktop viewport, aggregate bag quantity and birthday confirmation/payment. `check_checkout.py`, `check_accounts.py`, `check_catalog.py`, `check_cart.py` and `check_ai.py` cover the existing flows. AI checks simulate the provider API and do not incur paid generation calls. Image prompts and output paths are saved in `visual-prompts.json`.
 
 ## PostgreSQL preparation
 

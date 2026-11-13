@@ -1,99 +1,73 @@
 (() => {
   const hero = document.querySelector('.home-hero');
   if (!hero) return;
-  const fixtures = {
-    pendant: {name: 'Подвес', level: 75, temperature: 3000, last: 75},
-    left: {name: 'Левое бра', level: 65, temperature: 3000, last: 65},
-    right: {name: 'Правое бра', level: 65, temperature: 3000, last: 65},
-    floor: {name: 'Торшер', level: 45, temperature: 3000, last: 45},
-    strip: {name: 'Подсветка консоли', level: 60, temperature: 3000, last: 60}
-  };
-  const presets = {
-    day: [0, 0, 0, 0, 0], warm: [75, 65, 65, 45, 60],
-    evening: [25, 40, 40, 20, 65], off: [0, 0, 0, 0, 0]
-  };
-  const pins = [...hero.querySelectorAll('[data-fixture]')];
-  const buttons = [...hero.querySelectorAll('[data-scene]')];
-  const brightness = hero.querySelector('#fixture-brightness');
-  const temperature = hero.querySelector('#fixture-temperature');
-  const power = hero.querySelector('#fixture-power');
-  const caption = hero.querySelector('#scene-caption');
-  const name = hero.querySelector('#fixture-name');
-  const translate = source => window.lusarLocale?.text(source) || source;
-  let selected = 'pendant';
-  function renderFixture(key) {
-    const fixture = fixtures[key];
-    const layer = hero.querySelector(`[data-light="${key}"]`);
-    layer.style.setProperty('--level', fixture.level / 100);
-    // Aligned light pools remain fixed as brightness changes. Desaturation
-    // previews neutral white without casting a blue tint over the whole room.
-    const warmth = (6500 - fixture.temperature) / 3800;
-    layer.style.filter = `saturate(${.08 + warmth * 1.12}) brightness(${1.2 - warmth * .2})`;
-    pins.find(item => item.dataset.fixture === key).dataset.lit = String(fixture.level > 0);
+  const fixtures = Object.fromEntries(['pendant','left','right','floor','strip'].map((key,index) => [key, {
+    name: ['Подвес','Левое бра','Правое бра','Торшер','Подсветка консоли'][index], level: [90,40,40,30,45][index], temperature:3800, last: [90,40,40,30,45][index]
+  }]));
+  const presets = {morning:{levels:[65,25,25,20,35],temperature:4500},day:{levels:[90,40,40,30,45],temperature:3800},evening:{levels:[35,65,65,45,70],temperature:2700}};
+  const keys=Object.keys(fixtures), selected=new Set(['pendant']);
+  const $=selector=>hero.querySelector(selector), pins=[...hero.querySelectorAll('[data-fixture]')];
+  const brightness=$('#fixture-brightness'),temperature=$('#fixture-temperature'),power=$('#fixture-power'),globalPower=$('#scene-power');
+  const translate=source=>window.lusarLocale?.text(source)||source;
+  let currentPreset='day', savedScene=null;
+  function render() {
+    for (const key of keys) {
+      const fixture=fixtures[key], layer=$('[data-light="'+key+'"]'), warmth=(6500-fixture.temperature)/3800;
+      layer.style.setProperty('--level', fixture.level/100);
+      layer.style.filter='saturate('+(.04+Math.pow(warmth,2.5)*1.12)+') brightness('+(1.24-warmth*.24)+')';
+      const pin=pins.find(item=>item.dataset.fixture===key);
+      pin.setAttribute('aria-pressed',String(selected.has(key)));
+      pin.dataset.lit=String(fixture.level>0);
+    }
+    const values=[...selected].map(key=>fixtures[key]), mixed=prop=>new Set(values.map(item=>item[prop])).size>1;
+    $('#fixture-name').textContent=values.length>1 ? translate('Выбрано светильников')+': '+values.length : values[0]?translate(values[0].name):translate('Выберите светильники');
+    $('#fixture-name').title=values.map(item=>translate(item.name)).join(' · ');
+    brightness.disabled=temperature.disabled=power.disabled=!values.length;
+    brightness.value=values.length ? Math.round(values.reduce((sum,item)=>sum+item.level,0)/values.length):0;
+    temperature.value=values[0]?.temperature||3800;
+    $('#brightness-value').value=mixed('level')?translate('Разная'):brightness.value+'%';
+    $('#temperature-value').value=mixed('temperature')?translate('Разная'):temperature.value+' K';
+    brightness.style.setProperty('--fill',brightness.value+'%');
+    power.setAttribute('aria-checked',String(values.some(item=>item.level>0)));
+    globalPower.setAttribute('aria-checked',String(keys.some(key=>fixtures[key].level>0)));
+    $('[data-select-all]').textContent=translate(selected.size===keys.length?'Снять выбор':'Выбрать все');
+    hero.querySelectorAll('[data-scene]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.scene===currentPreset)));
   }
-  function renderEditor() {
-    const fixture = fixtures[selected];
-    name.textContent = translate(fixture.name);
-    brightness.value = fixture.level;
-    temperature.value = fixture.temperature;
-    hero.querySelector('#brightness-value').value = fixture.level + '%';
-    hero.querySelector('#temperature-value').value = fixture.temperature + ' K';
-    brightness.style.setProperty('--fill', fixture.level + '%');
-    power.setAttribute('aria-checked', String(fixture.level > 0));
-    for (const pin of pins) pin.setAttribute('aria-pressed', String(pin.dataset.fixture === selected));
+  function announce(text) {$('#scene-caption').textContent=text;}
+  pins.forEach(pin=>pin.addEventListener('click',()=>{
+    const key=pin.dataset.fixture;
+    selected.has(key)?selected.delete(key):selected.add(key);
+    render();
+    announce(selected.size?translate('Регулируем')+': '+$('#fixture-name').textContent:translate('Выберите светильники'));
+    $('.room-console').classList.remove('selection-changed');
+    requestAnimationFrame(()=>$('.room-console').classList.add('selection-changed'));
+  }));
+  $('[data-select-all]').addEventListener('click',()=>{
+    const all=selected.size===keys.length;selected.clear();if(!all)keys.forEach(key=>selected.add(key));render();
+    announce(translate(all?'Выберите светильники':'Выбраны все светильники'));
+  });
+  brightness.addEventListener('input',()=>{for(const key of selected){const item=fixtures[key];item.level=Number(brightness.value);if(item.level)item.last=item.level;}currentPreset='';render();});
+  temperature.addEventListener('input',()=>{for(const key of selected)fixtures[key].temperature=Number(temperature.value);currentPreset='';render();});
+  function toggle(target) {
+    const on=target.some(key=>fixtures[key].level>0);
+    for(const key of target){const item=fixtures[key];if(on){if(item.level>0)item.last=item.level;item.level=0;}else item.level=item.last||60;}
+    currentPreset='';render();announce(translate(on?'Свет выключен':'Свет включён'));
   }
-  function customScene() {
-    buttons.forEach(button => button.setAttribute('aria-pressed', 'false'));
-    renderFixture(selected);
-    renderEditor();
-  }
-  for (const pin of pins) pin.addEventListener('click', () => {
-    selected = pin.dataset.fixture;
-    renderEditor();
+  power.addEventListener('click',()=>toggle([...selected]));
+  globalPower.addEventListener('click',()=>{
+    const on=keys.some(key=>fixtures[key].level>0);
+    if(on){savedScene={levels:keys.map(key=>fixtures[key].level),preset:currentPreset};keys.forEach(key=>{if(fixtures[key].level>0)fixtures[key].last=fixtures[key].level;fixtures[key].level=0;});currentPreset='';}
+    else {keys.forEach((key,index)=>fixtures[key].level=savedScene?.levels[index]??fixtures[key].last);currentPreset=savedScene?.preset||'';}
+    render();announce(translate(on?'Свет выключен':'Свет включён'));
   });
-  brightness.addEventListener('input', () => {
-    const fixture = fixtures[selected];
-    fixture.level = Number(brightness.value);
-    if (fixture.level > 0) fixture.last = fixture.level;
-    customScene();
-  });
-  temperature.addEventListener('input', () => {
-    fixtures[selected].temperature = Number(temperature.value);
-    customScene();
-  });
-  power.addEventListener('click', () => {
-    const fixture = fixtures[selected];
-    fixture.level = fixture.level > 0 ? 0 : fixture.last;
-    customScene();
-  });
-  // Announce committed values, not every intermediate slider movement.
-  for (const input of [brightness, temperature]) input.addEventListener('change', () => {
-    const fixture = fixtures[selected];
-    caption.textContent = `${translate(fixture.name)}: ${fixture.level}%, ${fixture.temperature} K`;
-  });
-  for (const button of buttons) button.addEventListener('click', () => {
-    Object.keys(fixtures).forEach((key, index) => {
-      const fixture = fixtures[key];
-      fixture.level = presets[button.dataset.scene][index];
-      fixture.temperature = button.dataset.scene === 'evening' ? 2700 : 3000;
-      if (fixture.level > 0) fixture.last = fixture.level;
-      renderFixture(key);
-    });
-    buttons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
-    caption.textContent = button.dataset.scene === 'off' ? translate('Весь свет выключен') : button.textContent;
-    renderEditor();
-  });
-  document.addEventListener('lusar-language-change', renderEditor);
-  Object.keys(fixtures).forEach(renderFixture);
-  renderEditor();
-  // Only reveal controls when their lighting frame can actually be displayed.
-  const lightImage = new Image();
-  lightImage.onload = () => {
-    hero.querySelector('.room-console').hidden = false;
-    hero.querySelector('.room-hotspots').hidden = false;
-    hero.querySelector('.room-hint').hidden = false;
-    hero.dataset.interactive = 'true';
-  };
-  lightImage.onerror = () => hero.querySelectorAll('.room-light').forEach(layer => layer.hidden = true);
-  lightImage.src = '/scenes/lusar-room-on.webp';
+  hero.querySelectorAll('[data-scene]').forEach(button=>button.addEventListener('click',()=>{
+    currentPreset=button.dataset.scene;const preset=presets[currentPreset];
+    keys.forEach((key,index)=>{fixtures[key].level=fixtures[key].last=preset.levels[index];fixtures[key].temperature=preset.temperature;});
+    render();announce(button.textContent+' · '+preset.temperature+' K');
+  }));
+  [brightness,temperature].forEach(input=>input.addEventListener('change',()=>announce($('#fixture-name').textContent+': '+$('#brightness-value').value+', '+$('#temperature-value').value)));
+  document.addEventListener('lusar-language-change',render);render();
+  const image=new Image();image.onload=()=>{hero.querySelectorAll('.room-console,.room-hotspots').forEach(item=>item.hidden=false);hero.dataset.interactive='true';};
+  image.onerror=()=>hero.querySelectorAll('.room-light').forEach(item=>item.hidden=true);
+  image.src='/scenes/lusar-room-ararat-on.webp';
 })();
