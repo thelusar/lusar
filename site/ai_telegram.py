@@ -1,4 +1,4 @@
-"""Private Telegram entry point for the staging Lusar AI service."""
+"""Telegram entry point with explicit public access and bounded photo requests."""
 
 import base64
 import hashlib
@@ -10,7 +10,7 @@ import re
 from collections import deque
 from queue import Full, Queue
 from threading import Lock, Thread
-from time import sleep
+from time import monotonic, sleep
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -44,14 +44,36 @@ def connection_error(error):
 
 
 class AIBot:
-    def __init__(self, token, origin, allowed_users):
+    def __init__(self, token, origin, allowed_users, *, public=False, website_origin=None):
         self.token = token
         self.origin = origin
         self.allowed_users = allowed_users
+        self.public = public
+        self.website_origin = website_origin or origin
+        self.photo_requests = {}
         self.secret = hmac.new(token.encode(), b"LUSAR AI webhook v1", hashlib.sha256).hexdigest()
         self.pending = Queue(maxsize=3)
         self.seen = deque(maxlen=256)
         self.lock = Lock()
+
+    def photo_allowed(self, user_id):
+        """Three photos/hour/user, 30 seconds apart; bounded, process-local state."""
+        now = monotonic()
+        with self.lock:
+            expired = [key for key, times in self.photo_requests.items() if now - times[-1] >= 3600]
+            for key in expired:
+                del self.photo_requests[key]
+            times = self.photo_requests.get(user_id)
+            if times is None:
+                if len(self.photo_requests) >= 2048:
+                    return False
+                times = self.photo_requests[user_id] = deque()
+            while times and now - times[0] >= 3600:
+                times.popleft()
+            if times and (now - times[-1] < 30 or len(times) >= 3):
+                return False
+            times.append(now)
+            return True
 
     def request(self, method, payload, *, content_type="application/json", timeout=12):
         body = json.dumps(payload).encode() if content_type == "application/json" else payload
@@ -167,13 +189,13 @@ class AIBot:
         command = message.get("text", "").split(maxsplit=1)
         if command and command[0].split("@", 1)[0] == "/start":
             privacy = "Для подбора фото и подпись передаются в OpenAI. Используйте фото без людей и личных данных."
-            if chat_id not in self.allowed_users:
+            if not self.public and chat_id not in self.allowed_users:
                 self.send(chat_id, f"Lusar AI сейчас тестируется. Ваш ID для доступа: {chat_id}.\n\n{privacy}")
                 return
             self.send(chat_id, "Пришлите фото комнаты с пожеланиями в подписи. "
                                f"Я верну примерку светильников и ссылки на модели.\n\n{privacy}")
             return
-        if chat_id not in self.allowed_users:
+        if not self.public and chat_id not in self.allowed_users:
             return
         photos = message.get("photo")
         if not photos:
@@ -183,6 +205,8 @@ class AIBot:
             photo = next((item for item in reversed(photos) if item.get("file_size", 0) <= MAX_PHOTO), None)
             if photo is None:
                 raise AIError(413, "Пришлите фото размером до 4 МБ.")
+            if not self.photo_allowed(chat_id):
+                raise AIError(429, "Доступно до трёх примерок в час, с паузой 30 секунд. Попробуйте позже.")
             file_path = self.request("getFile", {"file_id": photo["file_id"]})["file_path"]
             if not re.fullmatch(r"[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+", file_path):
                 raise AIError(502, "Не удалось открыть фотографию из Telegram.")
@@ -205,7 +229,7 @@ class AIBot:
             lines.append(answer["imageError"])
         for item in answer["products"]:
             label = "В примерке · " if mockup_sent and item["inMockup"] else ""
-            lines.append(f"{label}{item['name']} · {item['sku']}\n{item['reason']}\n{self.origin}{item['path']}")
+            lines.append(f"{label}{item['name']} · {item['sku']}\n{item['reason']}\n{self.website_origin}{item['path']}")
         self.send(chat_id, "\n\n".join(lines) or "По этому фото не удалось подобрать светильники.")
 
 
@@ -215,14 +239,21 @@ def start_bot():
         return None
     origin = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
     parsed = urlparse(origin)
+    access = os.environ.get("LUSAR_AI_TELEGRAM_ACCESS", "private").strip().lower()
+    website_origin = os.environ.get("LUSAR_PUBLIC_ORIGIN", origin).rstrip("/")
+    website = urlparse(website_origin)
     allowed = os.environ.get("LUSAR_AI_TELEGRAM_USER_IDS", "").strip()
     if (not re.fullmatch(r"[0-9]+:[A-Za-z0-9_-]+", token)
             or token == os.environ.get("LUSAR_TELEGRAM_BOT_TOKEN", "").strip()
             or parsed.scheme != "https" or not parsed.netloc or parsed.path or parsed.query or parsed.fragment
+            or access not in {"private", "public"}
+            or website.scheme != "https" or not website.netloc or website.path or website.query or website.fragment
             or (allowed and not re.fullmatch(r"[0-9]+(?:\s*,\s*[0-9]+)*", allowed))):
         logging.warning("LUSAR AI: проверьте отдельный токен бота, адрес Render и ID тестировщиков.")
         return None
-    bot = AIBot(token, origin, {int(value) for value in allowed.split(",")} if allowed else set())
+    bot = AIBot(token, origin, {int(value) for value in allowed.split(",")} if allowed else set(),
+                public=access == "public", website_origin=website_origin)
+    logging.info("LUSAR AI: доступ Telegram %s.", access)
     return bot
 
 
