@@ -1,11 +1,13 @@
 """Build the LUSAR navigation preview from the public storefront snapshot."""
 import html
+import gzip
+import hashlib
 import json
 import os
 import re
 import warnings
 from pathlib import Path
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlsplit
 from xml.etree import ElementTree
 from loyalty import FIRST_ORDER_PERCENT, LOYALTY_TIERS
 import storefront_design as design
@@ -100,12 +102,15 @@ def nav_icon(name):
 
 
 def nav_dropdown(title, items, path, overview):
-    return ('<details class="nav-dropdown"><summary>' + html.escape(title) +
+    return ('<div class="nav-dropdown"><div class="nav-dropdown-heading">' +
+            f'<a class="nav-overview" href="/{path}">{html.escape(title)}</a>' +
+            f'<button class="nav-dropdown-toggle" type="button" aria-label="{html.escape(title)}" '
+            f'aria-controls="nav-{path}" aria-expanded="false">' +
             '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">'
-            '<path d="m2 4 4 4 4-4" fill="none" stroke="currentColor"/></svg></summary>'
-            '<div class="nav-panel"><ul>' +
+            '<path d="m2 4 4 4 4-4" fill="none" stroke="currentColor"/></svg></button></div>'
+            f'<div class="nav-panel" id="nav-{path}" hidden><ul>' +
             "".join(f'<li><a href="/{url.strip(chr(47))}">{nav_icon("lamp" if path == "catalog" else ROOM_ICONS.get(url.split(chr(47))[-1], "overview"))}<span>{html.escape(label)}</span></a></li>' for url, label in items) +
-            f'</ul><p>{link(path, overview, direction=True)}</p></div></details>')
+            f'</ul><p>{link(path, overview, direction=True)}</p></div></div>')
 
 
 def wordmark():
@@ -177,6 +182,12 @@ def write(path, title, body, draft=False, *, description="", image="", structure
     if structured_data and not draft:
         serialized = json.dumps(structured_data, ensure_ascii=False).replace("<", "\\u003c")
         metadata += f'<script type="application/ld+json">{serialized}</script>'
+    if path == "" or path == "catalog" or path.startswith("catalog/"):
+        photo_origins = {f'{urlsplit(photo["url"]).scheme}://{urlsplit(photo["url"]).netloc}'
+                         for item in data["products"] for photo in item["images"]
+                         if urlsplit(photo["url"]).scheme == "https"}
+        metadata += ''.join(f'<link rel="preconnect" href="{html.escape(origin, quote=True)}">'
+                            for origin in sorted(photo_origins)[:2])
     analytics = ""
     if path not in {"ai", "order-status"} and not (path == "account" or path.startswith("account/")):
         attrs = "".join(f' data-{provider}="{value}"' for provider, value in ANALYTICS_IDS.items() if value)
@@ -311,7 +322,7 @@ def product_grid(items, *, filters=True):
         photo = ""
         if item["images"]:
             url = html.escape(item["images"][min(1, len(item["images"]) - 1)]["url"], quote=True)
-            loading = "eager" if filters and index < 2 else "lazy"
+            loading = "eager" if filters and index < 4 else "lazy"
             photo = f'<img loading="{loading}" decoding="async" src="{url}" alt="" width="640" height="640">'
         attributes = {a["label"]: a["value"].strip() for a in item["attributes"]}
         keywords = " ".join([item["name"], item["sku"], item["brand"], categories[item["categoryId"]]["name"]] +
@@ -388,6 +399,8 @@ def category_cards(keys, *, eager=False, atmosphere=False):
     loading = "eager" if eager else "lazy"
     cards = []
     for key in keys:
+        if key not in categories:
+            continue
         category = categories[key]
         products = products_with_photos.get(key)
         photo = ""
@@ -974,3 +987,24 @@ for directory, current_ids in (
     for page in directory.glob("*/index.html"):
         if page.parent.name not in current_ids:
             page.unlink()
+
+# Each HTML response points to the exact asset bytes for this build. Long-lived
+# browser caching is safe even when a new catalog generation changes cart.js.
+asset_versions = {asset.name: hashlib.sha256(asset.read_bytes()).hexdigest()[:16]
+                  for asset in OUT.iterdir() if asset.suffix in {".js", ".css"}}
+def version_asset(match):
+    attribute, name, query = match.groups()
+    parameters = [part for part in (query or "").lstrip("?").split("&amp;") if part and not part.startswith("asset=")]
+    parameters.append(f'asset={asset_versions[name]}')
+    return f'{attribute}="/{name}?{"&amp;".join(parameters)}"'
+
+for page in OUT.rglob("*.html"):
+    markup = page.read_text(encoding="utf-8")
+    markup = re.sub(r'(src|href)="/([^/"?]+\.(?:js|css))(\?[^"<>]*)?"',
+                    version_asset, markup)
+    page.write_text(markup, encoding="utf-8")
+
+# Precompress text once at build time instead of spending request CPU on it.
+for asset in OUT.rglob("*"):
+    if asset.suffix in {".html", ".js", ".css", ".json", ".svg", ".xml"} and asset.stat().st_size >= 1024:
+        asset.with_name(asset.name + ".gz").write_bytes(gzip.compress(asset.read_bytes(), compresslevel=6, mtime=0))

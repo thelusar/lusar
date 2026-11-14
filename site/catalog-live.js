@@ -2,9 +2,10 @@
   let version = document.documentElement.dataset.catalogRevision;
   if (!version) return;
   let checking = false;
-  const protectedForm = /^\/(ai|support|order-status|account)(\/|$)/.test(location.pathname);
+  // Only pages that display catalog data need background freshness checks.
+  const commercePage = location.pathname === "/" || /^\/(catalog|cart|checkout|favorites|compare|search)(\/|$)/.test(location.pathname);
   async function check() {
-    if (checking || document.hidden || protectedForm) return;
+    if (checking || document.hidden || !commercePage) return;
     checking = true;
     try {
       const response = await fetch("/api/catalog", {cache:"no-store"});
@@ -26,6 +27,9 @@
   window.lusarCatalogCheck = check;
   window.addEventListener("focus", check);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
-  setInterval(check, 30000);
-  check();
+  if (commercePage) {
+    setInterval(check, 60000);
+    // Let the first screen and its controls become usable before polling.
+    window.addEventListener("load", () => setTimeout(check, 1500), {once:true});
+  }
 })();

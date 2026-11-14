@@ -4,6 +4,17 @@
   const menuToggle = header.querySelector("#menu-toggle");
   const narrow = matchMedia("(max-width: 78rem)");
   const dropdowns = [...nav.querySelectorAll(".nav-dropdown")];
+  const hover = matchMedia("(hover: hover) and (pointer: fine)");
+  const closeTimers = new Map();
+  function setDropdown(dropdown, open) {
+    clearTimeout(closeTimers.get(dropdown));
+    dropdown.dataset.open = String(open);
+    dropdown.querySelector(".nav-dropdown-toggle").setAttribute("aria-expanded", String(open));
+    dropdown.querySelector(".nav-panel").hidden = !open;
+  }
+  function openDropdown(dropdown) {
+    for (const other of dropdowns) setDropdown(other, other === dropdown);
+  }
   for (const link of nav.querySelectorAll("a")) {
     if (link.pathname === location.pathname) link.setAttribute("aria-current", "page");
   }
@@ -12,9 +23,9 @@
     header.dataset.navOpen = String(open);
     menuToggle.setAttribute("aria-expanded", String(open));
     if (open) {
-      nav.querySelector("summary").focus();
+      nav.querySelector("a").focus();
     } else {
-      for (const dropdown of dropdowns) dropdown.open = false;
+      for (const dropdown of dropdowns) setDropdown(dropdown, false);
     }
   }
 
@@ -35,14 +46,31 @@
     if (event.relatedTarget && !header.contains(event.relatedTarget)) setMenu(false);
   });
   for (const dropdown of dropdowns) {
-    const summary = dropdown.querySelector("summary");
-    summary.addEventListener("click", () => {
-      for (const other of dropdowns) {
-        if (other !== dropdown) other.open = false;
+    const toggle = dropdown.querySelector(".nav-dropdown-toggle");
+    toggle.addEventListener("click", () => {
+      if (dropdown.dataset.open === "true") setDropdown(dropdown, false);
+      else openDropdown(dropdown);
+    });
+    dropdown.addEventListener("pointerenter", () => {
+      if (hover.matches && !narrow.matches) openDropdown(dropdown);
+    });
+    dropdown.addEventListener("pointerleave", () => {
+      if (hover.matches && !narrow.matches) {
+        closeTimers.set(dropdown, setTimeout(() => setDropdown(dropdown, false), 140));
       }
     });
+    dropdown.addEventListener("focusin", event => {
+      clearTimeout(closeTimers.get(dropdown));
+      if (!narrow.matches && event.target.matches(".nav-overview")) openDropdown(dropdown);
+    });
+    toggle.addEventListener("keydown", event => {
+      if (event.key !== "ArrowDown") return;
+      event.preventDefault();
+      openDropdown(dropdown);
+      dropdown.querySelector(".nav-panel a").focus();
+    });
     dropdown.addEventListener("focusout", event => {
-      if (event.relatedTarget && !dropdown.contains(event.relatedTarget)) dropdown.open = false;
+      if (event.relatedTarget && !dropdown.contains(event.relatedTarget)) setDropdown(dropdown, false);
     });
   }
   document.addEventListener("click", event => {
@@ -52,15 +80,15 @@
     }
     if (header.dataset.navOpen === "true" && !header.contains(event.target)) setMenu(false);
     for (const dropdown of dropdowns) {
-      if (!dropdown.contains(event.target)) dropdown.open = false;
+      if (!dropdown.contains(event.target)) setDropdown(dropdown, false);
     }
   });
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
-    const dropdown = dropdowns.find(menu => menu.open);
+    const dropdown = dropdowns.find(menu => menu.dataset.open === "true");
     if (dropdown) {
-      dropdown.open = false;
-      dropdown.querySelector("summary").focus();
+      setDropdown(dropdown, false);
+      dropdown.querySelector(".nav-dropdown-toggle").focus();
     } else if (header.dataset.navOpen === "true") {
       setMenu(false);
       menuToggle.focus();

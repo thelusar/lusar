@@ -144,7 +144,22 @@ async function checkMenuResize(page) {
   try {
     frame.width = "1440";
     await settleResize(() => frame.contentWindow.innerWidth === 1440);
-    page.querySelector(".nav-dropdown summary").focus();
+    const catalog = page.querySelector('.nav-dropdown');
+    const overview = catalog.querySelector('.nav-overview');
+    const disclosure = catalog.querySelector('.nav-dropdown-toggle');
+    require(overview.getAttribute('href') === '/catalog', 'Catalog overview is not a navigation link');
+    require(page.querySelector('.nav-overview[href="/rooms"]'), 'Room overview is not a navigation link');
+    if(frame.contentWindow.matchMedia('(hover: hover) and (pointer: fine)').matches){
+      catalog.dispatchEvent(new frame.contentWindow.PointerEvent('pointerenter'));
+      require(!catalog.querySelector('.nav-panel').hidden, 'Desktop hover did not open catalog');
+    }
+    disclosure.dispatchEvent(new frame.contentWindow.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
+    require(page.activeElement === catalog.querySelector('.nav-panel a'), 'Keyboard cannot enter dropdown links');
+    let intercepted;
+    overview.addEventListener('click',event=>{intercepted=event.defaultPrevented;event.preventDefault();},{once:true});
+    overview.click();
+    require(intercepted === false, 'Overview navigation was intercepted');
+    page.querySelector(".nav-dropdown .nav-overview").focus();
     frame.width = originalWidth;
     // Headless virtual time may coalesce iframe resize notifications; deliver the settled viewport event.
     await settleResize(() => frame.contentWindow.innerWidth < 928);
@@ -182,17 +197,17 @@ openPage("/", page => {
   menuToggle.click();
   require(visible(nav) && menuToggle.getAttribute("aria-expanded") === "true", "Mobile menu did not open");
   const [catalog, rooms] = page.querySelectorAll(".nav-dropdown");
-  const catalogTrigger = catalog.querySelector("summary");
+  const catalogTrigger = catalog.querySelector(".nav-dropdown-toggle");
   catalogTrigger.click();
-  require(catalog.open && catalog.querySelector('a[href="/catalog"]'), "Catalog dropdown failed");
+  require(catalog.dataset.open === "true" && catalog.querySelector('a[href="/catalog"]'), "Catalog dropdown failed");
   mobileLayout(page);
-  rooms.querySelector("summary").click();
-  require(rooms.open && !catalog.open && rooms.querySelector('a[href^="/rooms/"]'), "Room dropdown failed");
+  rooms.querySelector(".nav-dropdown-toggle").click();
+  require(rooms.dataset.open === "true" && catalog.dataset.open !== "true" && rooms.querySelector('a[href^="/rooms/"]'), "Room dropdown failed");
   page.dispatchEvent(new frame.contentWindow.KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
-  require(!rooms.open && page.activeElement === rooms.querySelector("summary"), "Escape did not restore menu focus");
+  require(rooms.dataset.open !== "true" && page.activeElement === rooms.querySelector(".nav-dropdown-toggle"), "Escape did not restore menu focus");
   catalogTrigger.click();
   page.querySelector("#home-title").click();
-  require(!catalog.open && !visible(nav), "Click outside did not close menu");
+  require(catalog.dataset.open !== "true" && !visible(nav), "Click outside did not close menu");
   const day = page.querySelector('[data-scene="day"]');
   day.click();
   const timeout = Date.now() + 5000;

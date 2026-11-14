@@ -144,11 +144,44 @@ class Handler(SimpleHTTPRequestHandler):
         return self.catalog_generation.data if self.catalog_generation else json.loads(CATALOG.read_text(encoding="utf-8-sig"))
 
     def end_headers(self):
-        path = urlsplit(getattr(self, "path", "")).path
+        url = urlsplit(getattr(self, "path", ""))
+        path = url.path
+        if getattr(self, "_vary_encoding", False):
+            self.send_header("Vary", "Accept-Encoding")
         if not any(header.lower().startswith(b"cache-control:") for header in getattr(self, "_headers_buffer", [])):
             dynamic = not Path(path).suffix or path.endswith(".html") or Path(path).name in {"cart.js", "search.js", "ai-preview.js", "support.js"}
-            self.send_header("Cache-Control", "no-store" if dynamic else "private, no-cache")
+            fingerprint = parse_qs(url.query).get("asset", [""])[0]
+            success = bool(re.match(rb'HTTP/\S+ (?:200|304)\b', b''.join(getattr(self, "_headers_buffer", []))))
+            if success and Path(path).suffix in {".js", ".css"} and re.fullmatch(r"[a-f0-9]{16}", fingerprint):
+                self.send_header("Cache-Control", "private, max-age=31536000, immutable")
+            else:
+                self.send_header("Cache-Control", "no-store" if dynamic else "private, no-cache")
         super().end_headers()
+
+    def send_head(self):
+        target = Path(self.translate_path(self.path))
+        if target.is_file() and target.suffix in {".html", ".js", ".css", ".json", ".svg", ".xml"}:
+            self._vary_encoding = True
+            accepted = []
+            for entry in self.headers.get("Accept-Encoding", "").lower().split(","):
+                parts = entry.strip().split(";")
+                try:
+                    quality = next((float(part.strip()[2:]) for part in parts[1:] if part.strip().startswith("q=")), 1)
+                except ValueError:
+                    quality = 0
+                if quality > 0:
+                    accepted.append(parts[0])
+            compressed = target.with_name(target.name + ".gz")
+            if "gzip" in accepted and compressed.is_file() and compressed.stat().st_mtime_ns >= target.stat().st_mtime_ns:
+                stream = compressed.open("rb")
+                self.send_response(200)
+                self.send_header("Content-Type", self.guess_type(str(target)))
+                self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(compressed.stat().st_size))
+                self.send_header("Last-Modified", self.date_time_string(target.stat().st_mtime))
+                self.end_headers()
+                return stream
+        return super().send_head()
 
     def list_directory(self, path):
         self.send_error(404)

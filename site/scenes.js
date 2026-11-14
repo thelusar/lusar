@@ -8,14 +8,20 @@
   const keys=Object.keys(fixtures), selected=new Set(['pendant']);
   const $=selector=>hero.querySelector(selector), pins=[...hero.querySelectorAll('[data-fixture]')];
   const brightness=$('#fixture-brightness'),temperature=$('#fixture-temperature'),power=$('#fixture-power'),globalPower=$('#scene-power'),curtain=$('#curtain-opening');
+  const layers=Object.fromEntries(keys.map(key=>[key,$('[data-light="'+key+'"]')]));
+  const fixturePins=Object.fromEntries(pins.map(pin=>[pin.dataset.fixture,pin]));
+  const previous=new Map(), sceneButtons=[...hero.querySelectorAll('[data-scene]')];
+  const curtainLayer=$('.window-curtain'),sceneImage=$('#scene-image');
   const translate=source=>window.lusarLocale?.text(source)||source;
   let currentPreset='day', savedScene=null;
   function render() {
     for (const key of keys) {
-      const fixture=fixtures[key], layer=$('[data-light="'+key+'"]'), warmth=(6500-fixture.temperature)/3800;
-      layer.style.setProperty('--level', fixture.level/100);
-      layer.style.filter='saturate('+(.04+Math.pow(warmth,2.5)*1.12)+') brightness('+(1.24-warmth*.24)+')';
-      const pin=pins.find(item=>item.dataset.fixture===key);
+      const fixture=fixtures[key], layer=layers[key], warmth=(6500-fixture.temperature)/3800;
+      const before=previous.get(key);
+      if(before?.level!==fixture.level) layer.style.setProperty('--level', fixture.level/100);
+      if(before?.temperature!==fixture.temperature) layer.style.filter='saturate('+(.04+Math.pow(warmth,2.5)*1.12)+') brightness('+(1.24-warmth*.24)+')';
+      previous.set(key,{level:fixture.level,temperature:fixture.temperature});
+      const pin=fixturePins[key];
       pin.setAttribute('aria-pressed',String(selected.has(key)));
       pin.dataset.lit=String(fixture.level>0);
     }
@@ -31,18 +37,18 @@
     power.setAttribute('aria-checked',String(values.some(item=>item.level>0)));
     globalPower.setAttribute('aria-checked',String(keys.some(key=>fixtures[key].level>0)));
     $('[data-select-all]').textContent=translate(selected.size===keys.length?'Снять выбор':'Выбрать все');
-    hero.querySelectorAll('[data-scene]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.scene===currentPreset)));
+    sceneButtons.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.scene===currentPreset)));
   }
   function announce(text) {$('#scene-caption').textContent=text;}
   function renderCurtain() {
     const closure=Number(curtain.value), closed=closure/100, opening=100-closure;
     const edge=28.2+closed*17.2;
     // Follow the perspective of the window's top and bottom rails.
-    $('.window-curtain').style.clipPath=`polygon(24.1% 1.9%,${edge}% ${9.4+closed*13.9}%,${edge}% ${82-closed*10.2}%,24.1% 84%)`;
+    curtainLayer.style.clipPath=`polygon(24.1% 1.9%,${edge}% ${9.4+closed*13.9}%,${edge}% ${82-closed*10.2}%,24.1% 84%)`;
     // Unfold a dedicated full-resolution fabric asset instead of enlarging a narrow photo crop.
-    $('.window-curtain').style.setProperty('--drape-width',`${4.1+closed*17.2}%`);
-    $('.window-curtain').style.setProperty('--fabric-light',String(.72+opening*.0028));
-    $('#scene-image').style.filter=`brightness(${.18+.82*opening/100})`;
+    curtainLayer.style.setProperty('--drape-width',`${4.1+closed*17.2}%`);
+    curtainLayer.style.setProperty('--fabric-light',String(.72+opening*.0028));
+    sceneImage.style.filter=`brightness(${.18+.82*opening/100})`;
     $('#curtain-value').value=closure+'%';
     curtain.style.setProperty('--fill',closure+'%');
     curtain.setAttribute('aria-valuetext',closure+'% · '+translate(closure===100?'Закрыта':closure===0?'Полностью открыта':'Закрытие шторы'));
@@ -55,8 +61,6 @@
     selected.has(key)?selected.delete(key):selected.add(key);
     render();
     announce(selected.size?translate('Регулируем')+': '+$('#fixture-name').textContent:translate('Выберите светильники'));
-    $('.room-console').classList.remove('selection-changed');
-    requestAnimationFrame(()=>$('.room-console').classList.add('selection-changed'));
   }));
   $('[data-select-all]').addEventListener('click',()=>{
     const all=selected.size===keys.length;selected.clear();if(!all)keys.forEach(key=>selected.add(key));render();

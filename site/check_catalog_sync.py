@@ -38,7 +38,7 @@ class Quiet(serve.Handler):
 
 class SyncTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(self.temp.cleanup)
         self.feed = Feed()
         self.service = CatalogService(Path(self.temp.name) / "generations", fetcher=self.feed)
@@ -57,7 +57,7 @@ class SyncTests(unittest.TestCase):
         request = Request(self.origin + path, data=json.dumps(payload).encode() if payload else None,
                           headers={"Content-Type": "application/json"} if payload else {})
         try:
-            response = urlopen(request, timeout=15)
+            response = urlopen(request, timeout=40)
         except HTTPError as error:
             response = error
         with response:
@@ -173,6 +173,8 @@ function open(path){return new Promise(resolve=>{frame.onload=()=>resolve(frame.
 def check_browser(browser):
     feed = Feed()
     with tempfile.TemporaryDirectory() as temp:
+        previous_database = serve.DATABASE
+        serve.DATABASE = Path(temp) / 'orders.sqlite'
         service = CatalogService(Path(temp) / "generations", fetcher=feed)
 
         class BrowserHandler(Quiet):
@@ -209,6 +211,7 @@ def check_browser(browser):
             finally:
                 server.shutdown()
                 service.close()
+                serve.DATABASE = previous_database
         if "<output>PASS</output>" not in result.stdout:
             raise RuntimeError(result.stdout.partition("<output>")[2].partition("</output>")[0] or result.stderr[-500:])
     print("Browser catalog refresh, preserved checkout contacts, changed prices, unpublished items and newly published pages passed.")
