@@ -92,6 +92,10 @@ NAV_ICONS = {
     "dining": '<path d="M3 10h18M6 10l-2 9m14-9 2 9M9 10v5h6v-5"/>',
     "desk": '<path d="M3 13h18M5 13v6m14-6v6M8 13V5h8v5H8m4 0v3"/>',
     "outdoor": '<path d="m12 3-4 5h2l-4 5h3l-4 5h14l-4-5h3l-4-5h2ZM12 18v3"/>',
+    "grid": '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+    "compact": '<path d="M4 4h3v3H4Zm6.5 0h3v3h-3ZM17 4h3v3h-3ZM4 10.5h3v3H4Zm6.5 0h3v3h-3Zm6.5 0h3v3h-3ZM4 17h3v3H4Zm6.5 0h3v3h-3Zm6.5 0h3v3h-3Z"/>',
+    "list": '<rect x="3" y="4" width="5" height="6" rx="1"/><rect x="3" y="14" width="5" height="6" rx="1"/><path d="M12 5h9m-9 4h6m-6 6h9m-9 4h6"/>',
+    "filter": '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="var(--surface)"/><circle cx="15" cy="17" r="2" fill="var(--surface)"/>',
 }
 
 
@@ -314,8 +318,8 @@ def display_price(item):
     return "Цена по запросу" if item["price"] is None else f'{item["price"]:,} ֏'.replace(",", " ")
 
 
-def product_grid(items, *, filters=True):
-    if not items:
+def product_grid(items, *, filters=True, sidebar=False, active=""):
+    if not items and not sidebar:
         return "<p>В этой категории пока нет опубликованных товаров.</p>"
     cards = []
     for index, item in enumerate(items):
@@ -337,10 +341,13 @@ def product_grid(items, *, filters=True):
                    + nav_icon("favorites") + '</button>'
                    f'<button type="button" data-add="{identity}" aria-label="Добавить в корзину">'
                    + nav_icon("cart") + '</button></div>') if filters else ""
+        details = ' · '.join(f'{a["value"]} {a["unit"]}'.strip() for a in item["attributes"]
+                             if a["label"] in {"Цоколь", "Мощность", "Цветовая температура"})
         cards.append(
             f'<li {attrs}><a href="/{product_path(item).strip("/")}">'
             f'<span class="product-thumb">{photo}</span>'
             f'<span class="tile-name" data-locale-source>{html.escape(item["name"])}</span>'
+            + (f'<span class="tile-details">{html.escape(details)}</span>' if sidebar else '') +
             f'<span class="tile-price">{html.escape(display_price(item))}</span></a>{actions}</li>'
         )
     grid = '<ul class="tiles product-tiles">' + "".join(cards) + '</ul>'
@@ -360,6 +367,41 @@ def product_grid(items, *, filters=True):
     for name, label, attribute in (("socket", "Цоколь", "Цоколь"), ("temperature", "Температура света", "Цветовая температура")):
         values = sorted({a["value"].strip() for item in items for a in item["attributes"] if a["label"] == attribute and a["value"].strip()})
         facets += select(name, label, [(value, value + (" K" if name == "temperature" else "")) for value in values])
+    if sidebar:
+        views = ''.join(f'<button type="button" data-catalog-view="{view}" aria-label="{label}" title="{label}" '
+                        f'aria-pressed="{str(view == "grid").lower()}">{nav_icon(view)}</button>'
+                        for view, label in (("grid", "Крупные карточки"), ("compact", "Компактные карточки"), ("list", "Список")))
+        return (
+            '<div class="catalog-browser" data-view="grid"><aside class="catalog-sidebar" id="catalog-sidebar" aria-labelledby="catalog-sidebar-title">'
+            '<div class="catalog-sidebar-heading"><h2 id="catalog-sidebar-title">Категории и фильтры</h2>'
+            '<button type="button" data-close-filters aria-label="Закрыть фильтры">' + nav_icon("close") + '</button></div>'
+            + category_navigation(active, vertical=True) +
+            '<form id="product-filters" class="catalog-sidebar-filters" role="search" aria-label="Подбор светильников">'
+            '<section class="catalog-filter-group"><h3>Цена, ֏</h3><div class="catalog-price-range">'
+            '<label><span>От</span><input name="minimum" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>'
+            '<label><span>До</span><input name="maximum" type="number" min="0" step="any" inputmode="decimal" placeholder="Любая"></label></div></section>'
+            + ('<section class="catalog-filter-group catalog-facets">' + facets + '</section>' if facets else '') +
+            '<button type="reset" class="catalog-reset">Сбросить фильтры</button>'
+            '<button type="button" class="catalog-apply" data-close-filters>Показать товары</button></form>'
+            '<div class="catalog-sidebar-help"><span>Нужна помощь с выбором?</span>' + link("rooms", "Подобрать по комнате") +
+            link("ai", "Примерить с Lusar AI") + '</div></aside>'
+            '<div class="catalog-filter-backdrop" hidden></div><section class="catalog-results" aria-label="Товары">'
+            '<div class="catalog-tools"><button type="button" class="catalog-filter-trigger" aria-controls="catalog-sidebar" aria-expanded="false">'
+            + nav_icon("filter") + '<span>Фильтры</span><span id="catalog-active-count" hidden></span></button>'
+            '<label class="catalog-search"><span class="visually-hidden">Поиск по каталогу</span><span>' + nav_icon("search") +
+            '<input form="product-filters" name="q" type="search" placeholder="Название или артикул" autocomplete="off"></span></label>'
+            '<label class="catalog-sort"><span class="visually-hidden">Сортировка</span>'
+            '<select form="product-filters" name="sort"><option value="default">Как в каталоге</option>'
+            '<option value="low">Сначала дешевле</option><option value="high">Сначала дороже</option><option value="name">По названию</option></select></label>'
+            '<div class="catalog-views" role="group" aria-label="Вид каталога">' + views + '</div></div>'
+            '<div class="catalog-results-meta"><p id="product-filter-count" role="status"></p>'
+            '<button type="reset" form="product-filters" class="text-button" id="catalog-clear" hidden>Сбросить фильтры</button></div>'
+            + grid + '<section class="catalog-empty" id="catalog-empty" hidden><h2>Ничего не найдено</h2>'
+            '<p>Попробуйте изменить запрос или сбросить фильтры.</p><button type="reset" form="product-filters">Сбросить фильтры</button></section></section></div>'
+            '<div class="catalog-shopping-feedback"><button type="button" data-dismiss-shopping aria-label="Закрыть уведомление">×</button>'
+            '<p id="cart-status" role="status"></p><p id="favorite-status" role="status"></p>'
+            '<p id="cart-next" hidden>' + link("cart", "Перейти в корзину") + '</p></div><script src="/product-filters.js" defer></script>'
+        )
     return (
         '<form id="product-filters" class="product-filters" role="search" aria-label="Подбор светильников" hidden>'
         '<div class="catalog-toolbar"><label class="catalog-search"><span class="visually-hidden">Поиск по каталогу</span>'
@@ -380,10 +422,12 @@ def product_grid(items, *, filters=True):
     )
 
 
-def category_navigation(active=""):
-    links = '<a href="/catalog"' + (' aria-current="page"' if not active else '') + '>Все светильники</a>'
+def category_navigation(active="", *, vertical=False):
+    def count(key=None):
+        return ('<span class="category-count" aria-hidden="true">' + str(sum(1 for item in data["products"] if key is None or item["categoryId"] == key)) + '</span>') if vertical else ''
+    links = '<a href="/catalog"' + (' aria-current="page"' if not active else '') + '><span>Все светильники</span>' + count() + '</a>'
     links += ''.join(f'<a href="/{category_path(key).strip("/")}"' +
-                     (' aria-current="page"' if key == active else '') + f'>{html.escape(category["name"])}</a>'
+                     (' aria-current="page"' if key == active else '') + f'><span>{html.escape(category["name"])}</span>{count(key)}</a>'
                      for key, category in categories.items())
     return '<nav class="catalog-categories" aria-label="Категории">' + links + '</nav>'
 
@@ -444,18 +488,18 @@ write("", "Свет для жизни", (ROOT / "hero.html").read_text(encoding=
       description="Светильники LUSAR для дома и проектов. Каталог освещения и примерка светильников в вашем интерьере с Lusar AI.")
 write("catalog", "Каталог освещения",
       '<div class="section-heading catalog-heading"><div><span class="eyebrow">LUSAR · Коллекция света</span><h1>Каталог освещения</h1><p>От света над семейным столом до бра у любимого кресла. Выбирайте по комнате, форме и характеру света.</p></div><nav aria-label="Подбор света">' +
-      link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' + category_navigation() +
+      link("rooms", "По комнатам") + link("brands", "Бренды") + '</nav></div>' +
       '<section class="catalog-products" id="catalog-products" aria-label="Все светильники">' +
-      product_grid(sorted(data["products"], key=lambda item: list(categories).index(item["categoryId"]))) + '</section>',
+      product_grid(sorted(data["products"], key=lambda item: list(categories).index(item["categoryId"])), sidebar=True) + '</section>',
       description="Каталог LUSAR. Люстры, подвесные и настенные светильники, прожекторы и уличное освещение. Цены в армянских драмах.")
 for key, category in categories.items():
     children = [(category_path(child), item["name"]) for child, item in categories.items() if item.get("parentId") == key]
     products = [item for item in data["products"] if item["categoryId"] == key]
-    body = category_navigation(key)
+    body = ''
     if children:
         body += "<h2>Подкатегории</h2>" + listing(children)
     if products or not children:
-        body += product_grid(products)
+        body += product_grid(products, sidebar=True, active=key)
     write(category_path(key), category["name"], body, draft=not (products or children))
 for item in data["products"]:
     photos = ""
