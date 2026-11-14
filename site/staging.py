@@ -1,4 +1,4 @@
-"""Password-gated test deployment. Accept synthetic data only."""
+"""Render server: password-gated preview and an explicitly enabled public origin."""
 import base64
 import json
 import logging
@@ -7,6 +7,7 @@ import secrets
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
+from urllib.parse import urlsplit
 
 import ai_telegram
 import lusar_ai
@@ -20,12 +21,21 @@ from catalog_runtime import CatalogService, CatalogUnavailable
 class StagingHandler(serve.Handler):
     local_manager_preview = False
 
+    def public_request(self):
+        origin = getattr(self.server, "public_origin", "")
+        return bool(origin and self.headers.get("Host", "").lower() == urlsplit(origin).netloc.lower())
+
     def end_headers(self):
-        self.send_header("X-Robots-Tag", "noindex, nofollow")
+        path = urlsplit(self.path).path
+        private = path.startswith(("/account", "/auth/", "/manager/", "/api/", "/checkout", "/cart", "/favorites"))
+        if not self.public_request() or private:
+            self.send_header("X-Robots-Tag", "noindex, nofollow")
         self.send_header("Referrer-Policy", "no-referrer")
         super().end_headers()
 
     def staging_authorized(self):
+        if self.public_request():
+            return True
         if secrets.compare_digest(self.headers.get("Authorization", "").encode(), self.staging_auth):
             return True
         self.send_response(401)
@@ -72,11 +82,12 @@ class StagingHandler(serve.Handler):
         return payload
 
     def ai_request(self):
-        origin = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
+        origin = (self.server.public_origin if self.public_request() else
+                  os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/"))
         if not origin:
             origin = "http://" + self.headers.get("Host", "")
         if self.headers.get("Origin") != origin:
-            return self.reply(403, {"error": "Откройте Lusar AI со страницы стенда."})
+            return self.reply(403, {"error": "Откройте Lusar AI на сайте LUSAR."})
         try:
             data = self.read_json(lusar_ai.MAX_REQUEST)
             if data.get("consent") is not True:
@@ -106,12 +117,27 @@ class StagingHandler(serve.Handler):
         return self.reply(200 if accepted else 503, {"ok": accepted})
 
 
+def public_origin():
+    mode = os.environ.get("LUSAR_SITE_MODE", "staging").strip()
+    if mode == "staging":
+        return ""
+    if mode != "production":
+        raise SystemExit("LUSAR_SITE_MODE must be staging or production.")
+    config = serve.customer_accounts.Config.environment()
+    if not config.enabled or not config.secure or not os.environ.get("LUSAR_PUBLIC_ORIGIN", "").strip():
+        raise SystemExit("Production requires LUSAR_PUBLIC_ORIGIN (HTTPS) and configured customer authentication.")
+    if not order_storage.DATABASE_URL or staff.owner_id() is None:
+        raise SystemExit("Production requires PostgreSQL and a configured staff administrator.")
+    return config.origin
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     password = os.environ.get("LUSAR_STAGING_PASSWORD", "")
     if len(password) < 24:
         raise SystemExit("Set LUSAR_STAGING_PASSWORD to a generated secret of at least 24 characters.")
     StagingHandler.staging_auth = b"Basic " + base64.b64encode(f"manager:{password}".encode())
+    origin = public_origin()
     try:
         order_storage.initialize()
     except order_storage.DatabaseError:
@@ -128,6 +154,7 @@ def main():
         try:
             with serve.ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), StagingHandler) as server:
                 server.catalog_service = catalog
+                server.public_origin = origin
                 server.ai_bot = ai_telegram.start_bot()
                 if server.ai_bot is not None:
                     ai_telegram.start_webhook(server.ai_bot)
