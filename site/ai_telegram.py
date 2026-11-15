@@ -57,7 +57,7 @@ class AIBot:
         self.lock = Lock()
 
     def photo_allowed(self, user_id):
-        """Three photos/hour/user, 30 seconds apart; bounded, process-local state."""
+        """Ten photos/hour/user, 30 seconds apart; bounded, process-local state."""
         now = monotonic()
         with self.lock:
             expired = [key for key, times in self.photo_requests.items() if now - times[-1] >= 3600]
@@ -70,7 +70,7 @@ class AIBot:
                 times = self.photo_requests[user_id] = deque()
             while times and now - times[0] >= 3600:
                 times.popleft()
-            if times and (now - times[-1] < 30 or len(times) >= 3):
+            if times and (now - times[-1] < 30 or len(times) >= 10):
                 return False
             times.append(now)
             return True
@@ -206,7 +206,7 @@ class AIBot:
             if photo is None:
                 raise AIError(413, "Пришлите фото размером до 4 МБ.")
             if not self.photo_allowed(chat_id):
-                raise AIError(429, "Доступно до трёх примерок в час, с паузой 30 секунд. Попробуйте позже.")
+                raise AIError(429, "Доступно до 10 примерок в час, с паузой 30 секунд. Попробуйте позже.")
             file_path = self.request("getFile", {"file_id": photo["file_id"]})["file_path"]
             if not re.fullmatch(r"[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+", file_path):
                 raise AIError(502, "Не удалось открыть фотографию из Telegram.")

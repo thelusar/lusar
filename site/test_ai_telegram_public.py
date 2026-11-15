@@ -56,16 +56,16 @@ class PublicBotTests(unittest.TestCase):
             self.assertEqual(analyze.call_count, 1)
             self.assertEqual(download.call_count, 1)
             self.assertEqual(bot.request.call_count, 1)
-        self.assertIn('трёх примерок', bot.send.call_args.args[1])
+        self.assertIn('10 примерок', bot.send.call_args.args[1])
 
     def test_hour_limit_and_expiry_and_independent_clients(self):
         bot = self.bot()
-        with patch('ai_telegram.monotonic', side_effect=[0, 30, 60, 90, 90, 3601]):
-            self.assertTrue(bot.photo_allowed(42))
-            self.assertTrue(bot.photo_allowed(42))
-            self.assertTrue(bot.photo_allowed(42))
+        with patch('ai_telegram.monotonic', side_effect=[*range(0, 300, 30), 300, 300, 3600, 3630]):
+            for _ in range(10):
+                self.assertTrue(bot.photo_allowed(42))
             self.assertFalse(bot.photo_allowed(42))
             self.assertTrue(bot.photo_allowed(43))
+            self.assertTrue(bot.photo_allowed(42))
             self.assertTrue(bot.photo_allowed(42))
 
     def test_configuration_is_explicit_and_webhook_stays_on_render(self):
