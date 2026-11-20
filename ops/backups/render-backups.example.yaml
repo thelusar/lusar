@@ -1,0 +1,32 @@
+# Separate opt-in Blueprint. DO NOT merge into the active render.yaml or apply
+# before approval: creating this Cron Job incurs at least USD 1/month.
+services:
+  - type: cron
+    name: lusar-encrypted-backup
+    runtime: docker
+    repo: https://github.com/thelusar/lusar
+    branch: lusar-next
+    region: oregon
+    plan: starter
+    schedule: "0 */6 * * *"
+    dockerfilePath: ./ops/backups/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: LUSAR_BACKUP_NETWORK
+        value: render-private
+      - key: LUSAR_BACKUP_RECIPIENT
+        sync: false
+      - key: LUSAR_BACKUP_S3_ENDPOINT
+        sync: false
+      - key: LUSAR_BACKUP_S3_BUCKET
+        sync: false
+      - key: LUSAR_BACKUP_ACCESS_KEY_ID
+        sync: false
+      - key: LUSAR_BACKUP_SECRET_ACCESS_KEY
+        sync: false
+      - key: LUSAR_BACKUP_HEARTBEAT_URL
+        sync: false
+      - key: LUSAR_BACKUP_ALERT_WEBHOOK
+        sync: false

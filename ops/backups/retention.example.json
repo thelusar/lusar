@@ -1,0 +1,11 @@
+{
+  "privateBucketRequired": true,
+  "publicAccessEnabled": false,
+  "rulesToConfigureAfterApproval": [
+    {"prefix": "lusar/daily/", "retainDays": 30, "lockDays": 7},
+    {"prefix": "lusar/prechange/", "retainDays": 90, "lockDays": 7},
+    {"prefix": "lusar/monthly/", "retainDays": 365, "lockDays": 30}
+  ],
+  "controlPrefix": "lusar/control/",
+  "controlObjectsMustNotBeLockedOrExpired": true
+}
