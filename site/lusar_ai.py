@@ -13,6 +13,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from sync_catalog import SNAPSHOT
+import ai_limits
 
 
 CATALOG_READER = None
@@ -224,13 +225,15 @@ def analyze(photo, wishes, product_id=None):
     if not active_requests.acquire(blocking=False):
         raise AIError(429, "Lusar AI сейчас занят. Попробуйте через минуту.")
     try:
-        with request_lock:
-            now = monotonic()
-            while recent_requests and now - recent_requests[0] >= 3600:
-                recent_requests.popleft()
-            if len(recent_requests) >= 20:
+        if ai_limits.DATABASE is not None:
+            try:
+                allowed = ai_limits.reserve("global", 20)
+            except ai_limits.Unavailable:
+                raise AIError(503, "Lusar AI временно недоступен. Попробуйте позже.") from None
+            if not allowed:
                 raise AIError(429, "Достигнут часовой лимит примерок. Попробуйте позже.")
-            recent_requests.append(now)
+        else:
+            reserve_local_attempt()
         if product_id is not None:
             return render_room(photo, mime, wishes, [products[product_id]])
         result = recommend(photo, mime, wishes, products)
@@ -248,3 +251,14 @@ def analyze(photo, wishes, product_id=None):
         return result
     finally:
         active_requests.release()
+
+
+def reserve_local_attempt():
+    """Local mock previews only; Render always configures persistent quotas."""
+    with request_lock:
+        now = monotonic()
+        while recent_requests and now - recent_requests[0] >= 3600:
+            recent_requests.popleft()
+        if len(recent_requests) >= 20:
+            raise AIError(429, "Достигнут часовой лимит примерок. Попробуйте позже.")
+        recent_requests.append(now)

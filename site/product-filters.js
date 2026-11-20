@@ -131,7 +131,13 @@
   // Toolbar inputs belong to this form through the form attribute.
   document.addEventListener("input", event => { if (event.target.form === form) render(); });
   document.addEventListener("change", event => { if (event.target.form === form) render(); });
-  form.addEventListener("reset", () => queueMicrotask(() => render()));
+  form.addEventListener("reset", () => {
+    // Hidden inputs update their default value when assigned. Clear the legacy
+    // URL category explicitly so a reset cannot leave invisible filtering active.
+    const category = form.elements.namedItem("category");
+    if (category?.type === "hidden") category.value = "";
+    queueMicrotask(() => render());
+  });
   window.addEventListener("popstate", restore);
   form.hidden = false;
   restore();

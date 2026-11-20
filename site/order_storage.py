@@ -41,6 +41,7 @@ def initialize(local_path=None):
                     db.execute('ALTER TABLE orders ADD COLUMN deleted_by TEXT REFERENCES customers(id) ON DELETE SET NULL')
                 db.execute('CREATE INDEX IF NOT EXISTS orders_customer_created_idx ON orders(customer_id, created DESC)')
                 db.executescript((Path(__file__).parent / 'sqlite/003_staff.sql').read_text(encoding='utf-8'))
+                db.executescript((Path(__file__).parent / 'sqlite/005_ai_attempts.sql').read_text(encoding='utf-8'))
         return
     with psycopg.connect(DATABASE_URL, connect_timeout=5) as db:
         db.execute("SELECT pg_advisory_xact_lock(435312701)")
@@ -54,6 +55,16 @@ def initialize(local_path=None):
 
 def available(local_path):
     return bool(DATABASE_URL) or local_path.is_file()
+
+
+def healthy(local_path):
+    if not available(local_path):
+        return False
+    try:
+        with connect(local_path) as db:
+            return db.execute("SELECT 1").fetchone()[0] == 1
+    except DatabaseError:
+        return False
 
 
 @contextmanager

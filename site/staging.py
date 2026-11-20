@@ -10,6 +10,7 @@ from threading import Thread
 from urllib.parse import urlsplit
 
 import ai_telegram
+import ai_limits
 import lusar_ai
 import notify_orders
 import serve
@@ -47,12 +48,19 @@ class StagingHandler(serve.Handler):
 
     def do_GET(self):
         if self.path == "/healthz":
-            return self.reply(200, {"ok": True, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite",
+            healthy = order_storage.healthy(serve.DATABASE)
+            bot = getattr(self.server, "ai_bot", None)
+            return self.reply(200 if healthy else 503, {"ok": healthy, "storage": "postgresql" if order_storage.DATABASE_URL else "sqlite",
                                     "release": os.environ.get("RENDER_GIT_COMMIT", "local"),
                                     "catalog": self.server.catalog_service.status(),
                                     "accounts": {"configured": self.customer_service().config.enabled},
                                     "staff": {"owner_configured": staff.owner_id() is not None,
-                                              "ui_version": staff.UI_VERSION}})
+                                              "ui_version": staff.UI_VERSION},
+                                    "ai": {"configured": bool(os.environ.get("OPENAI_API_KEY", "").strip()),
+                                           "persistent_limits": ai_limits.DATABASE is not None,
+                                           "telegram": {"configured": bot is not None,
+                                                        "public": bool(bot and bot.public),
+                                                        "transport": bot.transport if bot else "disabled"}}})
         if self.staging_authorized():
             if self.path == "/api/ai":
                 return self.reply(200, {"available": bool(os.environ.get("OPENAI_API_KEY", "").strip())})
@@ -144,6 +152,9 @@ def main():
         raise SystemExit("PostgreSQL connection or migration failed. Check Render database settings.") from None
     with TemporaryDirectory(prefix="lusar-staging-") as directory:
         serve.DATABASE = Path(directory) / "orders.sqlite"
+        if not order_storage.DATABASE_URL:
+            order_storage.initialize(serve.DATABASE)
+        ai_limits.configure(serve.DATABASE)
         catalog = CatalogService(Path(directory) / "catalog")
         try:
             catalog.refresh()

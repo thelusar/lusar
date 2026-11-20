@@ -1,15 +1,19 @@
 """Verify public-host routing without external services or customer data."""
 import base64
 import http.client
+import json
 import os
 import tempfile
 import threading
 import unittest
+from types import SimpleNamespace
+from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import patch
 
 import serve
 import staging
+import order_storage
 
 
 class PublicHostTests(unittest.TestCase):
@@ -87,6 +91,18 @@ class PublicHostTests(unittest.TestCase):
         with patch.dict(os.environ, {'LUSAR_SITE_MODE': 'typo'}):
             with self.assertRaises(SystemExit):
                 staging.public_origin()
+
+    def test_health_returns_503_when_database_is_unavailable(self):
+        self.server.catalog_service = SimpleNamespace(status=lambda: {"synchronized": True},
+                                                     acquire=lambda: nullcontext(SimpleNamespace(directory=serve.ROOT / 'dist')))
+        with patch.object(order_storage, "healthy", return_value=False):
+            status, _, body = self.request('/healthz')
+        self.assertEqual(status, 503)
+        self.assertFalse(json.loads(body)['ok'])
+        with patch.object(order_storage, "healthy", return_value=True):
+            status, _, body = self.request('/healthz')
+        self.assertEqual(status, 200)
+        self.assertTrue(json.loads(body)['ok'])
 
 
 if __name__ == '__main__':

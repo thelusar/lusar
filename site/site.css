@@ -523,6 +523,9 @@ button:disabled { opacity: .6; cursor: not-allowed; }
 .sitemap-groups h2 { margin-top: 0; }
 .info-cards p, .info-cards address { margin: 0; color: var(--muted); font-style: normal; }
 .info-cards p + p, .info-cards address + p { margin-top: .5rem; }
+.info-cards .loyalty-thresholds { display: grid; grid-template-columns: 1fr auto; gap: .4rem 1rem; margin: 1rem 0; font-variant-numeric: tabular-nums; }
+.loyalty-thresholds dt { color: var(--muted); }
+.loyalty-thresholds dd { margin: 0; color: var(--accent); }
 .content-page .contact-phone { display: inline-block; margin: .2rem 0 .35rem; font-size: 1.35rem; font-variant-numeric: tabular-nums; text-decoration: none; }
 .info-actions, .map-links { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: 1rem; }
 .info-actions a, .map-links a { display: inline-flex; align-items: center; gap: .5rem; width: fit-content; color: var(--text); text-decoration: none; min-height: 2.75rem; }

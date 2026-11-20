@@ -1,4 +1,6 @@
-# LUSAR storefront preview
+# LUSAR storefront
+
+Production: **https://lusar.am**, Render `lusar-staging`, branch `lusar-next`. Auth0, PostgreSQL and catalogue sync are active. The Render hostname remains password protected. On 20 November 2026 the live catalogue contained 61 products; `storefront.json` is a deterministic local test snapshot, not the current live inventory. See [RECOVERY.md](RECOVERY.md) for the confirmed database expiry on 4 December and backup/recovery instructions. No backup or successful restore has yet been verified.
 
 Run from the repository root with Python 3.12:
 
@@ -46,13 +48,13 @@ Production requires hosting for the order service, manager authentication, stora
 
 ## Customer accounts
 
-The account pages use server-side customer sessions and Auth0 Universal Login for Google and email registration. Passwords never enter LUSAR. Without provider configuration the pages display an unavailable sign-in notice; guest checkout remains available. See [ACCOUNTS-SETUP.md](ACCOUNTS-SETUP.md) for exact callback URLs, Google connection, mail provider, Render variables, ownership and activation checks. The external provider is not activated by this code change.
+The account pages use server-side customer sessions and Auth0 Universal Login for Google and email registration. Passwords never enter LUSAR. Production is configured; without provider configuration a separate preview displays an unavailable sign-in notice and guest checkout remains available. See [ACCOUNTS-SETUP.md](ACCOUNTS-SETUP.md) for recovery/setup reference.
 
 `check_accounts.py` verifies signed identity claims, state/PKCE, CSRF, session revocation, customer isolation, first-order reservation, loyalty/returns, address ownership and optimistic shopping-state versions. `check_account_ui.py` exercises actual account pages and checkout in Chrome using a local signed identity provider, an isolated database and synthetic orders, including three widths, three languages and both themes. Neither test verifies delivery through real Google, Auth0 or email.
 
 ## Render staging
 
-In Render, create a Blueprint from `thelusar/lusar` and select `lusar-next`. The root `render.yaml` defines a free test service. Open its generated Render URL and sign in as `manager` using the generated `LUSAR_STAGING_PASSWORD` from the service's Environment settings. Use synthetic orders only. The preview is password protected and excluded from indexing. Leave the production domain connected to the existing site.
+The existing Blueprint from `thelusar/lusar` deploys `lusar-next`; do not create a duplicate service. The root `render.yaml` defines the service. Its Render URL requires the preview password and remains noindexed. The configured exact production hostname `lusar.am` is public. See [DOMAIN-SETUP.md](DOMAIN-SETUP.md) for configuration and rollback reference; activation has already happened.
 
 ### Staff access
 
@@ -66,7 +68,7 @@ The shared staging password opens the test site. The order panel requires an ind
 
 The two aligned WebP room frames weigh about 187 KiB together. Masks isolate fixtures and light pools. This is an illustrative preview rather than a physical lighting calculation; the depicted fixtures are not linked to catalogue SKUs. The image coordinate plane remains uncropped on mobile. Controls appear once the illuminated frame loads, and motion respects reduced-motion preferences.
 
-The glass lighting controls span the bottom of the hero. A horizontal curtain slider sits directly on the room: it starts 100% open on every page entry and continuously moves a perspective-clipped, folded graphite curtain across the window. Closing it dims the daylight base to 18%; reopening restores it, while artificial light levels and temperature remain independent. The slider supports touch and keyboard input, and its labels are available in all three languages. No additional media download or AI call is required for the curtain.
+The glass lighting controls span the bottom of the hero. The curtain slider starts at 0% closed (fully open), with 100% fully closed. It moves a perspective-clipped fabric texture across the window and dims daylight independently of artificial light. Touch, keyboard, three languages and reduced motion are supported. No AI call is made by this interaction.
 
 `editorial.json` contains 20 distinct Armenia-focused articles in Russian, Armenian and English. `editorial/` holds their 20 individual AI-generated WebP illustrations; each article identifies its illustration as generated. Articles have descriptions, canonical URLs, Article structured data, search entries and sitemap entries. `storefront_design.py` renders the journal, room planning pages, offers and footer. Full legal pages still need the operator's missing details before launch.
 
@@ -97,4 +99,6 @@ Add these values in Render's Environment settings and select **Save, rebuild, an
 
 Analytics providers start after the visitor allows statistics. The storefront sends page views and `view_item`, `add_to_cart`, `begin_checkout`, and `generate_lead`. Configure the same event names as JavaScript goals in Metrica. View visits and events in GA4 Realtime and use Metrica's tag debugger to confirm goals.
 
-The password-protected Lusar AI page uses the published catalog snapshot for photo recommendations and produces a room mockup using photos of up to two selected products as references. The product card opens mockup mode for that product. The Telegram bot registers its webhook on Render and sends both the room mockup and the catalog links. The preview shares a limit of 20 AI requests per hour per running instance. Keep this preview for invited testers and synthetic or test photos.
+Lusar AI uses the active published catalogue for photo recommendations and room mockups with up to two product references. The public website and `LusarAiBot` share 20 AI attempts per rolling hour. Telegram allows 10 photo attempts per rolling hour per user, 30 seconds apart. Render stores these quotas in PostgreSQL (`005_ai_attempts.sql`) so restarts do not reset them. Attempts are charged before provider access, including failures. Quota storage failure blocks generation. These limits bound attempts, not currency spending; OpenAI project budgets/model pricing still need owner review. Local simulated previews retain in-memory fallback only when persistent storage is not configured.
+
+Run `python -m unittest discover -s site -p 'test_*.py'` for host routing, health, public bot, persistent quotas and backup connection handling. `python site/check_launch.py` verifies indexable metadata/schema/internal links and 108 layout states for the completed launch pages. No paid AI requests or real customer orders are made by these checks.

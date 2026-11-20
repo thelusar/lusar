@@ -11,6 +11,7 @@ from urllib.parse import quote, urlencode, urlsplit
 from xml.etree import ElementTree
 from loyalty import FIRST_ORDER_PERCENT, LOYALTY_TIERS
 import storefront_design as design
+import launch_pages
 from sync_catalog import validate, revision
 
 ROOT = Path(__file__).resolve().parent
@@ -175,16 +176,42 @@ def write(path, title, body, draft=False, *, description="", image="", structure
         url = PUBLIC_ORIGIN + "/" + path.strip("/")
         canonical = f'<link rel="canonical" href="{html.escape(url, quote=True)}">'
         indexable.append(url)
+    if not description and not draft:
+        description = {
+            "brands": "Бренды светильников в каталоге LUSAR. Выбор моделей, фотографии и характеристики.",
+            "payment": "Как согласовать оплату заявки LUSAR с менеджером. Варианты получения и контакты магазина.",
+            "legal": "Правовая информация LUSAR: настройки cookie, обработка данных и правила использования сервисов.",
+            "sitemap": "Все разделы LUSAR: каталог светильников, комнаты, статьи, магазины и поддержка.",
+        }.get(path, f"{title} в LUSAR. Информация, полезные разделы и контакты магазина освещения.")
     metadata = ""
     if description:
         escaped = html.escape(description, quote=True)
         metadata += f'<meta name="description" content="{escaped}"><meta property="og:description" content="{escaped}">'
-    if image and not draft:
+    if not draft:
         metadata += (f'<meta property="og:type" content="website"><meta property="og:url" content="{html.escape(url, quote=True)}">'
                      f'<meta property="og:title" content="{html.escape(title, quote=True)}">'
-                     f'<meta property="og:image" content="{html.escape(image, quote=True)}">')
-    if structured_data and not draft:
-        serialized = json.dumps(structured_data, ensure_ascii=False).replace("<", "\\u003c")
+                     f'<meta property="og:image" content="{html.escape(image or PUBLIC_ORIGIN + "/scenes/lusar-room-ararat-on.webp", quote=True)}">')
+    schemas = [structured_data] if structured_data else []
+    if not draft and path.strip("/"):
+        clean = path.strip("/")
+        crumbs = [("", "Главная")]
+        if clean.startswith("catalog/"):
+            crumbs.append(("catalog", "Каталог"))
+            if clean.startswith("catalog/product/"):
+                product = next((item for item in data["products"] if clean.endswith("/" + item["id"])), None)
+                if product:
+                    crumbs.append((category_path(product["categoryId"]).strip("/"), categories[product["categoryId"]]["name"]))
+        else:
+            parent = clean.split("/")[0]
+            parent_title = {"stores": "Магазины", "rooms": "По комнатам", "journal": "Статьи", "brands": "Бренды", "legal": "Правовая информация"}.get(parent)
+            if parent_title and clean != parent:
+                crumbs.append((parent, parent_title))
+        crumbs.append((clean, title))
+        schemas.append({"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": index, "name": label, "item": PUBLIC_ORIGIN + "/" + route}
+            for index, (route, label) in enumerate(crumbs, 1)]})
+    if schemas and not draft:
+        serialized = json.dumps(schemas, ensure_ascii=False).replace("<", "\\u003c")
         metadata += f'<script type="application/ld+json">{serialized}</script>'
     if path == "" or path == "catalog" or path.startswith("catalog/"):
         photo_origins = {f'{urlsplit(photo["url"]).scheme}://{urlsplit(photo["url"]).netloc}'
@@ -377,6 +404,7 @@ def product_grid(items, *, filters=True, sidebar=False, active=""):
             '<button type="button" data-close-filters aria-label="Закрыть фильтры">' + nav_icon("close") + '</button></div>'
             + category_navigation(active, vertical=True) +
             '<form id="product-filters" class="catalog-sidebar-filters" role="search" aria-label="Подбор светильников">'
+            '<input type="hidden" name="category" value="">'
             '<section class="catalog-filter-group"><h3>Цена, ֏</h3><div class="catalog-price-range">'
             '<label><span>От</span><input name="minimum" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>'
             '<label><span>До</span><input name="maximum" type="number" min="0" step="any" inputmode="decimal" placeholder="Любая"></label></div></section>'
@@ -500,7 +528,8 @@ for key, category in categories.items():
         body += "<h2>Подкатегории</h2>" + listing(children)
     if products or not children:
         body += product_grid(products, sidebar=True, active=key)
-    write(category_path(key), category["name"], body, draft=not (products or children))
+    write(category_path(key), category["name"], body, draft=not (products or children),
+          description=f'{category["name"]} в каталоге LUSAR. Фотографии, характеристики, фильтры и сравнение светильников. Наличие уточнит менеджер.')
 for item in data["products"]:
     photos = ""
     if item["images"]:
@@ -662,7 +691,12 @@ for path, name, address, hint, source, source_label in stores:
                            map_links(address) + f'<p><a href="{source}">{source_label}</a></p>', featured=True) +
           information_card("phone", "На связи", contact_details) + '</div>' +
           info_actions((("stores", "Магазины"), ("contacts", "Контакты"))),
-          description=f"Магазин освещения LUSAR. {address}. {hint}.")
+          description=f"Магазин освещения LUSAR. {address}. {hint}.",
+          structured_data={"@context": "https://schema.org", "@type": "Store", "@id": PUBLIC_ORIGIN + "/" + path + "#store",
+                           "name": f"LUSAR · {name}", "url": PUBLIC_ORIGIN + "/" + path,
+                           "telephone": "+37477123451", "address": {"@type": "PostalAddress", "streetAddress": address.split(", ", 1)[1],
+                           "addressLocality": "Ереван", "addressCountry": "AM"}, "sameAs": [source],
+                           "openingHoursSpecification": {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "opens": "09:30", "closes": "19:00"}})
 write("about", "О LUSAR",
       '<div class="info-cards">' +
       information_card("spark", "От LUYS+ к LUSAR",
@@ -704,6 +738,7 @@ write("legal/cookies", "Политика cookie",
       information_card("overview", "Статистика",
                        '<p>Выбор статистики можно изменить через «Настройки cookie» в подвале.</p>') +
       '</div><p class="page-note">Страница в разработке</p>', draft=True)
+launch_pages.render(write, information_card, info_actions)
 write("ai", "Lusar AI", (ROOT / "ai-page.html").read_text(encoding="utf-8")
       .replace("<!-- spark-icon -->", nav_icon("spark")).replace("<!-- upload-icon -->", nav_icon("upload"))  , draft=True)
 design.render_rooms(write, ROOMS, category_cards, product_grid, data["products"], nav_icon)

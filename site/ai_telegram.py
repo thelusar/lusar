@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from lusar_ai import AIError, MAX_PHOTO, analyze, multipart_payload
+import ai_limits
 
 
 WEBHOOK = "/api/telegram/lusar-ai"
@@ -55,9 +56,16 @@ class AIBot:
         self.pending = Queue(maxsize=3)
         self.seen = deque(maxlen=256)
         self.lock = Lock()
+        self.transport = "connecting"
 
     def photo_allowed(self, user_id):
-        """Ten photos/hour/user, 30 seconds apart; bounded, process-local state."""
+        """Ten photos/hour/user, 30 seconds apart; persistent on Render."""
+        if ai_limits.DATABASE is not None:
+            scope = hmac.new(self.token.encode(), str(user_id).encode(), hashlib.sha256).hexdigest()
+            try:
+                return ai_limits.reserve("telegram:" + scope, 10, interval=30)
+            except ai_limits.Unavailable:
+                raise AIError(503, "Lusar AI временно недоступен. Попробуйте позже.") from None
         now = monotonic()
         with self.lock:
             expired = [key for key, times in self.photo_requests.items() if now - times[-1] >= 3600]
@@ -167,10 +175,12 @@ class AIBot:
     def run(self):
         sleep(8)
         mode = self.connect()
+        self.transport = mode or "unavailable"
         if mode == "polling":
             logging.warning("LUSAR AI: webhook не зарегистрирован. Временно читаем Telegram через getUpdates.")
             self.poll()
             mode = "webhook"
+            self.transport = mode
         if mode == "webhook":
             logging.info("LUSAR AI: webhook Telegram подключён.")
         while True:

@@ -66,7 +66,7 @@ function layout(page) {
     require(metrics.filter(event => event.name === "add_to_cart").length === 2, "Quick adds were not tracked");
     require(Object.keys(JSON.parse(localStorage.getItem("lusar-cart"))).length === 2, "Quick add missed a product");
     page.querySelector("[data-dismiss-shopping]").click();
-    require(!page.querySelector("#cart-status").textContent && page.activeElement === adds[1], "Shopping notice dismissal failed");
+    require(!page.querySelector("#cart-status").textContent && page.activeElement === adds[1], "Shopping notice dismissal failed: status=" + page.querySelector("#cart-status").textContent + ", focus=" + page.activeElement.outerHTML.slice(0,220) + ", hidden=" + !!adds[1].closest("li[hidden]"));
     page = await open("/cart");
     require(page.querySelectorAll("#cart-items > article").length === 2, "Bag did not receive quick-add products");
     page = await open("/catalog/category/sconces");
@@ -102,7 +102,8 @@ function layout(page) {
       }
     }
     page = await open("/catalog?category=pendants&minimum=6000&maximum=25000&sort=low");
-    require(page.querySelector("#product-filters details").open, "Restored filters are hidden");
+    require(page.querySelector("#product-filters").elements.namedItem("category").value === "pendants", "Shared category filter was not restored");
+    require(!page.querySelector("#catalog-clear").hidden, "Restored filter reset is hidden");
     require(visible(page).length > 0 && visible(page).every(item => item.dataset.category === "pendants"), "Shared filter link failed");
     for (const width of [320,390,1440]) {
       frame.style.width = width + "px"; await tick(); layout(page);
