@@ -1,6 +1,6 @@
 # LUSAR storefront
 
-Production: **https://lusar.am**, Render `lusar-staging`, branch `lusar-next`. Auth0, PostgreSQL and catalogue sync are active. The Render hostname remains password protected. On 20 November 2026 the live catalogue contained 61 products; `storefront.json` is a deterministic local test snapshot, not the current live inventory. See [RECOVERY.md](RECOVERY.md) for the confirmed database expiry on 4 December and backup/recovery instructions. No backup or successful restore has yet been verified.
+Production: **https://lusar.am**, Render `lusar-staging`, branch `lusar-next`. Auth0, PostgreSQL and catalogue sync are active. The Render hostname remains password protected. On 20 November 2026 the live catalogue contained 61 products; `storefront.json` is a deterministic local test snapshot, not the current live inventory. A real encrypted production backup and isolated PostgreSQL 18 restore were verified on 20 November. See [RECOVERY.md](RECOVERY.md) for the evidence, manual backup instructions and the still-unresolved database expiry on 4 December. Paid upgrades, off-site storage and automatic scheduling were explicitly deferred by the owner.
 
 Run from the repository root with Python 3.12:
 

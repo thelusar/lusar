@@ -7,3 +7,7 @@ site/*.sqlite-*
 *.dump
 *.dump.partial
 .lusar-backups/
+*.dump.age
+*.age.partial
+*identity.key
+*.dpapi
