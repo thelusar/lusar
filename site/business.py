@@ -17,10 +17,7 @@ def contact(t):
     return (phone() + f'<p><a href="mailto:{email}">{email}</a></p>' +
             '<p>' + t('Ежедневно', 'Ամեն օր', 'Daily') + ' · ' + CONFIG['hours'] + '</p>' +
             f'<div class="map-links"><a href="https://wa.me/{number[1:]}">WhatsApp</a>' +
-            f'<a href="https://t.me/{number}">Telegram</a></div><p>' +
-            t('Viber: добавьте номер магазина в контакты и откройте его в приложении. Telegram открывает контакт, если это разрешено настройками номера.',
-              'Viber․ ավելացրեք խանութի համարը կոնտակտներում և բացեք հավելվածում։ Telegram-ը բացում է կոնտակտը, եթե համարի կարգավորումները թույլ են տալիս։',
-              'Viber: save the store number to your contacts and open it in the app. Telegram can open the contact if the number’s privacy settings allow it.') + '</p>')
+            f'<a href="https://t.me/{number}">Telegram</a><span>Viber</span></div>')
 
 
 def seller(t):
@@ -50,6 +47,6 @@ def socials(t):
 
 
 def response_note(t):
-    return '<p>' + t('Обычно связываемся в течение 15 минут в рабочее время. Сложные и крупные заказы могут потребовать больше времени. Заявки вне рабочего времени обрабатываем после открытия магазина.',
-                    'Աշխատանքային ժամերին սովորաբար կապվում ենք 15 րոպեի ընթացքում։ Բարդ և խոշոր պատվերները կարող են ավելի շատ ժամանակ պահանջել։ Ոչ աշխատանքային ժամերին ստացված հայտերը մշակում ենք խանութի բացվելուց հետո։',
-                    'We usually contact you within 15 minutes during opening hours. Complex and large orders may take longer. Requests sent outside opening hours are handled when the store reopens.') + '</p>'
+    return '<p>' + t('Обычно отвечаем в течение 15 минут в рабочее время.',
+                    'Աշխատանքային ժամերին սովորաբար պատասխանում ենք 15 րոպեի ընթացքում։',
+                    'We usually reply within 15 minutes during opening hours.') + '</p>'

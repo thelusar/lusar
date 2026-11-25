@@ -32,9 +32,9 @@ def render(write, card, actions):
                  "Փորձեք ընտրված լուսատուները ձեր սենյակի լուսանկարում՝ կայքում կամ Lusar AI Bot-ում։",
                  "Preview selected lights in a photo of your room on the website or in Lusar AI Bot.") + actions((("ai", "Начать примерку"),))) +
           card("phone", t("Консультация по товарам", "Ապրանքների խորհրդատվություն", "Product advice"),
-               p("Сотрудники помогут разобраться в ассортименте и характеристиках. Проектирование освещения, выездные замеры, монтаж и отдельную комплексную услугу подбора LUSAR не оказывает.",
-                 "Աշխատակիցները կօգնեն հասկանալ տեսականին և բնութագրերը։ LUSAR-ը չի մատուցում լուսավորության նախագծման, տեղում չափագրման, տեղադրման կամ առանձին համալիր ընտրության ծառայություններ։",
-                 "Staff can help with the range and specifications. LUSAR does not provide lighting design, site measurements, installation or a separate comprehensive selection service.")) +
+               p('Поможем сравнить модели и разобраться в характеристиках светильников.',
+                 'Կօգնենք համեմատել մոդելներն ու հասկանալ լուսատուների բնութագրերը։',
+                 'We’ll help you compare models and understand their specifications.')) +
           card("orders", t("Сопровождение заявки", "Հայտի ուղեկցում", "Help with your request"),
                p("Отправьте заявку без онлайн-оплаты. Менеджер уточнит наличие, итоговую сумму и способ получения.",
                  "Ուղարկեք հայտը՝ առանց առցանց վճարման։ Մենեջերը կճշտի առկայությունը, վերջնական գումարը և ստացման եղանակը։",
@@ -43,13 +43,13 @@ def render(write, card, actions):
 
     write("professionals/request", t("Запрос на закупку", "Գնման հարցում", "Purchase enquiry"), '<div class="info-cards info-cards-pair">' +
           card("desk", t("Подготовьте детали", "Պատրաստեք մանրամասները", "Prepare the details"),
-               p("Для предметного разговора подготовьте план или фото, размеры помещения, зоны освещения, количество светильников и желаемые сроки.",
-                 "Քննարկման համար պատրաստեք հատակագիծը կամ լուսանկարը, տարածքի չափերը, լուսավորման գոտիները, լուսատուների քանակը և ցանկալի ժամկետները։",
-                 "Have a plan or photo, room dimensions, lighting zones, quantities and preferred dates ready for the discussion.") + actions((("favorites", "Избранное"), ("selection", "Подбор освещения"))), featured=True) +
+               p('Выберите модели и укажите нужное количество.',
+                 'Ընտրեք մոդելները և նշեք անհրաժեշտ քանակը։',
+                 'Choose your models and specify the quantities you need.') + actions((("favorites", "Избранное"), ("selection", "Подбор освещения"))), featured=True) +
           card("phone", t("Обсудите с менеджером", "Քննարկեք մենեջերի հետ", "Talk to a manager"),
-               p("Позвоните, чтобы уточнить возможности под ваш проект. Состав предложения, наличие и условия согласуются индивидуально.",
-                 "Զանգահարեք՝ ձեր նախագծի հնարավորությունները ճշտելու համար։ Առաջարկը, առկայությունն ու պայմանները համաձայնեցվում են անհատապես։",
-                 "Call to discuss your project. The proposal, availability and terms are agreed individually.") +
+               p('Позвоните менеджеру, чтобы обсудить наличие и условия закупки.',
+                 'Զանգահարեք մենեջերին՝ առկայությունն ու գնման պայմանները քննարկելու համար։',
+                 'Call a manager to discuss availability and purchasing terms.') +
                business.phone() + actions((("contacts", "Контакты"),))) + '</div>',
           description="Что подготовить для обсуждения освещения проекта с менеджером LUSAR: план, размеры, зоны и модели.")
 

@@ -343,7 +343,5 @@ main>.lead,main.content-page>p,main.content-page>dl{max-width:none}
 }
 @media(prefers-reduced-motion:reduce){.catalog-sidebar,.catalog-views button{transition:none}}
 .footer-stores{grid-template-columns:1fr 1fr}
-.footer-seller{font-size:.875rem;line-height:1.5;padding:.5rem 0;overflow-wrap:anywhere}
-.footer-seller p{margin:.25rem 0}.footer-seller address{font-style:normal}
 .contact-phone{white-space:nowrap}.social-link{display:inline-flex;align-items:center;gap:.4rem}
 @media(max-width:38rem){.footer-stores{grid-template-columns:1fr}}

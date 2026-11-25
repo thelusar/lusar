@@ -13,33 +13,32 @@ def render(write, card, actions):
         ('Принимаем наличные, банковские карты и банковские переводы. Детали оплаты согласовываются индивидуально с менеджером.',
          'Ընդունում ենք կանխիկ, բանկային քարտեր և բանկային փոխանցումներ։ Վճարման մանրամասները անհատապես համաձայնեցվում են մենեջերի հետ։',
          'We accept cash, bank cards and bank transfers. Payment details are agreed individually with a manager.'),
-        ('Вы получите номер и приватную ссылку для проверки статуса. Менеджер подтвердит наличие, итоговую сумму и способ получения. Обычно связываемся в течение 15 минут в рабочее время; сложные заказы могут занять больше времени. Вне рабочего времени заявки обрабатываем после открытия.',
-         'Կստանաք հայտի համարը և կարգավիճակը ստուգելու անձնական հղումը։ Մենեջերը կհաստատի առկայությունը, վերջնական գումարն ու ստացման եղանակը։ Աշխատանքային ժամերին սովորաբար կապվում ենք 15 րոպեի ընթացքում․ բարդ պատվերները կարող են ավելի երկար տևել։ Ոչ աշխատանքային ժամերի հայտերը մշակում ենք բացվելուց հետո։',
-         'You receive a reference number and a private status link. A manager confirms availability, the final total and collection arrangements. We usually contact you within 15 minutes during opening hours; complex orders may take longer. Requests outside opening hours are handled after reopening.')
+        ('Вы получите номер заявки и ссылку для проверки статуса. Менеджер свяжется с вами для подтверждения заказа.',
+         'Կստանաք հայտի համարը և կարգավիճակը ստուգելու հղումը։ Մենեջերը կապ կհաստատի ձեզ հետ՝ պատվերը հաստատելու համար։',
+         'You receive a request number and a status link. A manager will contact you to confirm your order.')
     ]:
         t(*entry)
     def p(ru, hy, en):
         return '<p>' + t(ru, hy, en) + '</p>'
 
     def page(path, title, sections, description):
-        write(path, t(*title), '<div class="info-cards">' + ''.join(
+        write(path, t(*title), ('<div class="info-cards info-cards-pair">' if len(sections) == 2 else '<div class="info-cards">') + ''.join(
             card(icon, t(*heading), body, featured=i == 0)
             for i, (icon, heading, body) in enumerate(sections)) + '</div>' +
             actions((("contacts", "Контакты"), ("catalog", "Каталог"))), description=t(*description))
 
     contact = b.contact(t)
     address = '<address>' + t(*b.CONFIG['address']) + '</address>'
-    store = card('pin', t('Единственный магазин LUSAR', 'LUSAR-ի միակ խանութը', 'The LUSAR store'), address + b.maps(t))
-    details = contact + b.response_note(t) + b.socials(t)
+    store = card('pin', t('Магазин LUSAR', 'LUSAR խանութը', 'LUSAR store'), address + b.maps(t))
+    details = contact + b.socials(t)
     write('contacts', t('Контакты LUSAR', 'LUSAR-ի կոնտակտները', 'Contact LUSAR'),
-          '<div class="info-cards">' + card('phone', t('На связи', 'Կապ մեզ հետ', 'Get in touch'), details, featured=True) + store +
-          card('orders', t('Сведения о продавце', 'Վաճառողի տվյալները', 'Seller details'), b.seller(t)) + '</div>',
+          '<div class="info-cards info-cards-pair">' + card('phone', t('На связи', 'Կապ մեզ հետ', 'Get in touch'), details, featured=True) + store + '</div>',
           description=t('Контакты LUSAR: +374 (98) 30-09-90, Ереван Маркет, С. Зоравар 11/1, D50. Ежедневно 09:30–19:00.',
                         'LUSAR․ +374 (98) 30-09-90, Ս. Զորավար 11/1, Երևան Տոնավաճառ, D50։ Ամեն օր՝ 09:30–19:00։',
                         'Contact LUSAR: +374 (98) 30-09-90, Yerevan Market, 11/1 S. Zoravar, D50. Daily 09:30–19:00.'))
     write('stores', t('Магазин LUSAR', 'LUSAR խանութը', 'LUSAR store'), '<div class="info-cards">' + store + '</div>',
-          description=t('Один магазин LUSAR в Ереване: Ереван Маркет, С. Зоравар 11/1, павильон D50.',
-                        'LUSAR-ի միակ խանութը՝ Ս. Զորավար 11/1, Երևան Տոնավաճառ, D50 տաղավար։',
+          description=t('Магазин LUSAR в Ереване: Ереван Маркет, С. Зоравар 11/1, павильон D50.',
+                        'LUSAR խանութը՝ Ս. Զորավար 11/1, Երևան Տոնավաճառ, D50 տաղավար։',
                         'The LUSAR store in Yerevan: Yerevan Market, 11/1 S. Zoravar Street, pavilion D50.'))
     write(b.CONFIG['storePath'], t('LUSAR · Ереван Маркет, D50', 'LUSAR · Երևան Տոնավաճառ, D50', 'LUSAR · Yerevan Market, D50'),
           '<div class="info-cards info-cards-pair">' + store + card('phone', t('На связи'), details) + '</div>',
@@ -52,88 +51,86 @@ def render(write, card, actions):
 
     page('about', ('О LUSAR', 'LUSAR-ի մասին', 'About LUSAR'), [
         ('spark', ('Свет для вашего пространства', 'Լույս՝ ձեր տարածքի համար', 'Lighting for your space'), p(
-            'LUSAR — магазин освещения для разных интерьеров и задач. Декоративные люстры, хрустальные светильники, LED-системы, магнитные треки, бра, торшеры и комплектующие помогают создать свой световой сценарий.',
-            'LUSAR-ը լուսավորության խանութ է տարբեր ինտերիերների և խնդիրների համար։ Դեկորատիվ ջահերը, բյուրեղյա լուսատուները, LED համակարգերը, մագնիսական ռելսերը, պատի և հատակի լուսատուներն ու բաղադրիչները կօգնեն ստեղծել ձեր լուսավորությունը։',
-            'LUSAR offers lighting for different interiors and needs: decorative chandeliers, crystal fixtures, LED systems, magnetic tracks, wall lights, floor lamps and components for your own lighting scheme.')),
+            'Люстры, хрустальные светильники, LED-системы, магнитные треки, бра и торшеры — для дома и других пространств.',
+            'Ջահեր, բյուրեղյա լուսատուներ, LED համակարգեր, մագնիսական ռելսեր, պատի և հատակի լուսատուներ՝ տան և այլ տարածքների համար։',
+            'Chandeliers, crystal fixtures, LED systems, magnetic tracks, wall lights and floor lamps for your home and other spaces.')),
         ('lamp', ('Ассортимент и качество', 'Տեսականի և որակ', 'Range and quality'), p(
-            'Мы регулярно обновляем коллекции и внимательно выбираем продукцию и производителей. При необходимости отдельные комплектующие заменяются на более качественные для повышения надёжности. В ассортименте есть решения разных ценовых категорий.',
-            'Մենք պարբերաբար թարմացնում ենք հավաքածուները և ուշադիր ընտրում ապրանքներն ու արտադրողներին։ Անհրաժեշտության դեպքում առանձին բաղադրիչները փոխարինվում են ավելի որակյալներով՝ հուսալիությունը բարձրացնելու համար։ Տեսականին ներառում է տարբեր գնային կարգերի լուծումներ։',
-            'We regularly refresh our collections and carefully select products and manufacturers. Where needed, individual components are replaced with higher-quality alternatives to improve reliability. The range includes different price points.')),
+            'Регулярно обновляем коллекции и тщательно выбираем продукцию. В ассортименте — освещение для разных стилей и бюджетов.',
+            'Պարբերաբար թարմացնում ենք հավաքածուները և խնամքով ընտրում ապրանքները։ Տեսականին ներառում է լուսավորություն տարբեր ոճերի և բյուջեների համար։',
+            'We regularly refresh our collections and carefully select our products, with lighting for different styles and budgets.')),
         ('orders', ('Розница и сотрудничество', 'Մանրածախ և համագործակցություն', 'Retail and partnerships'), p(
-            'Работаем с частными покупателями, магазинами и оптовыми партнёрами. Сотрудники консультируют по ассортименту и характеристикам товаров. Условия крупных закупок обсуждаем индивидуально.',
-            'Աշխատում ենք անհատ գնորդների, խանութների և մեծածախ գործընկերների հետ։ Աշխատակիցները խորհրդատվություն են տրամադրում տեսականու և ապրանքների բնութագրերի վերաբերյալ։ Խոշոր գնումների պայմանները քննարկում ենք անհատապես։',
-            'We work with individual customers, stores and wholesale partners. Our staff advise on the range and product specifications. Large purchases are discussed individually.') + actions((("professionals", "Дизайнерам и бизнесу"),))),
-        ('pin', ('Магазин и продавец', 'Խանութ և վաճառող', 'Store and seller'), address + b.seller(t))
+            'Работаем с частными покупателями, магазинами и оптовыми партнёрами. Условия крупных закупок обсуждаем индивидуально.',
+            'Աշխատում ենք անհատ գնորդների, խանութների և մեծածախ գործընկերների հետ։ Խոշոր գնումների պայմանները քննարկում ենք անհատապես։',
+            'We work with individual customers, stores and wholesale partners. Large purchases are discussed individually.') + actions((("professionals", "Дизайнерам и бизнесу"),))),
+        ('pin', ('Наш магазин', 'Մեր խանութը', 'Our store'), address + b.maps(t))
     ], ('LUSAR — освещение для разных интерьеров, широкий ассортимент, розничные и оптовые продажи в Ереване.',
         'LUSAR՝ լուսավորություն տարբեր ինտերիերների համար, լայն տեսականի, մանրածախ և մեծածախ վաճառք Երևանում։',
         'LUSAR lighting for different interiors: a broad range, retail and wholesale in Yerevan.'))
 
     page('delivery', ('Доставка и самовывоз', 'Առաքում և ինքնառաքում', 'Delivery and collection'), [
         ('pin', ('Самовывоз из магазина', 'Ստացում խանութից', 'Collect from the store'), p(
-            'Основной способ получения — самовывоз. Если товар есть в наличии, его можно забрать в магазине. Перед поездкой уточните наличие, а для крупного заказа заранее свяжитесь с менеджером.',
-            'Ստացման հիմնական եղանակը խանութից վերցնելն է։ Առկա ապրանքը կարող եք վերցնել խանութից։ Այցից առաջ ճշտեք առկայությունը, իսկ խոշոր պատվերի դեպքում նախապես կապվեք մենեջերի հետ։',
-            'Collection is the main way to receive your order. In-stock items can be collected from the store. Confirm availability before travelling and contact a manager in advance for a large order.') + address),
+            'Заберите заказ в магазине. Перед поездкой уточните наличие у менеджера.',
+            'Վերցրեք պատվերը խանութից։ Այցից առաջ առկայությունը ճշտեք մենեջերից։',
+            'Collect your order from the store. Confirm availability with a manager before visiting.') + address),
         ('delivery', ('Доставка по согласованию', 'Առաքում՝ համաձայնությամբ', 'Delivery by arrangement'), p(
-            'Собственной службы доставки у LUSAR нет. Возможность организации доставки, стоимость, условия и сроки обсуждаются индивидуально по телефону до согласования заказа.',
-            'LUSAR-ը սեփական առաքման ծառայություն չունի։ Առաքման կազմակերպման հնարավորությունը, արժեքը, պայմաններն ու ժամկետները քննարկվում են անհատապես հեռախոսով՝ պատվերը համաձայնեցնելուց առաջ։',
-            'LUSAR does not operate its own delivery service. Delivery availability, cost, terms and timing are discussed individually by phone before the order is agreed.') + b.phone()),
-        ('orders', ('После заявки', 'Հայտից հետո', 'After your request'), b.response_note(t))
+            'Возможность, стоимость и сроки доставки уточняйте по телефону.',
+            'Առաքման հնարավորությունը, արժեքն ու ժամկետները ճշտեք հեռախոսով։',
+            'Call us to discuss delivery availability, cost and timing.') + b.phone())
     ], ('Самовывоз из LUSAR в Ереван Маркет, D50. Возможность, стоимость и сроки доставки обсуждаются по телефону.',
         'Ստացում LUSAR-ից՝ Երևան Տոնավաճառ, D50։ Առաքման հնարավորությունը, արժեքն ու ժամկետները քննարկվում են հեռախոսով։',
         'Collect from LUSAR at Yerevan Market, D50. Delivery availability, cost and timing are discussed by phone.'))
 
-    payment = p('Принимаем наличные, банковские карты и банковские переводы. Предоплата, расчёты по крупным заказам и остальные детали согласовываются с менеджером индивидуально.',
-                'Ընդունում ենք կանխիկ, բանկային քարտեր և բանկային փոխանցումներ։ Կանխավճարը, խոշոր պատվերների հաշվարկներն ու մյուս մանրամասները անհատապես համաձայնեցվում են մենեջերի հետ։',
-                'We accept cash, bank cards and bank transfers. Prepayment, settlement for large orders and other details are agreed individually with a manager.')
-    request = p('На сайте вы отправляете заявку без онлайн-оплаты. Обязательны только имя и телефон; email и адрес — по желанию. Менеджер проверяет фактическое наличие, окончательную стоимость и согласовывает дальнейшие действия.',
-                'Կայքում ուղարկում եք հայտ՝ առանց առցանց վճարման։ Պարտադիր են միայն անունն ու հեռախոսը․ էլ. փոստն ու հասցեն՝ ըստ ցանկության։ Մենեջերը ստուգում է փաստացի առկայությունը, վերջնական արժեքը և համաձայնեցնում հետագա քայլերը։',
-                'The website accepts requests without online payment. Only your name and phone are required; email and address are optional. A manager checks actual availability, the final price and agrees the next steps.')
+    payment = p('Наличные, банковская карта или перевод. Условия предоплаты уточняйте у менеджера.',
+                'Կանխիկ, բանկային քարտ կամ փոխանցում։ Կանխավճարի պայմանները ճշտեք մենեջերից։',
+                'Cash, bank card or bank transfer. Ask a manager about prepayment terms.')
+    request = p('Отправьте заявку, указав имя и телефон. Менеджер подтвердит наличие и итоговую стоимость. Оплата — после согласования заказа.',
+                'Ուղարկեք հայտը՝ նշելով անունն ու հեռախոսը։ Մենեջերը կհաստատի առկայությունն ու վերջնական արժեքը։ Վճարումը՝ պատվերը համաձայնեցնելուց հետո։',
+                'Send a request with your name and phone number. A manager will confirm availability and the final price. Payment follows order confirmation.')
     page('payment', ('Оплата', 'Վճարում', 'Payment'), [
         ('orders', ('Заявка без онлайн-оплаты', 'Հայտ՝ առանց առցանց վճարման', 'Request without online payment'), request),
-        ('check', ('Способы оплаты', 'Վճարման եղանակներ', 'Payment methods'), payment),
-        ('phone', ('Подтверждение менеджером', 'Հաստատում մենեջերի կողմից', 'Manager confirmation'), b.response_note(t))
+        ('check', ('Способы оплаты', 'Վճարման եղանակներ', 'Payment methods'), payment)
     ], ('Оплата LUSAR: наличные, банковская карта или перевод. Стоимость и условия подтверждает менеджер, онлайн-оплаты нет.',
         'LUSAR-ի վճարում՝ կանխիկ, քարտ կամ փոխանցում։ Արժեքն ու պայմանները հաստատում է մենեջերը․ առցանց վճարում չկա։',
         'Pay LUSAR by cash, bank card or transfer. A manager confirms the price and terms; there is no online payment.'))
 
-    rights = p('Эта информация не ограничивает обязательные права покупателя по законодательству Республики Армения. Условия конкретного товара уточняются до покупки; индивидуальное согласование не отменяет требований закона.',
-               'Այս տեղեկությունը չի սահմանափակում գնորդի պարտադիր իրավունքները՝ Հայաստանի Հանրապետության օրենսդրությամբ։ Կոնկրետ ապրանքի պայմանները ճշտվում են մինչև գնումը․ անհատական համաձայնությունը չի վերացնում օրենքի պահանջները։',
-               'This information does not limit mandatory consumer rights under Armenian law. Product-specific terms are clarified before purchase; individual arrangements do not override statutory requirements.')
+    rights = p('Условия магазина не ограничивают ваши права по законодательству Республики Армения.',
+               'Խանութի պայմանները չեն սահմանափակում ձեր իրավունքները՝ Հայաստանի Հանրապետության օրենսդրությամբ։',
+               'Store terms do not limit your rights under Armenian law.')
     page('returns', ('Гарантия, обмен и возврат', 'Երաշխիք, փոխանակում և վերադարձ', 'Warranty, exchange and returns'), [
         ('check', ('Гарантия на конкретный товар', 'Կոնկրետ ապրանքի երաշխիք', 'Product-specific warranty'), p(
-            'Гарантийный срок зависит от товара. Уточните срок и условия для выбранной модели у менеджера до покупки. Единого гарантийного срока для всего ассортимента нет.',
-            'Երաշխիքային ժամկետը կախված է ապրանքից։ Ընտրված մոդելի ժամկետն ու պայմանները ճշտեք մենեջերից մինչև գնումը։ Ամբողջ տեսականու համար միասնական երաշխիքային ժամկետ չկա։',
-            'Warranty periods depend on the product. Ask the manager about the selected model’s period and terms before purchase. There is no single warranty period for the entire range.')),
+            'Срок и условия гарантии уточняйте у менеджера для выбранной модели до покупки.',
+            'Ընտրված մոդելի երաշխիքի ժամկետն ու պայմանները ճշտեք մենեջերից մինչև գնումը։',
+            'Ask a manager about the selected model’s warranty period and terms before buying.')),
         ('orders', ('Товар надлежащего качества', 'Պատշաճ որակի ապրանք', 'Goods of satisfactory quality'), p(
-            'Обмен и возврат осуществляются по законодательству Республики Армения. Для товара надлежащего качества применяются предусмотренные законом условия, сроки и исключения, в том числе требования к состоянию товара, сохранности его свойств и комплектации.',
-            'Փոխանակումն ու վերադարձը կատարվում են ՀՀ օրենսդրությամբ։ Պատշաճ որակի ապրանքի համար կիրառվում են օրենքով նախատեսված պայմանները, ժամկետներն ու բացառությունները, այդ թվում՝ ապրանքի վիճակի, հատկությունների պահպանման և լրակազմի պահանջները։',
-            'Exchanges and returns follow Armenian law. Goods of satisfactory quality are subject to statutory conditions, periods and exceptions, including requirements concerning their condition, preserved properties and completeness.')),
+            'Обмен и возврат — по законодательству Республики Армения. Для качественного товара учитываются установленные законом сроки, исключения, состояние и комплектация.',
+            'Փոխանակումն ու վերադարձը՝ ՀՀ օրենսդրությամբ։ Որակյալ ապրանքի համար հաշվի են առնվում օրենքով սահմանված ժամկետները, բացառությունները, վիճակն ու լրակազմը։',
+            'Exchanges and returns follow Armenian law. For satisfactory goods, statutory periods, exceptions, condition and completeness requirements apply.')),
         ('phone', ('Если обнаружен недостаток', 'Թերության հայտնաբերման դեպքում', 'If you discover a defect'), p(
-            'Сообщите менеджеру о недостатке и укажите товар и сведения о покупке, которыми располагаете. Требования к товарному виду при возврате качественного товара не являются безусловным основанием отказать в обращении по дефекту. Ваши требования рассматриваются с учётом характера недостатка и применимого закона.',
-            'Մենեջերին տեղեկացրեք թերության մասին՝ նշելով ապրանքը և գնման վերաբերյալ առկա տվյալները։ Որակյալ ապրանքի վերադարձի ժամանակ արտաքին տեսքի պահանջները թերության վերաբերյալ դիմումը մերժելու անվերապահ հիմք չեն։ Պահանջները դիտարկվում են՝ հաշվի առնելով թերության բնույթն ու կիրառելի օրենքը։',
-            'Tell the manager about the defect and identify the product and any purchase details you have. Appearance requirements for returning satisfactory goods are not an unconditional reason to reject a defect claim. Claims are considered according to the defect and applicable law.') + b.phone()),
+            'Свяжитесь с менеджером и опишите недостаток. Обращения по дефектам рассматриваются отдельно от возврата качественного товара — с сохранением ваших законных прав.',
+            'Կապվեք մենեջերի հետ և նկարագրեք թերությունը։ Թերությունների դիմումները դիտարկվում են որակյալ ապրանքի վերադարձից առանձին՝ պահպանելով ձեր օրինական իրավունքները։',
+            'Contact a manager and describe the defect. Defect claims are handled separately from returns of satisfactory goods, with your statutory rights preserved.') + b.phone()),
         ('overview', ('Права покупателя', 'Գնորդի իրավունքները', 'Consumer rights'), rights)
     ], ('Гарантия зависит от товара. Обмен, возврат и обращения по дефектам в LUSAR — по законодательству Республики Армения.',
         'Երաշխիքը կախված է ապրանքից։ LUSAR-ի փոխանակումը, վերադարձն ու թերությունների դիմումները՝ ՀՀ օրենսդրությամբ։',
         'Warranty depends on the product. LUSAR exchanges, returns and defect claims follow Armenian law.'))
 
-    cooperation = p('Приглашаем к сотрудничеству магазины освещения, оптовых партнёров, дизайнеров интерьеров, архитекторов и строительные компании. Подбирайте товары из ассортимента LUSAR для своих задач и бюджета. Объёмы, цены и условия сотрудничества обсуждаются индивидуально.',
-                    'Համագործակցության ենք հրավիրում լուսավորության խանութներին, մեծածախ գործընկերներին, ինտերիերի դիզայներներին, ճարտարապետներին և շինարարական ընկերություններին։ Ընտրեք LUSAR-ի տեսականուց՝ ձեր խնդիրներին ու բյուջեին համապատասխան։ Ծավալները, գներն ու պայմանները քննարկվում են անհատապես։',
-                    'We welcome lighting stores, wholesale partners, interior designers, architects and construction companies. Choose from LUSAR’s range to suit your needs and budget. Quantities, prices and partnership terms are discussed individually.')
+    cooperation = p('Сотрудничаем с магазинами, оптовыми партнёрами, дизайнерами, архитекторами и строительными компаниями. Цены и условия закупок обсуждаем индивидуально.',
+                    'Համագործակցում ենք խանութների, մեծածախ գործընկերների, դիզայներների, ճարտարապետների և շինարարական ընկերությունների հետ։ Գներն ու գնման պայմանները քննարկում ենք անհատապես։',
+                    'We work with stores, wholesale partners, designers, architects and construction companies. Prices and purchasing terms are discussed individually.')
     for route in ('professionals', 'partners'):
         page(route, ('Сотрудничество с LUSAR', 'Համագործակցություն LUSAR-ի հետ', 'Partner with LUSAR'), [
             ('desk', ('Для профессионалов и бизнеса', 'Մասնագետների և բիզնեսի համար', 'For professionals and businesses'), cooperation),
             ('phone', ('Обсудим вашу закупку', 'Քննարկենք ձեր գնումը', 'Discuss your purchase'), p(
-                'Сообщите менеджеру интересующие модели, количество и пожелания. Он проверит наличие и подготовит условия для вашего запроса.',
-                'Մենեջերին հայտնեք հետաքրքրող մոդելները, քանակն ու ցանկությունները։ Նա կստուգի առկայությունը և կպատրաստի ձեր հարցման պայմանները։',
-                'Tell the manager which models and quantities you need, together with any preferences. They will check availability and prepare terms for your enquiry.') + contact)
+                'Сообщите менеджеру модели и количество — уточним наличие и условия.',
+                'Մենեջերին հայտնեք մոդելներն ու քանակը՝ կճշտենք առկայությունն ու պայմանները։',
+                'Tell the manager which models and quantities you need — we’ll confirm availability and terms.') + contact)
         ], ('Розничные и оптовые закупки, сотрудничество с дизайнерами, архитекторами и магазинами. Индивидуальные условия LUSAR.',
             'Մանրածախ և մեծածախ գնումներ, համագործակցություն դիզայներների, ճարտարապետների և խանութների հետ։ LUSAR-ի անհատական պայմաններ։',
             'Retail and wholesale purchases, partnerships with designers, architects and stores. Individual terms from LUSAR.'))
 
     page('legal/terms', ('Условия заявок и продажи', 'Հայտերի և վաճառքի պայմաններ', 'Request and sale terms'), [
         ('orders', ('Сведения о продавце', 'Վաճառողի տվյալները', 'Seller details'), b.seller(t) + contact),
-        ('check', ('Порядок оформления', 'Ձևակերպման կարգը', 'Placing a request'), request + b.response_note(t)),
+        ('check', ('Порядок оформления', 'Ձևակերպման կարգը', 'Placing a request'), request),
         ('overview', ('Стоимость и получение', 'Արժեքը և ստացումը', 'Price and collection'), payment + p(
             'Итог в корзине предварительный. До оплаты менеджер подтверждает наличие, сумму с применимыми скидками и способ получения. Основной способ — самовывоз; возможность доставки обсуждается по телефону. Отправка заявки не является онлайн-оплатой.',
             'Զամբյուղի գումարը նախնական է։ Մինչև վճարումը մենեջերը հաստատում է առկայությունը, կիրառելի զեղչերով գումարն ու ստացման եղանակը։ Հիմնական եղանակը խանութից ստանալն է․ առաքման հնարավորությունը քննարկվում է հեռախոսով։ Հայտի ուղարկումը առցանց վճարում չէ։',
@@ -174,7 +171,7 @@ def render(write, card, actions):
 
     page('news', ('Новости LUSAR', 'LUSAR-ի նորությունները', 'LUSAR news'), [
         ('lamp', ('Коллекции и ассортимент', 'Հավաքածուներ և տեսականի', 'Collections and range'), p(
-            'Коллекции LUSAR регулярно обновляются, а каталог сайта пополняется постепенно. Посмотрите опубликованные модели и уточните фактическое наличие у менеджера.',
-            'LUSAR-ի հավաքածուները պարբերաբար թարմացվում են, իսկ կայքի կատալոգը համալրվում է աստիճանաբար։ Դիտեք հրապարակված մոդելները և փաստացի առկայությունը ճշտեք մենեջերից։',
-            'LUSAR collections are regularly refreshed and the website catalogue is being expanded gradually. Explore published models and confirm actual availability with a manager.'))
+            'Откройте каталог и познакомьтесь с коллекциями освещения LUSAR.',
+            'Բացեք կատալոգը և ծանոթացեք LUSAR-ի լուսավորության հավաքածուներին։',
+            'Explore the catalogue and discover LUSAR lighting collections.'))
     ], ('Обновления ассортимента и коллекций освещения LUSAR.', 'LUSAR-ի տեսականու և լուսավորության հավաքածուների նորությունները։', 'Updates to LUSAR lighting collections and range.'))
