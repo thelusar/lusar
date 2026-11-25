@@ -345,3 +345,11 @@ main>.lead,main.content-page>p,main.content-page>dl{max-width:none}
 .footer-stores{grid-template-columns:1fr 1fr}
 .contact-phone{white-space:nowrap}.social-link{display:inline-flex;align-items:center;gap:.4rem}
 @media(max-width:38rem){.footer-stores{grid-template-columns:1fr}}
+.hero-copy :is(h1,.lead,.hero-description){text-wrap:balance;hyphens:none}
+@media(min-width:78.001rem){.home-hero .hero-copy{width:calc(24% - var(--gutter) - 1rem);max-width:22rem}}
+@media(min-width:78.001rem){.hero-copy .hero-actions>:is(.button-link,.ai-action){flex:1 1 auto;padding-inline:.7rem}}
+.site-footer .developer-credit{margin-left:auto;display:inline-flex;align-items:baseline;gap:.4rem;white-space:nowrap;color:var(--muted);font-size:.875rem;letter-spacing:.015em}
+.developer-credit strong{font-weight:500;color:var(--metal);transition:color .2s}
+.site-footer .developer-credit:hover strong{color:var(--text)}
+.site-footer .developer-credit:focus-visible{outline:1px solid var(--metal);outline-offset:5px;border-radius:2px}
+@media(max-width:38rem){.site-footer .developer-credit{flex-basis:100%;justify-content:flex-end;margin-top:.6rem}}

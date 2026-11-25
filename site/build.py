@@ -166,7 +166,9 @@ def footer_markup():
             wordmark() + design.footer_intro() + business.socials(design.t) + '</div>' + groups +
             '</div>' + design.footer_stores() + '<div class="footer-bottom"><span>© LUSAR</span>' +
             "".join(link(path, label) for path, label in FOOTER_LEGAL) +
-            '<button type="button" id="cookie-settings" hidden>Настройки cookie</button></div></footer>')
+            '<button type="button" id="cookie-settings" hidden>Настройки cookie</button>'
+            '<a class="developer-credit" href="https://sovazone.com/" lang="en" data-locale-source>'
+            '<span>Design &amp; Development</span><strong>SovaZone</strong></a></div></footer>')
 
 
 def write(path, title, body, draft=False, *, description="", image="", structured_data=None):
