@@ -257,6 +257,10 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_error(404, "Product unavailable")
         root = Path(self.directory).resolve()
         path = unquote(url.path)
+        retired = path.removesuffix("/index.html").rstrip("/")
+        if retired in {"/stores/yerevan-arshakunyats", "/about/founder"}:
+            destination = "/stores/yerevan-smbat-zoravar" if retired.startswith("/stores/") else "/about"
+            return self.redirect_permanently(destination)
         brand_id = path.removesuffix("/index.html").rstrip("/").removeprefix("/brands/")
         if path.startswith("/brands/") and brand_id in BRANDS:
             destination = BRANDS[brand_id]["path"]

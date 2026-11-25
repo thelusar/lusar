@@ -1,0 +1,12 @@
+{
+  "seller": "Luys+ LLC",
+  "taxId": "02333832",
+  "phone": "+37498300990",
+  "phoneDisplay": "+374 (98) 30-09-90",
+  "email": "lusarlighting@gmail.com",
+  "hours": "09:30–19:00",
+  "storePath": "stores/yerevan-smbat-zoravar",
+  "address": ["г. Ереван, ул. С. Зоравар, 11/1, Ереван Маркет, павильон D50", "Ս. Զորավար 11/1, Երևան Տոնավաճառ, D50 տաղավար", "11/1 S. Zoravar Street, Yerevan Market, pavilion D50, Yerevan"],
+  "legalAddress": ["Республика Армения, г. Ереван, ул. Смбат Зоравар, 11/1", "Հայաստանի Հանրապետություն, ք. Երևան, Սմբատ Զորավարի փողոց, 11/1", "Republic of Armenia, Yerevan, 11/1 Smbat Zoravar Street"],
+  "socialUrls": {"Instagram": "", "Facebook": "", "YouTube": "", "TikTok": ""}
+}

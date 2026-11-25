@@ -12,7 +12,7 @@ from xml.etree import ElementTree as ET
 import serve
 from check_checkout import EDGE
 
-PAGES = ["selection", "services", "professionals/request", "account/notifications", "legal/cookies", "legal/loyalty"]
+PAGES = ["selection", "services", "professionals/request", "account/notifications", "legal/cookies", "legal/loyalty", "contacts", "stores", "stores/yerevan-smbat-zoravar", "about", "delivery", "payment", "returns", "professionals", "partners", "news", "legal/terms", "legal/privacy", "legal/ai", "faq", "support"]
 
 
 class Metadata(HTMLParser):
@@ -69,7 +69,7 @@ def check_static(directory):
                 continue
             target = directory / unquote(link.path).strip("/")
             assert target.is_file() or (target / "index.html").is_file(), f"Broken internal link: {url} -> {href}"
-    assert types.get("Store") == 2, "Missing store schema"
+    assert types.get("Store") == 1, "Expected exactly one real store"
     assert types.get("Product") and types.get("Article") == 20, "Missing product/article schema"
     assert "Sitemap: https://lusar.am/sitemap.xml" in (directory / "robots.txt").read_text()
     print(json.dumps({"indexablePages": len(urls), "schemaTypes": types}))
@@ -85,6 +85,7 @@ if(d.querySelector('main').textContent.includes('Страница в разра�
 for(const width of [320,390,1440]){f.style.width=width+'px';await tick();
 for(const lang of ['ru','hy','en']){const picker=d.querySelector('#language');picker.value=lang;picker.dispatchEvent(new f.contentWindow.Event('change'));
 for(const theme of ['dark','light']){d.documentElement.dataset.theme=theme;await tick();
+if(lang!=='ru' && /[А-Яа-яЁё]/u.test(d.querySelector('main').textContent))throw Error('Untranslated text: '+path+':'+lang+':'+d.querySelector('main').textContent.match(/.{0,30}[А-Яа-яЁё].{0,100}/u)?.[0]);
 if(d.documentElement.scrollWidth>d.documentElement.clientWidth+1)throw Error('Overflow: '+path+':'+width+':'+lang);
 for(const el of d.querySelectorAll('main h1,main h2,main p,main a')){const rect=el.getBoundingClientRect();
 if(rect.width&&rect.right>d.documentElement.clientWidth+1)throw Error('Text overflow: '+path);}
@@ -126,7 +127,7 @@ def main():
             try:
                 result = subprocess.run(common + ["--user-data-dir=" + temporary + "/browser", "--window-size=1700,1100", "--virtual-time-budget=25000", "--dump-dom", origin + "/launch-check"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
                 output = result.stdout.partition("<output>")[2].partition("</output>")[0]
-                assert output == "PASS:108", output or result.stderr[-300:]
+                assert output == "PASS:" + str(len(PAGES) * 18), output or result.stderr[-300:]
                 print(output)
                 if args.screenshots:
                     args.screenshots.mkdir(parents=True, exist_ok=True)

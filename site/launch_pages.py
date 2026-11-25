@@ -1,6 +1,7 @@
 """Useful launch pages based on implemented behavior, without invented terms."""
 from storefront_design import t
 from loyalty import LOYALTY_TIERS
+import business
 
 
 def render(write, card, actions):
@@ -30,13 +31,17 @@ def render(write, card, actions):
           card("spark", "Lusar AI", p("Примерьте выбранные светильники на фотографии своей комнаты на сайте или в Lusar AI Bot.",
                  "Փորձեք ընտրված լուսատուները ձեր սենյակի լուսանկարում՝ կայքում կամ Lusar AI Bot-ում։",
                  "Preview selected lights in a photo of your room on the website or in Lusar AI Bot.") + actions((("ai", "Начать примерку"),))) +
+          card("phone", t("Консультация по товарам", "Ապրանքների խորհրդատվություն", "Product advice"),
+               p("Сотрудники помогут разобраться в ассортименте и характеристиках. Проектирование освещения, выездные замеры, монтаж и отдельную комплексную услугу подбора LUSAR не оказывает.",
+                 "Աշխատակիցները կօգնեն հասկանալ տեսականին և բնութագրերը։ LUSAR-ը չի մատուցում լուսավորության նախագծման, տեղում չափագրման, տեղադրման կամ առանձին համալիր ընտրության ծառայություններ։",
+                 "Staff can help with the range and specifications. LUSAR does not provide lighting design, site measurements, installation or a separate comprehensive selection service.")) +
           card("orders", t("Сопровождение заявки", "Հայտի ուղեկցում", "Help with your request"),
                p("Отправьте заявку без онлайн-оплаты. Менеджер уточнит наличие, итоговую сумму и способ получения.",
                  "Ուղարկեք հայտը՝ առանց առցանց վճարման։ Մենեջերը կճշտի առկայությունը, վերջնական գումարը և ստացման եղանակը։",
                  "Send a request without online payment. A manager will confirm availability, the final amount and collection or delivery.") + actions((("support", "Поддержка"), ("order-status", "Статус заявки")))) + '</div>',
           description="Инструменты LUSAR: подбор и сравнение светильников, примерка с AI и помощь по заявке.")
 
-    write("professionals/request", "Запрос на проект", '<div class="info-cards info-cards-pair">' +
+    write("professionals/request", t("Запрос на закупку", "Գնման հարցում", "Purchase enquiry"), '<div class="info-cards info-cards-pair">' +
           card("desk", t("Подготовьте детали", "Պատրաստեք մանրամասները", "Prepare the details"),
                p("Для предметного разговора подготовьте план или фото, размеры помещения, зоны освещения, количество светильников и желаемые сроки.",
                  "Քննարկման համար պատրաստեք հատակագիծը կամ լուսանկարը, տարածքի չափերը, լուսավորման գոտիները, լուսատուների քանակը և ցանկալի ժամկետները։",
@@ -45,7 +50,7 @@ def render(write, card, actions):
                p("Позвоните, чтобы уточнить возможности под ваш проект. Состав предложения, наличие и условия согласуются индивидуально.",
                  "Զանգահարեք՝ ձեր նախագծի հնարավորությունները ճշտելու համար։ Առաջարկը, առկայությունն ու պայմանները համաձայնեցվում են անհատապես։",
                  "Call to discuss your project. The proposal, availability and terms are agreed individually.") +
-               '<a class="contact-phone" href="tel:+37477123451">+374 77 123451</a>' + actions((("contacts", "Контакты"),))) + '</div>',
+               business.phone() + actions((("contacts", "Контакты"),))) + '</div>',
           description="Что подготовить для обсуждения освещения проекта с менеджером LUSAR: план, размеры, зоны и модели.")
 
     write("account/notifications", "Уведомления", '<div class="info-cards info-cards-pair">' +
@@ -86,4 +91,4 @@ def render(write, card, actions):
                p("Google Analytics и Яндекс Метрика запускаются после разрешения статистики. Изменить выбор можно через «Настройки cookie» внизу любой страницы. Отключение останавливает дальнейший сбор на сайте, но не удаляет уже переданные сведения у провайдеров.",
                  "Google Analytics-ը և Յանդեքս Մետրիկան գործարկվում են վիճակագրությունը թույլատրելուց հետո։ Ընտրությունը փոխեք ցանկացած էջի ներքևի cookie-ի կարգավորումներում։ Անջատումը դադարեցնում է հետագա հավաքումը, բայց չի ջնջում մատակարարներին արդեն փոխանցված տվյալները։",
                  "Google Analytics and Yandex Metrica start after you allow statistics. Change your choice using Cookie settings at the bottom of any page. Disabling stops further collection here; it does not erase information already sent to providers.")) +
-          '</div>' + actions((("legal/privacy", "Политика конфиденциальности"), ("contacts", "Контакты"))), draft=True)
+          '</div>' + actions((("legal/privacy", "Политика конфиденциальности"), ("contacts", "Контакты"))), description=t("Cookie LUSAR: вход, настройки браузера и необязательная статистика.", "LUSAR cookie՝ մուտք, դիտարկիչի կարգավորումներ և ոչ պարտադիր վիճակագրություն։", "LUSAR cookies: sign-in, browser preferences and optional statistics."))

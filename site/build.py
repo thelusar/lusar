@@ -12,12 +12,14 @@ from xml.etree import ElementTree
 from loyalty import FIRST_ORDER_PERCENT, LOYALTY_TIERS
 import storefront_design as design
 import launch_pages
+import business
+import business_pages
 from sync_catalog import validate, revision
 
 ROOT = Path(__file__).resolve().parent
 OUT = Path(os.environ.get("LUSAR_BUILD_DIR", ROOT / "dist"))
 PUBLIC_ORIGIN = "https://lusar.am"
-SERVICE_HOURS = "09:30–19:00"
+SERVICE_HOURS = business.CONFIG["hours"]
 ANALYTICS_IDS = {
     "google-analytics": os.environ.get("LUSAR_GA4_ID", "").strip(),
     "yandex-metrica": os.environ.get("LUSAR_YANDEX_METRICA_ID", "").strip(),
@@ -161,7 +163,7 @@ def footer_markup():
                      "".join(f"<li>{link(path, label)}</li>" for path, label in items) +
                      "</ul></section>" for title, items in FOOTER_GROUPS)
     return ('<footer class="site-footer"><div class="footer-main"><div class="footer-brand">' +
-            wordmark() + design.footer_intro() + '</div>' + groups +
+            wordmark() + design.footer_intro() + business.socials(design.t) + '</div>' + groups +
             '</div>' + design.footer_stores() + '<div class="footer-bottom"><span>© LUSAR</span>' +
             "".join(link(path, label) for path, label in FOOTER_LEGAL) +
             '<button type="button" id="cookie-settings" hidden>Настройки cookie</button></div></footer>')
@@ -181,7 +183,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
             "brands": "Бренды светильников в каталоге LUSAR. Выбор моделей, фотографии и характеристики.",
             "payment": "Как согласовать оплату заявки LUSAR с менеджером. Варианты получения и контакты магазина.",
             "legal": "Правовая информация LUSAR: настройки cookie, обработка данных и правила использования сервисов.",
-            "sitemap": "Все разделы LUSAR: каталог светильников, комнаты, статьи, магазины и поддержка.",
+            "sitemap": "Все разделы LUSAR: каталог светильников, комнаты, статьи, магазин и поддержка.",
         }.get(path, f"{title} в LUSAR. Информация, полезные разделы и контакты магазина освещения.")
     metadata = ""
     if description:
@@ -203,7 +205,7 @@ def write(path, title, body, draft=False, *, description="", image="", structure
                     crumbs.append((category_path(product["categoryId"]).strip("/"), categories[product["categoryId"]]["name"]))
         else:
             parent = clean.split("/")[0]
-            parent_title = {"stores": "Магазины", "rooms": "По комнатам", "journal": "Статьи", "brands": "Бренды", "legal": "Правовая информация"}.get(parent)
+            parent_title = {"stores": "Магазин", "rooms": "По комнатам", "journal": "Статьи", "brands": "Бренды", "legal": "Правовая информация"}.get(parent)
             if parent_title and clean != parent:
                 crumbs.append((parent, parent_title))
         crumbs.append((clean, title))
@@ -284,7 +286,7 @@ FOOTER_GROUPS = (
                      ("journal", "Статьи"), ("offers", "Акции"))),
     ("Покупателям", (("delivery", "Доставка"), ("payment", "Оплата"), ("returns", "Гарантия и возврат"),
                      ("faq", "Частые вопросы"), ("support", "Поддержка"))),
-    ("О LUSAR", (("about", "О нас"), ("contacts", "Контакты"), ("partners", "Наши партнёры"), ("news", "Новости"))),
+    ("О LUSAR", (("about", "О нас"), ("contacts", "Контакты"), ("partners", "Сотрудничество"), ("news", "Новости"))),
 )
 FOOTER_LEGAL = (("legal", "Правовая информация"), ("sitemap", "Карта сайта"))
 FOOTER = [item for _, items in FOOTER_GROUPS for item in items if item[0] not in {"catalog", "rooms"}] + list(FOOTER_LEGAL)
@@ -296,12 +298,12 @@ EXTRA = [
     ("account/settings", "Настройки аккаунта"), ("account/notifications", "Уведомления"),
     ("account/sign-in", "Вход"), ("account/register", "Регистрация"),
     ("account/recovery", "Восстановление доступа"), ("order-status", "Статус заявки"),
-    ("about/founder", "David Matevosyan"), ("stores", "Магазины"),
+    ("stores", "Магазин"),
     ("projects", "Реализованные проекты"), ("professionals", "Дизайнерам и бизнесу"),
-    ("professionals/request", "Запрос на проект"), ("services", "Услуги LUSAR"),
+    ("professionals/request", "Запрос на закупку"), ("services", "Услуги LUSAR"),
     ("journal/guides", "Как выбрать свет"), ("compare", "Сравнение"),
     ("search", "Поиск"), ("selection", "Подборка"),
-    ("legal/terms", "Публичная оферта и условия продажи"), ("legal/privacy", "Конфиденциальность"),
+    ("legal/terms", "Условия заявок и продажи"), ("legal/privacy", "Конфиденциальность"),
     ("legal/cookies", "Политика cookie"), ("legal/loyalty", "Условия акций и скидок"),
     ("legal/ai", "Условия использования Lusar AI и аккаунта"),
 ]
@@ -610,7 +612,6 @@ for item in data["products"]:
           image=photo_urls[0] if photo_urls else "", structured_data=structured_data)
 
 draft_routes = {
-    "about/founder": (("about", "О LUSAR"), ("stores", "Магазины")),
     "partners": (("brands", "Бренды"), ("contacts", "Контакты")),
     "projects": (("rooms", "По комнатам"), ("ai", "Lusar AI")),
     "professionals": (("contacts", "Контакты"), ("catalog", "Каталог")),
@@ -630,85 +631,12 @@ for path, title in FOOTER + EXTRA:
               information_card("spark", "Страница в разработке", info_actions(draft_routes[path]), featured=True) +
               '</div>', draft=True)
 
-write("payment", "Оплата", '<p class="lead">Выберите удобный способ оплаты при подтверждении заказа.</p>'
-      '<div class="info-cards">' +
-      information_card("pin", "В магазине", '<p>После подтверждения заказа менеджером.</p>') +
-      information_card("orders", "По чеку менеджера", '<p>Менеджер пришлёт данные для оплаты.</p>') +
-      information_card("delivery", "При получении", '<p>Способ оплаты согласует менеджер.</p>') + '</div>' +
-      info_actions((("delivery", "Доставка"), ("support", "Задать вопрос"))))
-write("delivery", "Доставка",
-      '<div class="info-cards info-cards-pair">' +
-      information_card("delivery", "Доставка по адресу", '<p>Укажите адрес при оформлении заявки или сообщите его менеджеру. '
-                       'Менеджер уточнит способ получения, сроки и стоимость.</p>', featured=True) +
-      information_card("pin", "Получение в магазине", '<p>Перед поездкой уточните наличие товара у менеджера.</p>' +
-                       info_actions((("stores", "Магазины"),))) +
-      '</div><p class="page-note">Страница в разработке</p>' +
-      info_actions((("payment", "Оплата"), ("support", "Поддержка"))), draft=True)
-write("returns", "Гарантия и возврат",
-      '<div class="info-cards">' +
-      information_card("orders", "Вопрос по заказу",
-                       '<p>Свяжитесь с менеджером и назовите номер заказа. Менеджер подскажет, что делать дальше.</p>' +
-                       info_actions((("support", "Поддержка"), ("account/orders", "Мои заказы"))), featured=True) +
-      '</div><p class="page-note">Страница в разработке</p>', draft=True)
-store_path = "stores/yerevan-arshakunyats"
-store_address = "Ереван, проспект Аршакуняц, 210/1"
-d50_path = "stores/yerevan-smbat-zoravar"
-d50_address = "Ереван, улица Смбата Зоравара, 11/3"
-store_phone = '<a class="contact-phone" href="tel:+37477123451">+374 77 123451</a>'
-stores = (
-    (store_path, "Аршакуняц", store_address, "Ярмарка «Еранкюни»",
-     "https://www.spyur.am/ru/companies/luys-plus-shop/52299/", "Карточка магазина в «Спюре»"),
-    (d50_path, "Смбата Зоравара", d50_address, "Павильон D50 · рядом с метро «Сасунци Давид»",
-     "https://2gis.am/ru/yerevan/firm/70000001110752412", "Карточка магазина в 2ГИС"),
-)
-
-
-def map_links(address):
-    google = html.escape(urlencode({"api": 1, "query": address}), quote=True)
-    yandex = html.escape(urlencode({"text": address}), quote=True)
-    return (f'<div class="map-links"><a href="https://www.google.com/maps/search/?{google}">Google Карты</a>'
-            f'<a href="https://yandex.com/maps/?{yandex}">Яндекс Карты</a></div>')
-
-
-contact_details = f'{store_phone}<p><span>Ежедневно</span> · {SERVICE_HOURS}</p>'
-store_cards = "".join(
-    information_card("pin", name, f'<address>{address}</address><p>{hint}</p>' + map_links(address) +
-                     info_actions(((path, "О магазине"),)))
-    for path, name, address, hint, _, _ in stores
-)
-write("contacts", "Контакты LUSAR",
-      '<div class="info-cards">' +
-      information_card("phone", "На связи", contact_details +
-                       info_actions((("order-status", "Проверить статус заявки"), ("faq", "Частые вопросы"))), featured=True) +
-      store_cards + '</div>',
-      description="Телефон, часы работы и адреса двух магазинов LUSAR в Ереване. Маршруты в Google и Яндекс Картах.")
-write("stores", "Магазины LUSAR", '<div class="info-cards info-cards-pair">' + store_cards + '</div>' +
-      info_actions((("contacts", "Контакты"),)), description="Адреса магазинов освещения LUSAR в Ереване.")
-for path, name, address, hint, source, source_label in stores:
-    write(path, f"LUSAR · {name}",
-          '<div class="info-cards info-cards-pair">' +
-          information_card("pin", "Как добраться", f'<address>{address}</address><p>{hint}</p>' +
-                           map_links(address) + f'<p><a href="{source}">{source_label}</a></p>', featured=True) +
-          information_card("phone", "На связи", contact_details) + '</div>' +
-          info_actions((("stores", "Магазины"), ("contacts", "Контакты"))),
-          description=f"Магазин освещения LUSAR. {address}. {hint}.",
-          structured_data={"@context": "https://schema.org", "@type": "Store", "@id": PUBLIC_ORIGIN + "/" + path + "#store",
-                           "name": f"LUSAR · {name}", "url": PUBLIC_ORIGIN + "/" + path,
-                           "telephone": "+37477123451", "address": {"@type": "PostalAddress", "streetAddress": address.split(", ", 1)[1],
-                           "addressLocality": "Ереван", "addressCountry": "AM"}, "sameAs": [source],
-                           "openingHoursSpecification": {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "opens": "09:30", "closes": "19:00"}})
-write("about", "О LUSAR",
-      '<div class="info-cards">' +
-      information_card("spark", "От LUYS+ к LUSAR",
-                       '<p>LUSAR — новое название LUYS+. В каталоге представлены светильники для дома, интерьера и улицы.</p>' +
-                       info_actions((("catalog", "Открыть каталог"),)), featured=True) +
-      information_card("pin", "Магазины в Ереване", info_actions((("stores", "Адреса и маршруты"),))) +
-      information_card("account", "Основатель", info_actions((("about/founder", "David Matevosyan"),))) + '</div>',
-      description="LUSAR, ранее LUYS+. Светильники для дома, интерьера и улицы. Магазины в Ереване.")
+contact_details = business.contact(design.t) + business.response_note(design.t)
+store_phone = business.phone()
 FAQ = [
     ("Можно ли оформить заявку без регистрации?", "Да. Добавьте товары в корзину, укажите имя и телефон. Email и адрес можно оставить пустыми."),
-    ("Что происходит после отправки заявки?", "Вы получите номер и приватную ссылку для проверки статуса. Менеджер подтвердит наличие, итоговую сумму и способ получения."),
-    ("Как оплатить заказ?", "Оплатить можно в магазине, по чеку от менеджера или при получении. Доступный вариант менеджер согласует при подтверждении заказа."),
+    ("Что происходит после отправки заявки?", "Вы получите номер и приватную ссылку для проверки статуса. Менеджер подтвердит наличие, итоговую сумму и способ получения. Обычно связываемся в течение 15 минут в рабочее время; сложные заказы могут занять больше времени. Вне рабочего времени заявки обрабатываем после открытия."),
+    ("Как оплатить заказ?", "Принимаем наличные, банковские карты и банковские переводы. Детали оплаты согласовываются индивидуально с менеджером."),
     ("Можно ли узнать наличие по сайту?", "Пока наличие уточняет менеджер. При обращении укажите артикул со страницы товара."),
     ("Как действует скидка 10% на первый заказ?", "Пока акция активна, она доступна зарегистрированным покупателям без выполненных заказов. Отменённая заявка не лишает права на скидку. Скидка применяется отдельно от промокода и скидки кабинета."),
     ("Почему скидка по промокоду меньше его номинала?", "Промокод уменьшает стоимость товаров максимум на 20%. Например, при заказе на 10 000 ֏ код на 5 000 ֏ даст скидку 2 000 ֏."),
@@ -753,10 +681,6 @@ write("journal/guides", "Как выбрать свет",
                        '<p>Загрузите фото комнаты в Lusar AI и оцените, как выбранная модель выглядит в вашем пространстве.</p>') +
       '</div>' + info_actions((("rooms", "Все комнаты"), ("ai", "Примерить с Lusar AI"), ("journal", "Статьи"))),
       description="Как спланировать освещение, сверить размеры светильника и примерить модель на фотографии комнаты.")
-write("news", "Новости", '<div class="info-cards">' +
-      information_card("spark", "От LUYS+ к LUSAR", '<p>LUSAR — новое название LUYS+.</p>' +
-                       info_actions((("about", "О LUSAR"),)), featured=True) + '</div>',
-      description="Обновления LUSAR и информация о переходе от LUYS+ к LUSAR.")
 write("brands", "Бренды", listing([(brand_path(key), brand["name"]) for key, brand in sorted(brands.items())])
       if brands else '<div class="info-cards">' +
       information_card("lamp", "Страница в разработке", info_actions((("catalog", "Каталог"),)), featured=True) +
@@ -777,6 +701,9 @@ write("search", "Поиск по каталогу", """
 """ + info_actions((("catalog", "Открыть каталог"),)), draft=True)
 write("offers", "Акции", design.offers(nav_icon), description="Скидка на первый заказ и 10% в день рождения с промокодом Happy. Условия акций LUSAR.")
 design.render_privacy(write)
+business_pages.render(write, information_card, info_actions)
+for retired, destination in (("stores/yerevan-arshakunyats", business.CONFIG["storePath"]), ("about/founder", "about")):
+    write(retired, "LUSAR", info_actions(((destination, "О LUSAR"),)), draft=True)
 loyalty_rows = "".join(
     f'<tr><td>{("От " + f"{threshold:,}".replace(",", " ") + " ֏") if threshold else "До 50 000 ֏"}</td><td>{discount}%</td></tr>'
     for threshold, discount in LOYALTY_TIERS
@@ -840,8 +767,8 @@ def order_summary(checkout=False):
             '<p id="cart-summary" role="status"></p><div class="order-summary-actions">'
             '<div class="order-grand-total"><span>Предварительный итог</span><strong id="order-total">—</strong></div>' + action + '</div>' +
             '<div class="order-payment-info"><p class="order-payment-note">Оплата после подтверждения.</p>'
-            '<p class="order-summary-note">Наличие, доставку и итоговую сумму уточнит менеджер.</p>'
-            '<a class="order-payment-link" href="/payment">Способы оплаты</a></div></aside>')
+            '<p class="order-summary-note">Наличие, способ получения и итоговую сумму уточнит менеджер.</p>'
+            '<a class="order-payment-link" href="/payment">Способы оплаты</a>' + business.response_note(design.t) + '<p><a href="/legal/terms">Условия заявок и продажи</a> · <a href="/legal/privacy">Конфиденциальность</a></p></div></aside>')
 
 
 def empty_bag():
@@ -934,7 +861,7 @@ sitemap_groups = (
     ("По комнатам", [("rooms", "Все комнаты")] + [(f"rooms/{key}", title) for key, (title, _, _) in ROOMS.items()]),
     ("Покупателям", list(FOOTER_GROUPS[1][1]) + [("order-status", "Статус заявки")]),
     ("О LUSAR", list(FOOTER_GROUPS[2][1]) +
-     [(path, title) for path, title in EXTRA if path in {"about/founder", "stores", "projects", "professionals", "services"}]),
+     [(path, title) for path, title in EXTRA if path in {"stores", "professionals", "services"}]),
     ("Статьи", (("journal", "Все статьи"), ("journal/guides", "Как выбрать свет"), ("offers", "Акции"))),
     ("Правовая информация", [(path, title) for path, title in EXTRA if path.startswith("legal/")]),
     ("Личный кабинет", (("account", "Обзор"), ("account/orders", "Мои заказы"), ("account/settings", "Профиль"),
@@ -972,7 +899,7 @@ for asset in ("staff.css", "staff.js"):
     (OUT / asset).write_bytes((ROOT / asset).read_bytes())
 (OUT / "theme.js").write_bytes((ROOT / "theme.js").read_bytes())
 (OUT / "locale.js").write_text((ROOT / "locale.js").read_text(encoding="utf-8").replace(
-    "const translations = {", "const translations = {" + json.dumps(design.TRANSLATIONS,ensure_ascii=False)[1:-1] + ","), encoding="utf-8")
+    '  const labels =', '  Object.assign(translations, ' + json.dumps(design.TRANSLATIONS,ensure_ascii=False) + ');\n  const labels ='), encoding="utf-8")
 for asset in ("storefront.css", "storefront.js"):
     (OUT / asset).write_bytes((ROOT / asset).read_bytes())
 (OUT / "editorial").mkdir(exist_ok=True)

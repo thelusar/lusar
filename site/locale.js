@@ -264,14 +264,8 @@
     "Ежедневно": ["Ամեն օր", "Daily"],
     "Контакты LUSAR": ["LUSAR-ի կոնտակտները", "Contact LUSAR"],
     "Магазины LUSAR": ["LUSAR-ի խանութները", "LUSAR stores"],
-    "Аршакуняц": ["Արշակունյաց", "Arshakunyats"],
     "Смбата Зоравара": ["Սմբատ Զորավար", "Smbat Zoravar"],
-    "LUSAR · Аршакуняц": ["LUSAR · Արշակունյաց", "LUSAR · Arshakunyats"],
     "LUSAR · Смбата Зоравара": ["LUSAR · Սմբատ Զորավար", "LUSAR · Smbat Zoravar"],
-    "Ереван, проспект Аршакуняц, 210/1": ["Երևան, Արշակունյաց պողոտա, 210/1", "210/1 Arshakunyats Avenue, Yerevan"],
-    "Ереван, улица Смбата Зоравара, 11/3": ["Երևան, Սմբատ Զորավարի փողոց, 11/3", "11/3 Smbat Zoravar Street, Yerevan"],
-    "Ярмарка «Еранкюни»": ["«Եռանկյունի» տոնավաճառ", "Yerankyuni market"],
-    "Павильон D50 · рядом с метро «Сасунци Давид»": ["Տաղավար D50 · «Սասունցի Դավիթ» մետրոյի մոտ", "Unit D50 · near Sasuntsi Davit metro"],
     "Google Карты": ["Google Քարտեզներ", "Google Maps"],
     "Яндекс Карты": ["Յանդեքս Քարտեզներ", "Yandex Maps"],
     "Карточка магазина в «Спюре»": ["Խանութի էջը «Սփյուռում»", "Store listing on Spyur"],
@@ -279,9 +273,6 @@
     "О магазине": ["Խանութի մասին", "Store details"],
     "Адреса и маршруты": ["Հասցեներ և երթուղիներ", "Addresses and directions"],
     "Магазины в Ереване": ["Խանութներ Երևանում", "Stores in Yerevan"],
-    "От LUYS+ к LUSAR": ["LUYS+-ից դեպի LUSAR", "From LUYS+ to LUSAR"],
-    "LUSAR — новое название LUYS+.": ["LUSAR-ը LUYS+-ի նոր անունն է։", "LUSAR is the new name of LUYS+."],
-    "LUSAR — новое название LUYS+. В каталоге представлены светильники для дома, интерьера и улицы.": ["LUSAR-ը LUYS+-ի նոր անունն է։ Կատալոգում ներկայացված են տան, ինտերիերի և բացօթյա լուսատուներ։", "LUSAR is the new name of LUYS+. Explore lighting for homes, interiors and outdoor spaces."],
     "Основатель": ["Հիմնադիր", "Founder"],
     "Доставка по адресу": ["Առաքում հասցեով", "Delivery to your address"],
     "Укажите адрес при оформлении заявки или сообщите его менеджеру. Менеджер уточнит способ получения, сроки и стоимость.": ["Հայտում նշեք հասցեն կամ փոխանցեք այն մենեջերին։ Մենեջերը կճշտի ստացման եղանակը, ժամկետը և արժեքը։", "Enter your address with your request or share it with your manager. They will confirm the delivery method, timing and cost."],
@@ -606,12 +597,14 @@
   }
 
   const originalTitle = document.title;
+  const pageMetadata = [...document.querySelectorAll('meta[name="description"],meta[property="og:description"],meta[property="og:title"]')].map(el => [el, el.content]);
   const picker = document.querySelector("#language");
   function apply() {
     document.documentElement.lang = language;
     picker.value = language;
     document.querySelector("#language-display").textContent = labels[language];
     translateTree(document.body);
+    for (const [element, source] of pageMetadata) element.content = text(source);
     document.title = text(originalTitle.replace(/ — LUSAR$/u, "")) + " — LUSAR";
     document.dispatchEvent(new Event("lusar-language-change"));
   }
